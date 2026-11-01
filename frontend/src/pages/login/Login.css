@@ -1,0 +1,477 @@
+/**
+ * NEXORA MART Login & Register Page Styles
+ * Exactly Fitted to Reference Screenshot (media_1793532961144_32a45be6.png):
+ * - Part 1 (Top Half): Centered 3D M Logo + NEXORA (white) MART (orange)
+ * - Part 2 (Second Half): Dark Slate Solid Card (#181E2B) fitted so ALL elements (including Google button & footer) are 100% visible!
+ * - Zero scrolling, zero overflow, perfectly proportioned.
+ * - Dark input styling on data entry & browser autofill (never white!).
+ */
+
+/* ========================================================
+   1. MAIN PAGE VIEWPORT CONTAINER
+   ======================================================== */
+.login-page-root {
+  width: 100%;
+  min-height: 100vh;
+  min-height: 100dvh;
+  position: relative;
+  background-color: var(--bg-page);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow-x: hidden;
+  overflow-y: auto;
+  box-sizing: border-box;
+  transition: background-color 0.3s ease;
+}
+
+/* ========================================================
+   2. AMBIENT LOGO GLOW
+   ======================================================== */
+.nexora-brand-centered-wrapper {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  user-select: none;
+}
+
+.nexora-ambient-glow {
+  position: absolute;
+  top: 36%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 130px;
+  height: 130px;
+  background: radial-gradient(circle, rgba(255, 122, 26, 0.22) 0%, transparent 70%);
+  border-radius: 50%;
+  pointer-events: none;
+  filter: blur(12px);
+}
+
+.nexora-ambient-glow.desktop {
+  width: 260px;
+  height: 260px;
+  filter: blur(20px);
+}
+
+/* ========================================================
+   3. DESKTOP SPLIT-SCREEN LAYOUT (>= 768px)
+   ======================================================== */
+.nexora-desktop-layout {
+  position: relative;
+  z-index: 1;
+  width: 100%;
+  max-width: 1360px;
+  min-height: 100vh;
+  min-height: 100dvh;
+  margin: 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 30px 60px;
+  box-sizing: border-box;
+}
+
+/* Left Branding Section */
+.nexora-desktop-branding {
+  flex: 1 1 50%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 30px;
+  text-align: center;
+  user-select: none;
+  position: relative;
+  z-index: 1;
+}
+
+.nexora-desktop-branding .nexora-logo-image-wrapper img {
+  width: 200px;
+  height: 200px;
+  border-radius: 24px;
+  max-width: 100%;
+  filter: drop-shadow(0 14px 32px rgba(255, 106, 26, 0.24));
+  transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.nexora-desktop-branding .nexora-logo-image-wrapper:hover img {
+  transform: translateY(-4px) scale(1.02);
+}
+
+.nexora-desktop-branding .nexora-brand-title {
+  margin-top: 18px;
+  font-size: 32px;
+  font-weight: 700;
+  letter-spacing: 1px;
+}
+
+/* Right Login Card Container */
+.nexora-desktop-card-col {
+  flex: 0 0 460px;
+  max-width: 480px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  z-index: 2;
+}
+
+/* Desktop Rounded Frosted Card */
+.nexora-login-card {
+  width: 100%;
+  background-color: var(--bg-card);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border-radius: 24px;
+  padding: 20px 24px 18px 24px;
+  border: 1px solid var(--border-card);
+  box-shadow: var(--shadow-card);
+  position: relative;
+  z-index: 2;
+  box-sizing: border-box;
+  animation: nmartFadeIn 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  transition: background-color 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease;
+}
+
+/* ========================================================
+   4. TWO-HALF MOBILE SMARTPHONE LAYOUT (< 768px)
+   ======================================================== */
+.nexora-mobile-layout {
+  position: relative;
+  z-index: 1;
+  width: 100%;
+  min-height: 100vh;
+  min-height: 100dvh;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  box-sizing: border-box;
+  padding: 8px 12px 22px 12px;
+}
+
+/* Top Branding: Flexible to absorb all remaining vertical space */
+.nexora-mobile-top-half {
+  flex: 1 1 auto;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  user-select: none;
+  box-sizing: border-box;
+  position: relative;
+  z-index: 1;
+  min-height: 120px;
+  padding: 12px 0;
+}
+
+.nexora-mobile-top-half .nexora-logo-image-wrapper img {
+  width: 92px;
+  height: 92px;
+  border-radius: 24px;
+  max-width: 100%;
+  object-fit: contain;
+  filter: drop-shadow(0 8px 22px rgba(255, 106, 26, 0.28));
+}
+
+.nexora-mobile-top-half .nexora-brand-title {
+  margin-top: 8px;
+  font-size: 26px;
+  font-weight: 500;
+  letter-spacing: 1px;
+}
+
+/* Second Half: Floating Card with 12px side and 22px bottom margins */
+.nexora-mobile-bottom-half {
+  flex: 0 0 auto;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  box-sizing: border-box;
+  position: relative;
+  z-index: 2;
+}
+
+/* Mobile Floating Card */
+.nexora-mobile-card {
+  width: 100%;
+  max-width: 440px;
+  background-color: var(--bg-card);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border-radius: 24px;
+  border: 1px solid var(--border-card);
+  padding: 16px;
+  box-shadow: var(--shadow-card);
+  box-sizing: border-box;
+  transition: background-color 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease;
+}
+
+/* ========================================================
+   5. COMMON FORM ELEMENTS & TYPOGRAPHY
+   ======================================================== */
+.nexora-login-form-container {
+  width: 100%;
+  box-sizing: border-box;
+  font-family: 'Plus Jakarta Sans', sans-serif;
+}
+
+.nexora-login-header {
+  margin-bottom: 10px;
+  text-align: left;
+}
+
+.nexora-welcome-title {
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  font-size: 22px;
+  font-weight: 800;
+  color: var(--text-primary);
+  margin: 0 0 2px 0;
+  line-height: 1.15;
+  letter-spacing: -0.3px;
+  transition: color 0.3s ease;
+}
+
+.nexora-welcome-subtitle {
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  font-size: 12px;
+  color: var(--text-secondary);
+  margin: 0;
+  font-weight: 500;
+  line-height: 1.35;
+  transition: color 0.3s ease;
+}
+
+/* Error Banner */
+.nexora-form-error-banner {
+  padding: 5px 10px;
+  margin-bottom: 6px;
+  border-radius: 8px;
+  background-color: var(--color-error-bg);
+  border: 1px solid var(--color-error-border);
+  color: var(--color-error);
+  font-size: 11px;
+  font-weight: 500;
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  display: flex;
+  align-items: center;
+  animation: nmartFadeIn 0.2s ease;
+}
+
+/* ========================================================
+   INPUT DATA ENTRY & BROWSER AUTOFILL (NEVER WHITE!)
+   ======================================================== */
+.nexora-text-input {
+  background-color: transparent !important;
+  color: var(--text-primary, #FFFFFF) !important;
+  caret-color: var(--primary-orange, #FF6A1A) !important;
+  font-family: 'Plus Jakarta Sans', sans-serif !important;
+}
+
+.nexora-text-input::placeholder {
+  color: var(--text-placeholder, #768499) !important;
+  opacity: 1 !important;
+}
+
+/* Chrome, Edge, Safari, Firefox autofill override */
+.nexora-text-input:-webkit-autofill,
+.nexora-text-input:-webkit-autofill:hover,
+.nexora-text-input:-webkit-autofill:focus,
+.nexora-text-input:-webkit-autofill:active {
+  -webkit-box-shadow: 0 0 0 1000px var(--bg-input, #1B2232) inset !important;
+  box-shadow: 0 0 0 1000px var(--bg-input, #1B2232) inset !important;
+  -webkit-text-fill-color: var(--text-primary, #FFFFFF) !important;
+  color: var(--text-primary, #FFFFFF) !important;
+  caret-color: var(--primary-orange, #FF6A1A) !important;
+  font-family: 'Plus Jakarta Sans', sans-serif !important;
+  transition: background-color 5000s ease-in-out 0s, color 5000s ease-in-out 0s !important;
+}
+
+[data-theme="dark"] .nexora-text-input,
+[data-theme="dark"] .nexora-text-input:-webkit-autofill,
+[data-theme="dark"] .nexora-text-input:-webkit-autofill:hover,
+[data-theme="dark"] .nexora-text-input:-webkit-autofill:focus,
+[data-theme="dark"] .nexora-text-input:-webkit-autofill:active {
+  -webkit-box-shadow: 0 0 0 1000px #1B2232 inset !important;
+  box-shadow: 0 0 0 1000px #1B2232 inset !important;
+  -webkit-text-fill-color: #FFFFFF !important;
+  color: #FFFFFF !important;
+  caret-color: #FF6A1A !important;
+}
+
+[data-theme="light"] .nexora-text-input,
+[data-theme="light"] .nexora-text-input:-webkit-autofill,
+[data-theme="light"] .nexora-text-input:-webkit-autofill:hover,
+[data-theme="light"] .nexora-text-input:-webkit-autofill:focus,
+[data-theme="light"] .nexora-text-input:-webkit-autofill:active {
+  -webkit-box-shadow: 0 0 0 1000px #FFFFFF inset !important;
+  box-shadow: 0 0 0 1000px #FFFFFF inset !important;
+  -webkit-text-fill-color: #0B0B2B !important;
+  color: #0B0B2B !important;
+  caret-color: #FF6A1A !important;
+}
+
+/* Options Row: Keep me signed in & Forgot Password */
+.nexora-options-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 6px;
+  margin-bottom: 0;
+  font-size: 13px;
+}
+
+.nexora-forgot-link {
+  color: var(--primary-orange);
+  font-weight: 600;
+  font-size: 13px;
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  transition: opacity 0.15s ease, color 0.15s ease;
+}
+
+.nexora-forgot-link:hover {
+  color: var(--primary-orange-hover);
+  text-decoration: underline;
+}
+
+/* Primary Gradient Login Button (44px Height, Fully Rounded, 12px margin above and below) */
+.nexora-btn-login {
+  width: 100%;
+  height: 44px;
+  border-radius: 9999px;
+  border: none;
+  background: linear-gradient(90deg, #FF5B18 0%, #FF781E 60%, #FFA126 100%);
+  color: #FFFFFF;
+  font-weight: 700;
+  font-size: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  cursor: pointer;
+  box-shadow: var(--shadow-button-primary);
+  transition: transform 0.15s ease, box-shadow 0.15s ease, opacity 0.15s ease;
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  user-select: none;
+  padding: 0 16px;
+  margin: 12px 0;
+}
+
+.nexora-btn-login:hover:not(:disabled) {
+  box-shadow: 0 10px 26px rgba(255, 106, 26, 0.48);
+  transform: translateY(-1px);
+}
+
+.nexora-btn-login:active:not(:disabled) {
+  transform: scale(0.99);
+}
+
+.nexora-btn-login:disabled {
+  opacity: 0.75;
+  cursor: not-allowed;
+}
+
+/* Divider: Or continue with */
+.nexora-divider-row {
+  display: flex;
+  align-items: center;
+  margin: 0 0 10px 0;
+  gap: 0;
+}
+
+.nexora-divider-line {
+  flex: 1;
+  height: 1px;
+  background-color: var(--divider-line);
+  transition: background-color 0.3s ease;
+}
+
+.nexora-divider-text {
+  font-size: 11px;
+  color: var(--text-muted);
+  font-weight: 400;
+  padding: 0 10px;
+  white-space: nowrap;
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  transition: color 0.3s ease;
+}
+
+/* Social Login Row */
+.nexora-social-row {
+  margin-bottom: 10px;
+}
+
+/* Bottom Footer Link */
+.nexora-signup-footer {
+  margin-top: 0;
+  text-align: center;
+  font-size: 13px;
+  font-family: 'Plus Jakarta Sans', sans-serif;
+}
+
+.nexora-signup-label {
+  color: var(--text-secondary);
+  font-weight: 400;
+  transition: color 0.3s ease;
+}
+
+.nexora-signup-action {
+  color: var(--primary-orange);
+  font-weight: 600;
+  font-size: 13px;
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  text-decoration: none;
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 0;
+  margin-left: 4px;
+  transition: color 0.15s ease;
+}
+
+.nexora-signup-action:hover {
+  color: var(--primary-orange-hover);
+  text-decoration: underline;
+}
+
+/* ========================================================
+   6. RESPONSIVE SCROLLBAR & OVERFLOW
+   ======================================================== */
+@media (max-height: 720px) {
+  .login-page-root {
+    overflow-y: auto !important;
+  }
+}
+
+/* Keyframes */
+@keyframes nmartFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Keyframes */
+@keyframes nmartFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}

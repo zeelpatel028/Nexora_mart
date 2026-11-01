@@ -1,0 +1,109 @@
+/**
+ * Modern CSS Reset & Cross-Browser Normalization
+ */
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+html, body {
+  width: 100%;
+  height: 100%;
+  font-family: var(--font-main);
+  background-color: var(--bg-page);
+  color: var(--text-primary);
+  overflow-x: hidden;
+}
+
+#root {
+  min-height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+button {
+  font-family: inherit;
+  border: none;
+  background: none;
+  outline: none;
+  cursor: pointer;
+  user-select: none;
+}
+
+a {
+  text-decoration: none;
+  color: inherit;
+}
+
+input, select, textarea {
+  font-family: inherit;
+}
+
+/* Browser Autofill Reset (Chrome, Edge, Safari, Firefox)
+   Eliminates awkward colored background patches inside custom input wrappers */
+input:-webkit-autofill,
+input:-webkit-autofill:hover, 
+input:-webkit-autofill:focus, 
+input:-webkit-autofill:active {
+  -webkit-box-shadow: 0 0 0 1000px var(--bg-input, #1B2232) inset !important;
+  box-shadow: 0 0 0 1000px var(--bg-input, #1B2232) inset !important;
+  -webkit-text-fill-color: var(--text-primary, #FFFFFF) !important;
+  color: var(--text-primary, #FFFFFF) !important;
+  caret-color: var(--primary-orange, #FF6A1A) !important;
+  font-family: var(--font-main) !important;
+  font-size: 15px !important;
+  font-weight: 500 !important;
+  background-color: transparent !important;
+  transition: background-color 5000s ease-in-out 0s, color 5000s ease-in-out 0s;
+}
+
+input:autofill {
+  box-shadow: 0 0 0 1000px var(--bg-input, #1B2232) inset !important;
+  -webkit-text-fill-color: var(--text-primary, #FFFFFF) !important;
+  color: var(--text-primary, #FFFFFF) !important;
+  background-color: transparent !important;
+}
+
+[data-theme="dark"] input:-webkit-autofill,
+[data-theme="dark"] input:-webkit-autofill:hover,
+[data-theme="dark"] input:-webkit-autofill:focus,
+[data-theme="dark"] input:-webkit-autofill:active {
+  -webkit-box-shadow: 0 0 0 1000px #1B2232 inset !important;
+  box-shadow: 0 0 0 1000px #1B2232 inset !important;
+  -webkit-text-fill-color: #FFFFFF !important;
+  color: #FFFFFF !important;
+  caret-color: #FF6A1A !important;
+}
+
+[data-theme="light"] input:-webkit-autofill,
+[data-theme="light"] input:-webkit-autofill:hover,
+[data-theme="light"] input:-webkit-autofill:focus,
+[data-theme="light"] input:-webkit-autofill:active {
+  -webkit-box-shadow: 0 0 0 1000px #FFFFFF inset !important;
+  box-shadow: 0 0 0 1000px #FFFFFF inset !important;
+  -webkit-text-fill-color: #0B0B2B !important;
+  color: #0B0B2B !important;
+  caret-color: #FF6A1A !important;
+}
+
+/* Modern Minimal Scrollbars */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(148, 163, 184, 0.4);
+  border-radius: 999px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(148, 163, 184, 0.7);
+}

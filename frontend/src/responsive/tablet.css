@@ -1,0 +1,30 @@
+/**
+ * Tablet Device Specific Styles (600px - 1023px)
+ * Optimizations for iPad, Galaxy Tab, and medium viewports
+ */
+
+@media (min-width: 600px) and (max-width: 1023px) {
+  .app-viewport-root {
+    padding: 24px 16px;
+    background-color: var(--bg-page, #FFF8F0);
+  }
+
+  .main-display-area {
+    padding: 20px 16px;
+    align-items: center;
+    justify-content: center;
+  }
+
+  /* Tablet card styling enhancements */
+  .tablet-card {
+    transition: transform var(--transition-normal), box-shadow var(--transition-normal);
+  }
+
+  /* Landscape orientation optimizations */
+  @media (orientation: landscape) and (max-height: 700px) {
+    .tablet-card {
+      min-height: auto;
+      padding: 28px 30px;
+    }
+  }
+}

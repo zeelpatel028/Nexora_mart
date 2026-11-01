@@ -1,0 +1,47 @@
+/**
+ * Mobile Device Specific Styles (< 600px)
+ * Optimizations for iOS Safari, Android Chrome, and small touchscreens
+ */
+
+@media (max-width: 599px) {
+  /* Prevent horizontal scrolling on mobile viewports */
+  html, body {
+    overflow-x: hidden;
+    position: relative;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  /* Full-bleed mobile background */
+  .app-viewport-root {
+    background-color: var(--bg-page, #FFF8F0) !important;
+    min-height: 100vh;
+    min-height: 100dvh;
+    padding: 0 !important;
+  }
+
+  .main-display-area {
+    padding: 0 !important;
+    min-height: 100vh;
+    min-height: 100dvh;
+    background-color: var(--bg-page, #FFF8F0) !important;
+    align-items: stretch !important;
+  }
+
+  /* Touch-friendly interactive targets (minimum 44px) */
+  button, input, select {
+    min-height: 44px;
+    touch-action: manipulation;
+  }
+
+  /* Small Mobile devices (320px - 374px) */
+  @media (max-width: 374px) {
+    .mobile-screen-card {
+      padding: 24px 14px 20px 14px !important;
+    }
+
+    .brand-title {
+      font-size: 16px !important;
+      letter-spacing: 0.18em !important;
+    }
+  }
+}

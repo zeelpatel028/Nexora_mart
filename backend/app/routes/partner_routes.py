@@ -1,0 +1,178 @@
+from typing import List, Optional
+from fastapi import APIRouter, Depends, HTTPException, status
+from sqlalchemy.orm import Session
+from ..database.connection import get_db
+from ..middleware.auth_middleware import get_current_user
+from ..models.user import User
+from ..models.partner import Customer, Supplier
+from ..schemas.partner_schema import (
+    CustomerCreate,
+    CustomerUpdate,
+    CustomerResponse,
+    SupplierCreate,
+    SupplierUpdate,
+    SupplierResponse
+)
+from ..services.store_service import StoreService
+
+router = APIRouter(tags=["Partners"])
+
+# --- Customer Endpoints ---
+
+@router.get("/customers", response_model=List[CustomerResponse])
+def list_customers(
+    search: Optional[str] = None,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    store = StoreService.get_user_store(db, current_user)
+    q = db.query(Customer).filter(Customer.store_id == store.id, Customer.is_active == True)
+    if search:
+        p = f"%{search.strip()}%"
+        q = q.filter((Customer.name.ilike(p)) | (Customer.phone.ilike(p)))
+    return q.order_by(Customer.name).all()
+
+@router.post("/customers", response_model=CustomerResponse, status_code=status.HTTP_201_CREATED)
+def create_customer(
+    request: CustomerCreate,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    store = StoreService.get_user_store(db, current_user)
+    cust = Customer(
+        store_id=store.id,
+        name=request.name.strip(),
+        phone=request.phone,
+        email=request.email,
+        address=request.address,
+        gst_number=request.gst_number,
+        credit_limit=request.credit_limit or 0.0,
+        balance=0.0,
+        is_active=True
+    )
+    db.add(cust)
+    db.commit()
+    db.refresh(cust)
+    return cust
+
+@router.put("/customers/{id}", response_model=CustomerResponse)
+def update_customer(
+    id: int,
+    request: CustomerUpdate,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    store = StoreService.get_user_store(db, current_user)
+    cust = db.query(Customer).filter(Customer.id == id, Customer.store_id == store.id).first()
+    if not cust:
+        raise HTTPException(status_code=404, detail="Customer not found.")
+    if request.name is not None:
+        cust.name = request.name.strip()
+    if request.phone is not None:
+        cust.phone = request.phone
+    if request.email is not None:
+        cust.email = request.email
+    if request.address is not None:
+        cust.address = request.address
+    if request.credit_limit is not None:
+        cust.credit_limit = request.credit_limit
+    if request.is_active is not None:
+        cust.is_active = request.is_active
+    db.commit()
+    db.refresh(cust)
+    return cust
+
+@router.delete("/customers/{id}")
+def delete_customer(
+    id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    store = StoreService.get_user_store(db, current_user)
+    cust = db.query(Customer).filter(Customer.id == id, Customer.store_id == store.id).first()
+    if not cust:
+        raise HTTPException(status_code=404, detail="Customer not found.")
+    cust.is_active = False
+    db.commit()
+    return {"message": "Customer deactivated successfully."}
+
+
+# --- Supplier Endpoints ---
+
+@router.get("/suppliers", response_model=List[SupplierResponse])
+def list_suppliers(
+    search: Optional[str] = None,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    store = StoreService.get_user_store(db, current_user)
+    q = db.query(Supplier).filter(Supplier.store_id == store.id, Supplier.is_active == True)
+    if search:
+        p = f"%{search.strip()}%"
+        q = q.filter((Supplier.name.ilike(p)) | (Supplier.company_name.ilike(p)) | (Supplier.phone.ilike(p)))
+    return q.order_by(Supplier.name).all()
+
+@router.post("/suppliers", response_model=SupplierResponse, status_code=status.HTTP_201_CREATED)
+def create_supplier(
+    request: SupplierCreate,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    store = StoreService.get_user_store(db, current_user)
+    supp = Supplier(
+        store_id=store.id,
+        name=request.name.strip(),
+        company_name=request.company_name,
+        phone=request.phone,
+        email=request.email,
+        address=request.address,
+        gst_number=request.gst_number,
+        balance=0.0,
+        is_active=True
+    )
+    db.add(supp)
+    db.commit()
+    db.refresh(supp)
+    return supp
+
+@router.put("/suppliers/{id}", response_model=SupplierResponse)
+def update_supplier(
+    id: int,
+    request: SupplierUpdate,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    store = StoreService.get_user_store(db, current_user)
+    supp = db.query(Supplier).filter(Supplier.id == id, Supplier.store_id == store.id).first()
+    if not supp:
+        raise HTTPException(status_code=404, detail="Supplier not found.")
+    if request.name is not None:
+        supp.name = request.name.strip()
+    if request.company_name is not None:
+        supp.company_name = request.company_name
+    if request.phone is not None:
+        supp.phone = request.phone
+    if request.email is not None:
+        supp.email = request.email
+    if request.address is not None:
+        supp.address = request.address
+    if request.is_active is not None:
+        supp.is_active = request.is_active
+    db.commit()
+    db.refresh(supp)
+    return supp
+
+@router.delete("/suppliers/{id}")
+def delete_supplier(
+    id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    store = StoreService.get_user_store(db, current_user)
+    supp = db.query(Supplier).filter(Supplier.id == id, Supplier.store_id == store.id).first()
+    if not supp:
+        raise HTTPException(status_code=404, detail="Supplier not found.")
+    supp.is_active = False
+    db.commit()
+    return {"message": "Supplier deactivated successfully."}
+
