@@ -1,0 +1,431 @@
+/**
+ * TypeScript Data Models & Schemas
+ * Matched with FastAPI backend schemas and SQLite models
+ */
+
+// ========================
+// AUTH & USER
+// ========================
+export interface User {
+  id: number;
+  email: string;
+  first_name?: string;
+  surname?: string;
+  name?: string;
+  phone?: string;
+  store_type?: string;
+  storeType?: string;
+  is_active?: boolean;
+  created_at?: string;
+}
+
+export interface AuthResponse {
+  token: string;
+  access_token?: string;
+  token_type?: string;
+  user: User;
+}
+
+export interface LoginPayload {
+  email: string;
+  password: string;
+}
+
+export interface RegisterPayload {
+  firstName: string;
+  surname: string;
+  email: string;
+  phone: string;
+  storeType: string;
+  password: string;
+}
+
+// ========================
+// STORE
+// ========================
+export interface Store {
+  id: number;
+  user_id: number;
+  name: string;
+  category_id?: number | null;
+  category?: Category | null;
+  phone?: string | null;
+  email?: string | null;
+  address?: string | null;
+  city?: string | null;
+  tax_number?: string | null;
+  currency?: string;
+  created_at?: string;
+}
+
+export interface StoreUpdatePayload {
+  name?: string;
+  category_id?: number;
+  phone?: string;
+  email?: string;
+  address?: string;
+  city?: string;
+  tax_number?: string;
+  currency?: string;
+}
+
+// ========================
+// CATEGORY & DYNAMIC FIELDS
+// ========================
+export interface CategoryField {
+  id: number;
+  category_id: number;
+  field_name: string;
+  label: string;
+  field_type: 'text' | 'number' | 'select' | 'date' | 'boolean';
+  is_required: boolean;
+  options?: string[] | null;
+  default_value?: string | null;
+  display_order: number;
+}
+
+export interface Category {
+  id: number;
+  name: string;
+  code: string;
+  description?: string | null;
+  icon?: string | null;
+  is_active: boolean;
+  fields?: CategoryField[];
+}
+
+// ========================
+// PRODUCT & VARIANTS
+// ========================
+export interface ProductVariant {
+  id?: number;
+  product_id?: number;
+  sku: string;
+  barcode?: string;
+  attributes: Record<string, any>;
+  price: number;
+  stock?: number;
+  inventory?: { quantity: number };
+}
+
+export interface Product {
+  id: number;
+  store_id: number;
+  category_id: number;
+  category_name?: string | null;
+  category_code?: string | null;
+  name: string;
+  sku: string;
+  barcode?: string | null;
+  description?: string | null;
+  image_url?: string | null;
+  purchase_price: number;
+  selling_price: number;
+  mrp?: number | null;
+  unit: string;
+  min_stock_level: number;
+  is_active: boolean;
+  has_variants: boolean;
+  attributes: Record<string, any>;
+  current_stock: number;
+  variants?: ProductVariant[];
+  created_at?: string;
+}
+
+export interface ProductCreatePayload {
+  category_id: number;
+  name: string;
+  sku?: string;
+  barcode?: string;
+  description?: string;
+  image_url?: string;
+  purchase_price: number;
+  selling_price: number;
+  mrp?: number;
+  unit: string;
+  min_stock_level?: number;
+  initial_stock?: number;
+  has_variants?: boolean;
+  attributes?: Record<string, any>;
+  variants?: Array<{
+    sku: string;
+    barcode?: string;
+    attributes: Record<string, any>;
+    price: number;
+    initial_stock?: number;
+  }>;
+}
+
+export interface ProductUpdatePayload {
+  name?: string;
+  category_id?: number;
+  barcode?: string;
+  description?: string;
+  image_url?: string;
+  purchase_price?: number;
+  selling_price?: number;
+  mrp?: number;
+  unit?: string;
+  min_stock_level?: number;
+  is_active?: boolean;
+  attributes?: Record<string, any>;
+}
+
+// ========================
+// INVENTORY
+// ========================
+export interface InventoryItem {
+  id: number;
+  product_id: number;
+  product_name: string;
+  sku: string;
+  unit: string;
+  quantity: number;
+  min_stock_level: number;
+  batch_number?: string | null;
+  expiry_date?: string | null;
+  is_low_stock?: boolean;
+  is_expired?: boolean;
+  is_expiring_soon?: boolean;
+}
+
+export interface StockMovement {
+  id: number;
+  product_id: number;
+  product_name?: string;
+  movement_type: 'IN' | 'OUT' | 'ADJUST' | 'SALE' | 'PURCHASE';
+  quantity: number;
+  quantity_before?: number;
+  quantity_after?: number;
+  reason?: string | null;
+  notes?: string | null;
+  created_at: string;
+}
+
+export interface StockInPayload {
+  product_id: number;
+  quantity: number;
+  unit_cost?: number;
+  batch_number?: string;
+  expiry_date?: string;
+  notes?: string;
+}
+
+export interface StockOutPayload {
+  product_id: number;
+  quantity: number;
+  reason: string;
+  notes?: string;
+}
+
+export interface StockAdjustPayload {
+  product_id: number;
+  physical_count: number;
+  reason: string;
+  notes?: string;
+}
+
+// ========================
+// SALES / ORDERS / POS
+// ========================
+export interface SaleItem {
+  id?: number;
+  sale_id?: number;
+  product_id: number;
+  product_name?: string;
+  sku?: string;
+  unit?: string;
+  quantity: number;
+  unit_price: number;
+  discount?: number;
+  subtotal: number;
+}
+
+export interface Sale {
+  id: number;
+  invoice_number: string;
+  store_id: number;
+  customer_id?: number | null;
+  customer_name?: string | null;
+  customer_phone?: string | null;
+  subtotal: number;
+  discount_amount: number;
+  tax_amount: number;
+  total_amount: number;
+  paid_amount: number;
+  payment_method: string;
+  payment_status: string;
+  items?: SaleItem[];
+  created_at: string;
+}
+
+export interface SaleCreatePayload {
+  customer_id?: number | null;
+  payment_method: string;
+  discount_amount?: number;
+  tax_amount?: number;
+  paid_amount?: number;
+  items: Array<{
+    product_id: number;
+    quantity: number;
+    unit_price: number;
+    discount?: number;
+  }>;
+}
+
+// ========================
+// PURCHASES
+// ========================
+export interface PurchaseItem {
+  id?: number;
+  purchase_id?: number;
+  product_id: number;
+  product_name?: string;
+  sku?: string;
+  quantity: number;
+  unit_cost: number;
+  batch_number?: string | null;
+  expiry_date?: string | null;
+  subtotal: number;
+}
+
+export interface Purchase {
+  id: number;
+  invoice_number: string;
+  store_id: number;
+  supplier_id?: number | null;
+  supplier_name?: string | null;
+  total_amount: number;
+  paid_amount: number;
+  payment_method: string;
+  payment_status: string;
+  items?: PurchaseItem[];
+  created_at: string;
+}
+
+export interface PurchaseCreatePayload {
+  supplier_id: number;
+  invoice_number?: string;
+  payment_method: string;
+  paid_amount?: number;
+  items: Array<{
+    product_id: number;
+    quantity: number;
+    unit_cost: number;
+    batch_number?: string;
+    expiry_date?: string;
+  }>;
+}
+
+// ========================
+// PARTNERS (Customers & Suppliers)
+// ========================
+export interface Customer {
+  id: number;
+  store_id: number;
+  name: string;
+  phone?: string | null;
+  email?: string | null;
+  address?: string | null;
+  gst_number?: string | null;
+  credit_limit: number;
+  balance: number;
+  is_active: boolean;
+  created_at?: string;
+}
+
+export interface Supplier {
+  id: number;
+  store_id: number;
+  name: string;
+  company_name?: string | null;
+  phone?: string | null;
+  email?: string | null;
+  address?: string | null;
+  gst_number?: string | null;
+  balance: number;
+  is_active: boolean;
+  created_at?: string;
+}
+
+// ========================
+// FINANCE & EXPENSES
+// ========================
+export interface Expense {
+  id: number;
+  store_id: number;
+  category: string;
+  amount: number;
+  payment_method: string;
+  expense_date: string;
+  description?: string | null;
+  receipt_url?: string | null;
+}
+
+export interface Payment {
+  id: number;
+  store_id: number;
+  reference_type: 'SALE' | 'PURCHASE' | 'EXPENSE' | 'CUSTOMER_CREDIT' | 'SUPPLIER_PAY';
+  reference_id?: number | null;
+  amount: number;
+  payment_method: string;
+  payment_date: string;
+  notes?: string | null;
+}
+
+// ========================
+// REPORTS
+// ========================
+export interface DashboardSummary {
+  store_id: number;
+  store_name: string;
+  category_name?: string;
+  total_sales: number;
+  today_sales: number;
+  total_orders: number;
+  active_products: number;
+  low_stock_count: number;
+  inventory_value: number;
+  estimated_profit?: number;
+}
+
+export interface SalesAnalytics {
+  days: number;
+  daily_trends: Array<{
+    date: string;
+    sales: number;
+    orders: number;
+  }>;
+  total_sales: number;
+  total_orders: number;
+}
+
+export interface CategoryPerformance {
+  categories: Array<{
+    category_id: number;
+    name: string;
+    icon?: string;
+    total_sales: number;
+    items_sold: number;
+  }>;
+}
+
+export interface InventoryValuation {
+  total_items: number;
+  total_units: number;
+  total_cost_value: number;
+  total_retail_value: number;
+  potential_margin_value: number;
+  margin_percentage: number;
+}
+
+// ========================
+// UNITS
+// ========================
+export interface Unit {
+  id: number;
+  name: string;
+  symbol: string;
+  is_base_unit?: boolean;
+}
+

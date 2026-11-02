@@ -1,0 +1,13 @@
+cd D:\Nexora\Nmart\backend
+.\.venv\Scripts\Activate.ps1
+uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
+
+
+
+
+cd D:\Nexora\Nmart\react-native-app
+npm start
+
+
+
+& "$env:LOCALAPPDATA\Android\Sdk\platform-tools\adb.exe" reverse tcp:8081 tcp:8081
