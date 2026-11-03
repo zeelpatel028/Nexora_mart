@@ -70,6 +70,22 @@ export const SettingsScreen: React.FC = () => {
     Alert.alert('Reset to Default', `API Base URL reset to:\n${defaultUrl}`);
   };
 
+  const handleSelectRender = async () => {
+    const url = Config.PRODUCTION_API_URL;
+    setApiUrl(url);
+    await storage.setCustomApiUrl(url);
+    apiClient.setBaseUrl(url);
+    Alert.alert('Render Cloud Selected', `API URL switched to:\n${url}`);
+  };
+
+  const handleSelectLocal = async () => {
+    const url = Config.LOCAL_API_URL;
+    setApiUrl(url);
+    await storage.setCustomApiUrl(url);
+    apiClient.setBaseUrl(url);
+    Alert.alert('Localhost Backend Selected', `API URL switched to:\n${url}`);
+  };
+
   return (
     <View style={{ flex: 1, backgroundColor: colors.background }}>
       <Header title="System Settings" subtitle="App & backend connection" />
@@ -101,16 +117,33 @@ export const SettingsScreen: React.FC = () => {
             Backend Server Configuration
           </Text>
           <Text style={[styles.sectionSub, { color: colors.textSecondary }]}>
-            FastAPI server address. Android Emulator connects via 10.0.2.2:8000/api; physical devices use host Wi-Fi IP.
+            FastAPI server address. Default: production cloud server on Render.
           </Text>
 
           <Input
             label="API Base URL"
             value={apiUrl}
             onChangeText={setApiUrl}
-            placeholder="http://10.0.2.2:8000/api"
+            placeholder="https://nexora-mart-i996.onrender.com/api"
             autoCapitalize="none"
           />
+
+          <View style={[styles.btnRow, { marginTop: 6, marginBottom: 8 }]}>
+            <Button
+              title="🌐 Render Cloud"
+              variant={apiUrl.includes('render.com') ? 'primary' : 'outline'}
+              size="sm"
+              onPress={handleSelectRender}
+              style={{ flex: 1, marginRight: 6 }}
+            />
+            <Button
+              title="💻 Localhost"
+              variant={apiUrl.includes('10.0.2.2') || apiUrl.includes('localhost') ? 'primary' : 'outline'}
+              size="sm"
+              onPress={handleSelectLocal}
+              style={{ flex: 1, marginLeft: 6 }}
+            />
+          </View>
 
           <View style={styles.btnRow}>
             <Button
@@ -122,7 +155,7 @@ export const SettingsScreen: React.FC = () => {
               style={{ flex: 1, marginRight: 6 }}
             />
             <Button
-              title="Save URL"
+              title="Save Custom URL"
               size="sm"
               onPress={handleSaveApiUrl}
               style={{ flex: 1, marginLeft: 6 }}
@@ -131,7 +164,7 @@ export const SettingsScreen: React.FC = () => {
 
           <TouchableOpacity onPress={handleResetDefaults} style={{ alignSelf: 'center', marginTop: 10 }}>
             <Text style={{ color: colors.textMuted, fontSize: 12 }}>
-              Reset to Default (10.0.2.2:8000/api)
+              Reset to Default (Render Production API)
             </Text>
           </TouchableOpacity>
 
@@ -187,7 +220,7 @@ export const SettingsScreen: React.FC = () => {
 
           <View style={styles.infoRow}>
             <Text style={{ color: colors.textSecondary, fontSize: 13 }}>Database</Text>
-            <Text style={{ color: colors.textPrimary, fontWeight: '700' }}>Shared SQLite (nmart.db)</Text>
+            <Text style={{ color: colors.textPrimary, fontWeight: '700' }}>Aiven Cloud MySQL</Text>
           </View>
         </Card>
 

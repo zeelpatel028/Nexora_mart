@@ -55,11 +55,9 @@ export const Dashboard = ({ user, onLogout }) => {
       id: 'overview',
       label: 'Dashboard',
       icon: (
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-          <rect x="3" y="3" width="7" height="9"></rect>
-          <rect x="14" y="3" width="7" height="5"></rect>
-          <rect x="14" y="12" width="7" height="9"></rect>
-          <rect x="3" y="16" width="7" height="5"></rect>
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+          <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>
+          <polyline points="9 22 9 12 15 12 15 22"></polyline>
         </svg>
       )
     },
@@ -184,17 +182,17 @@ export const Dashboard = ({ user, onLogout }) => {
     <div className="admin-shell">
       {/* 1. TOP NAVBAR */}
       <header className="admin-topbar">
-        {/* Left: Mobile Toggle & Brand Logo */}
+        {/* Left: Hamburger Menu & Brand Logo */}
         <div className="d-flex align-items-center gap-2">
           <button
             type="button"
-            className="topbar-icon-btn d-lg-none"
+            className="topbar-hamburger-btn"
             onClick={() => setSidebarOpen(!sidebarOpen)}
             aria-label="Toggle navigation menu"
           >
-            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2">
-              <line x1="3" y1="12" x2="21" y2="12"></line>
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#334155" strokeWidth="2.2" strokeLinecap="round">
               <line x1="3" y1="6" x2="21" y2="6"></line>
+              <line x1="3" y1="12" x2="21" y2="12"></line>
               <line x1="3" y1="18" x2="21" y2="18"></line>
             </svg>
           </button>
@@ -361,19 +359,17 @@ export const Dashboard = ({ user, onLogout }) => {
           </div>
 
           {/* Bottom Sidebar Brand Footer */}
-          <div className="sidebar-footer">
-            <div className="sidebar-brand-badge">
-              <div className="sidebar-badge-icon">
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#FFFFFF" strokeWidth="2.2">
+          <div className="sidebar-footer text-center">
+            <div className="sidebar-footer-card">
+              <div className="sidebar-footer-icon-box">
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#FF6A1A" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
                   <circle cx="9" cy="21" r="1"></circle>
                   <circle cx="20" cy="21" r="1"></circle>
                   <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"></path>
                 </svg>
               </div>
-              <div>
-                <div className="sidebar-badge-title">NEXORA MART</div>
-                <div className="sidebar-badge-version">v1.0.0</div>
-              </div>
+              <div className="sidebar-footer-title">NEXORA MART</div>
+              <div className="sidebar-footer-version">v1.0.0</div>
             </div>
           </div>
         </aside>

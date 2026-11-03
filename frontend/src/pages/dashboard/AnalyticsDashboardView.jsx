@@ -11,6 +11,12 @@ export const AnalyticsDashboardView = ({
   const [categoryTimeframe, setCategoryTimeframe] = useState('This Month');
   const [hoveredDay, setHoveredDay] = useState(null);
 
+  // Helper to ensure clean single-arrow trend display
+  const formatTrend = (rawTrend) => {
+    if (!rawTrend) return '+0%';
+    return rawTrend.replace(/^[↑↓▲▼\s]+/, '').trim();
+  };
+
   // Fallback defaults if backend is loading
   const stats = analyticsData?.stats || [
     {
@@ -186,6 +192,7 @@ export const AnalyticsDashboardView = ({
                 <span className="bar bar-1"></span>
                 <span className="bar bar-2"></span>
                 <span className="bar bar-3"></span>
+                <span className="bar bar-4"></span>
               </div>
             </div>
             <div className="stat-content mt-3">
@@ -193,7 +200,7 @@ export const AnalyticsDashboardView = ({
               <h2 className="stat-card-value text-dark my-1">{stats[0]?.value || '₹ 45,850'}</h2>
               <div className="d-flex align-items-center gap-1 stat-trend-badge text-success">
                 <span className="trend-arrow">↑</span>
-                <span className="trend-text">{stats[0]?.trend || '+12.5%'}</span>
+                <span className="trend-text">+{formatTrend(stats[0]?.trend).replace(/^\+/, '')}</span>
               </div>
             </div>
           </div>
@@ -214,6 +221,7 @@ export const AnalyticsDashboardView = ({
                 <span className="bar bar-1"></span>
                 <span className="bar bar-2"></span>
                 <span className="bar bar-3"></span>
+                <span className="bar bar-4"></span>
               </div>
             </div>
             <div className="stat-content mt-3">
@@ -221,7 +229,7 @@ export const AnalyticsDashboardView = ({
               <h2 className="stat-card-value text-dark my-1">{stats[1]?.value || '248'}</h2>
               <div className="d-flex align-items-center gap-1 stat-trend-badge text-success">
                 <span className="trend-arrow">↑</span>
-                <span className="trend-text">{stats[1]?.trend || '+8.2%'}</span>
+                <span className="trend-text">+{formatTrend(stats[1]?.trend).replace(/^\+/, '')}</span>
               </div>
             </div>
           </div>
@@ -242,6 +250,7 @@ export const AnalyticsDashboardView = ({
                 <span className="bar bar-1"></span>
                 <span className="bar bar-2"></span>
                 <span className="bar bar-3"></span>
+                <span className="bar bar-4"></span>
               </div>
             </div>
             <div className="stat-content mt-3">
@@ -270,6 +279,7 @@ export const AnalyticsDashboardView = ({
                 <span className="bar bar-1"></span>
                 <span className="bar bar-2"></span>
                 <span className="bar bar-3"></span>
+                <span className="bar bar-4"></span>
               </div>
             </div>
             <div className="stat-content mt-3">
@@ -605,10 +615,10 @@ export const AnalyticsDashboardView = ({
       {/* 4. Quick Access Section */}
       <div className="analytics-quick-access-section mb-4">
         <div className="d-flex justify-content-between align-items-center mb-3">
-          <h5 className="fw-bold mb-0 text-dark">Quick Access</h5>
+          <h5 className="section-title fw-bold mb-0 text-dark">Quick Access</h5>
           <button
             type="button"
-            className="btn btn-sm btn-link text-primary text-decoration-none fw-semibold p-0"
+            className="btn btn-sm btn-link view-all-link text-decoration-none fw-semibold p-0"
             onClick={() => onNavigateTab('products')}
           >
             View All →
@@ -651,10 +661,10 @@ export const AnalyticsDashboardView = ({
               )
             },
             {
-              id: 'partners',
+              id: 'employees',
               label: 'Employees',
               icon: (
-                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#FF6A1A" strokeWidth="2.2">
+                <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#FF6A1A" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
                   <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
                   <circle cx="9" cy="7" r="4"></circle>
                   <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
@@ -663,10 +673,10 @@ export const AnalyticsDashboardView = ({
               )
             },
             {
-              id: 'partners',
+              id: 'customers',
               label: 'Customers',
               icon: (
-                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#FF6A1A" strokeWidth="2.2">
+                <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#FF6A1A" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
                   <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
                   <circle cx="12" cy="7" r="4"></circle>
                 </svg>
@@ -706,17 +716,17 @@ export const AnalyticsDashboardView = ({
               )
             }
           ].map((item, idx) => (
-            <div key={idx} className="col-6 col-sm-4 col-md-3">
+            <div key={idx} className="col-6 col-sm-6 col-lg-3">
               <div
-                className="quick-access-tile text-center p-3 h-100"
+                className="quick-access-tile text-center"
                 onClick={() => onNavigateTab(item.id)}
                 role="button"
                 tabIndex={0}
               >
-                <div className="quick-access-icon mb-2">
+                <div className="quick-access-icon-box mb-2">
                   {item.icon}
                 </div>
-                <div className="quick-access-label fw-bold text-dark">
+                <div className="quick-access-label fw-bold">
                   {item.label}
                 </div>
               </div>
@@ -734,7 +744,7 @@ export const AnalyticsDashboardView = ({
               <h5 className="chart-title mb-0 fw-bold">Recent Activities</h5>
               <button
                 type="button"
-                className="btn btn-sm btn-link text-primary text-decoration-none fw-semibold p-0"
+                className="btn btn-sm btn-link view-all-link text-decoration-none fw-semibold p-0"
                 onClick={() => onNavigateTab('reports')}
               >
                 View All →
@@ -794,7 +804,7 @@ export const AnalyticsDashboardView = ({
               <h5 className="chart-title mb-0 fw-bold">Low Stock Products</h5>
               <button
                 type="button"
-                className="btn btn-sm btn-link text-primary text-decoration-none fw-semibold p-0"
+                className="btn btn-sm btn-link view-all-link text-decoration-none fw-semibold p-0"
                 onClick={() => onNavigateTab('inventory')}
               >
                 View All →

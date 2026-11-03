@@ -1,10 +1,43 @@
 /**
  * Backend API Endpoints Configuration
+ * Supports dual-connection to both Localhost and Render Cloud backend.
  */
-export const API_BASE_URL =
-  import.meta.env.VITE_API_URL ||
-  import.meta.env.VITE_API_BASE_URL ||
-  (import.meta.env.PROD ? 'https://nexora-mart-i996.onrender.com/api' : 'http://localhost:8000/api');
+export const LOCAL_API_URL = 'http://localhost:8000/api';
+export const RENDER_API_URL = 'https://nexora-mart-i996.onrender.com/api';
+
+export const STORAGE_KEY_API = 'nmart_custom_api_url';
+
+export function getInitialApiUrl() {
+  try {
+    const saved = localStorage.getItem(STORAGE_KEY_API);
+    if (saved && saved.trim()) {
+      return saved.trim().replace(/\/+$/, '');
+    }
+  } catch {
+    // LocalStorage unavailable
+  }
+
+  const envUrl = import.meta.env.VITE_API_URL || import.meta.env.VITE_API_BASE_URL;
+  if (envUrl && envUrl.trim()) {
+    return envUrl.trim().replace(/\/+$/, '');
+  }
+
+  return import.meta.env.DEV ? LOCAL_API_URL : RENDER_API_URL;
+}
+
+export function saveApiUrl(url) {
+  try {
+    if (url && url.trim()) {
+      localStorage.setItem(STORAGE_KEY_API, url.trim().replace(/\/+$/, ''));
+    } else {
+      localStorage.removeItem(STORAGE_KEY_API);
+    }
+  } catch {
+    // Ignore
+  }
+}
+
+export const API_BASE_URL = getInitialApiUrl();
 
 export const API_ENDPOINTS = {
   AUTH: {

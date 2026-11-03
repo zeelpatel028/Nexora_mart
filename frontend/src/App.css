@@ -3,7 +3,18 @@
  * NEXORA MART
  */
 
-/* Viewport Root Container */
+/* Admin Dashboard Root - Full Width Edge-to-Edge */
+.admin-app-root {
+  width: 100%;
+  min-height: 100vh;
+  margin: 0;
+  padding: 0;
+  background-color: #F8FAFC;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Viewport Root Container for Auth & Splash */
 .app-viewport-root {
   min-height: 100vh;
   min-height: 100dvh;
@@ -19,7 +30,7 @@
   box-sizing: border-box;
 }
 
-/* Main Display Canvas */
+/* Main Display Canvas for Auth & Splash */
 .main-display-area {
   width: 100%;
   min-height: 100vh;

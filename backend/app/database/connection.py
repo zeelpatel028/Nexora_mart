@@ -83,16 +83,8 @@ def _initialize_engine():
         eng, resolved_url = _build_engine(target_url)
         with eng.connect() as conn:
             conn.execute(text("SELECT 1"))
-        safe_url = resolved_url
-        if "@" in safe_url:
-            parts = safe_url.split("@")
-            user_part = parts[0].split("://")
-            proto = user_part[0]
-            credentials = user_part[1].split(":")
-            username = credentials[0]
-            safe_url = f"{proto}://{username}:****@{parts[1]}"
-        logger.info(f"Database connected successfully: {safe_url}")
-        print(f"[OK] Database connected successfully: {safe_url}")
+        logger.info("Database connected successfully")
+        print("Database connected successfully")
         return eng
     except Exception as e:
         logger.error(f"Fatal: Could not connect to database ({e})")
