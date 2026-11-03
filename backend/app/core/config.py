@@ -3,8 +3,15 @@ from typing import List, Optional
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 _CORE_DIR = Path(__file__).resolve().parent
-_BACKEND_DIR = _CORE_DIR.parent.parent
-_ENV_FILE = _BACKEND_DIR / ".env"
+_APP_DIR = _CORE_DIR.parent
+_BACKEND_DIR = _APP_DIR.parent
+
+_CANDIDATE_ENVS = [
+    _BACKEND_DIR / ".env",
+    _APP_DIR / ".env",
+    Path(".env").resolve()
+]
+_ENV_FILE = next((f for f in _CANDIDATE_ENVS if f.exists()), None)
 
 class Settings(BaseSettings):
     PROJECT_NAME: str = "NMART API"

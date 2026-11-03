@@ -82,6 +82,7 @@ export const Endpoints = {
   // Business Intelligence & Profitability Reports
   REPORTS: {
     DASHBOARD_SUMMARY: '/reports/dashboard-summary',
+    ANALYTICS_OVERVIEW: '/reports/analytics-overview',
     SALES_ANALYTICS: '/reports/sales-analytics',
     CATEGORY_PERFORMANCE: '/reports/category-performance',
     INVENTORY_VALUATION: '/reports/inventory-valuation',

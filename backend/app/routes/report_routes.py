@@ -7,7 +7,8 @@ from ..schemas.report_schema import (
     DashboardSummaryResponse,
     SalesAnalyticsResponse,
     CategoryPerformanceResponse,
-    InventoryValuationResponse
+    InventoryValuationResponse,
+    AnalyticsOverviewResponse
 )
 from ..services.report_service import ReportService
 from ..services.store_service import StoreService
@@ -59,4 +60,18 @@ def get_inventory_valuation(
     """
     store = StoreService.get_user_store(db, current_user)
     return ReportService.get_inventory_valuation(db, store)
+
+@router.get("/analytics-overview", response_model=AnalyticsOverviewResponse)
+def get_analytics_overview(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    """
+    Returns high-fidelity live dashboard analytics overview:
+    KPI stat cards, weekly combo chart metrics, category sales distribution,
+    recent activities, and low stock inventory alerts.
+    """
+    store = StoreService.get_user_store(db, current_user)
+    return ReportService.get_analytics_overview(db, store, user=current_user)
+
 

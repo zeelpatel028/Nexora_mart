@@ -41,3 +41,50 @@ class InventoryValuationResponse(BaseModel):
     total_retail_valuation: float
     potential_profit: float
 
+# --- NEXORA MART ANALYTICS DASHBOARD SPECIFICATION ---
+
+class AnalyticsStatCard(BaseModel):
+    id: str
+    title: str
+    value: str
+    trend: Optional[str] = None
+    is_positive: bool = True
+    subtitle: Optional[str] = None
+    color_scheme: str  # 'orange', 'red', 'blue', 'green'
+
+class SalesChartPoint(BaseModel):
+    day: str
+    sales: float
+    orders: int
+
+class CategorySalesSegment(BaseModel):
+    name: str
+    percentage: int
+    color: str
+    sales: Optional[float] = None
+
+class RecentActivity(BaseModel):
+    id: str
+    title: str
+    description: str
+    timestamp: str
+    icon: str
+
+class LowStockProduct(BaseModel):
+    id: int
+    name: str
+    stock: str
+    status: str
+    status_color: str  # 'danger' (red) or 'warning' (orange/amber)
+    category: Optional[str] = None
+
+class AnalyticsOverviewResponse(BaseModel):
+    store_name: str
+    greeting: str
+    date_display: str
+    stats: List[AnalyticsStatCard]
+    sales_overview: List[SalesChartPoint]
+    category_sales: List[CategorySalesSegment]
+    category_total_sales: str
+    recent_activities: List[RecentActivity]
+    low_stock_products: List[LowStockProduct]

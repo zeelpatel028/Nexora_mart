@@ -5,6 +5,9 @@ export const reportService = {
   getDashboardSummary: async () => {
     return await api.get(API_ENDPOINTS.REPORTS.DASHBOARD_SUMMARY);
   },
+  getAnalyticsOverview: async () => {
+    return await api.get(API_ENDPOINTS.REPORTS.ANALYTICS_OVERVIEW);
+  },
   getSalesAnalytics: async (days = 14) => {
     return await api.get(`${API_ENDPOINTS.REPORTS.SALES_ANALYTICS}?days=${days}`);
   },

@@ -9,7 +9,13 @@ if str(_BACKEND_DIR) not in sys.path:
 if str(_CURRENT_DIR) not in sys.path:
     sys.path.insert(0, str(_CURRENT_DIR))
 
-from fastapi import FastAPI
+from fastapi import FastAPI, Request, status
+from fastapi.responses import JSONResponse
+from fastapi.exceptions import RequestValidationError
+from starlette.exceptions import HTTPException as StarletteHTTPException
+import logging
+
+logger = logging.getLogger("nmart.api")
 
 try:
     from .core.config import settings
@@ -100,6 +106,45 @@ def create_application() -> FastAPI:
 
     # Setup Cross-Origin Resource Sharing
     setup_cors(app)
+
+    # Register centralized exception handlers for production error responses
+    @app.exception_handler(StarletteHTTPException)
+    async def http_exception_handler(request: Request, exc: StarletteHTTPException):
+        return JSONResponse(
+            status_code=exc.status_code,
+            content={
+                "success": False,
+                "status_code": exc.status_code,
+                "detail": exc.detail,
+                "path": request.url.path,
+            },
+        )
+
+    @app.exception_handler(RequestValidationError)
+    async def validation_exception_handler(request: Request, exc: RequestValidationError):
+        return JSONResponse(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            content={
+                "success": False,
+                "status_code": 422,
+                "detail": "Request validation error",
+                "errors": exc.errors(),
+                "path": request.url.path,
+            },
+        )
+
+    @app.exception_handler(Exception)
+    async def general_exception_handler(request: Request, exc: Exception):
+        logger.error(f"Unhandled server error on {request.method} {request.url.path}: {exc}", exc_info=True)
+        return JSONResponse(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            content={
+                "success": False,
+                "status_code": 500,
+                "detail": "Internal server error occurred",
+                "path": request.url.path,
+            },
+        )
 
     # Mount API routers under /api
     app.include_router(auth_router, prefix=settings.API_V1_PREFIX)

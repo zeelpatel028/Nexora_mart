@@ -1,6 +1,0 @@
-<?xml version="1.0" encoding="utf-8"?>
-<full-backup-content>
-    <!-- Exclude sensitive auth token credentials from cloud backups -->
-    <exclude domain="sharedpref" path="nmart_secure_prefs.xml" />
-    <exclude domain="sharedpref" path="nmart_auth_prefs.xml" />
-</full-backup-content>

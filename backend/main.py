@@ -1,10 +1,12 @@
 """
 NMART Backend Entrypoint
-Allows running the server with any of these standard commands from the backend directory:
-- uvicorn app.main:app --reload
+Production-ready for Render, Docker, and local development.
+Supports:
+- uvicorn app.main:app --host 0.0.0.0 --port $PORT
 - uvicorn main:app --reload
 - python main.py
 """
+import os
 import sys
 from pathlib import Path
 
@@ -17,5 +19,7 @@ from app.main import app, create_application
 
 if __name__ == "__main__":
     import uvicorn
-    uvicorn.run("app.main:app", host="127.0.0.1", port=8000, reload=True)
-
+    port = int(os.environ.get("PORT", 8000))
+    host = os.environ.get("HOST", "0.0.0.0")
+    is_dev = os.environ.get("ENVIRONMENT", "development") == "development"
+    uvicorn.run("app.main:app", host=host, port=port, reload=is_dev)

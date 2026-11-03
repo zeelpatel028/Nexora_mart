@@ -429,3 +429,59 @@ export interface Unit {
   is_base_unit?: boolean;
 }
 
+// ========================
+// ANALYTICS DASHBOARD
+// ========================
+export interface AnalyticsStatCard {
+  id: string;
+  title: string;
+  value: string;
+  trend?: string;
+  is_positive?: boolean;
+  subtitle?: string;
+  color_scheme: 'orange' | 'red' | 'blue' | 'green';
+}
+
+export interface SalesChartPoint {
+  day: string;
+  sales: number;
+  orders: number;
+}
+
+export interface CategorySalesSegment {
+  name: string;
+  percentage: number;
+  color: string;
+  sales?: number;
+}
+
+export interface RecentActivity {
+  id: string;
+  title: string;
+  description: string;
+  timestamp: string;
+  icon: string;
+}
+
+export interface LowStockProduct {
+  id: number;
+  name: string;
+  stock: string;
+  status: string;
+  status_color: 'danger' | 'warning';
+  category?: string;
+}
+
+export interface AnalyticsOverview {
+  store_name: string;
+  greeting: string;
+  date_display: string;
+  stats: AnalyticsStatCard[];
+  sales_overview: SalesChartPoint[];
+  category_sales: CategorySalesSegment[];
+  category_total_sales: string;
+  recent_activities: RecentActivity[];
+  low_stock_products: LowStockProduct[];
+}
+
+

@@ -8,11 +8,16 @@ import {
   DashboardSummary,
   InventoryValuation,
   SalesAnalytics,
+  AnalyticsOverview,
 } from '../models/types';
 
 export const reportService = {
   async getDashboardSummary(): Promise<DashboardSummary> {
     return apiClient.get<DashboardSummary>(Endpoints.REPORTS.DASHBOARD_SUMMARY);
+  },
+
+  async getAnalyticsOverview(): Promise<AnalyticsOverview> {
+    return apiClient.get<AnalyticsOverview>(Endpoints.REPORTS.ANALYTICS_OVERVIEW);
   },
 
   async getSalesAnalytics(days: number = 14): Promise<SalesAnalytics> {

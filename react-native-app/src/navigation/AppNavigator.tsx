@@ -70,24 +70,36 @@ const MainTabNavigator: React.FC = () => {
         name="DashboardTab"
         component={DashboardScreen}
         options={{
-          tabBarLabel: 'Dashboard',
-          tabBarIcon: ({ color }) => <Text style={{ fontSize: 20 }}>📊</Text>,
-        }}
-      />
-      <Tab.Screen
-        name="ProductsTab"
-        component={ProductListScreen}
-        options={{
-          tabBarLabel: 'Catalog',
-          tabBarIcon: ({ color }) => <Text style={{ fontSize: 20 }}>📦</Text>,
+          tabBarLabel: 'Home',
+          tabBarIcon: ({ color, focused }) => (
+            <Text style={{ fontSize: 20, color: focused ? brandColors.primary : colors.textMuted }}>
+              🏠
+            </Text>
+          ),
         }}
       />
       <Tab.Screen
         name="PosTab"
         component={PosBillingScreen}
         options={{
-          tabBarLabel: 'POS & Billing',
-          tabBarIcon: ({ color }) => <Text style={{ fontSize: 20 }}>💳</Text>,
+          tabBarLabel: 'Sales',
+          tabBarIcon: ({ color, focused }) => (
+            <Text style={{ fontSize: 20, color: focused ? brandColors.primary : colors.textMuted }}>
+              🛒
+            </Text>
+          ),
+        }}
+      />
+      <Tab.Screen
+        name="ProductsTab"
+        component={ProductListScreen}
+        options={{
+          tabBarLabel: 'Products',
+          tabBarIcon: ({ color, focused }) => (
+            <Text style={{ fontSize: 20, color: focused ? brandColors.primary : colors.textMuted }}>
+              📦
+            </Text>
+          ),
         }}
       />
       <Tab.Screen
@@ -95,7 +107,11 @@ const MainTabNavigator: React.FC = () => {
         component={InventoryScreen}
         options={{
           tabBarLabel: 'Inventory',
-          tabBarIcon: ({ color }) => <Text style={{ fontSize: 20 }}>📋</Text>,
+          tabBarIcon: ({ color, focused }) => (
+            <Text style={{ fontSize: 20, color: focused ? brandColors.primary : colors.textMuted }}>
+              ▦
+            </Text>
+          ),
         }}
       />
       <Tab.Screen
@@ -103,7 +119,11 @@ const MainTabNavigator: React.FC = () => {
         component={MoreMenuScreen}
         options={{
           tabBarLabel: 'More',
-          tabBarIcon: ({ color }) => <Text style={{ fontSize: 20 }}>⚙️</Text>,
+          tabBarIcon: ({ color, focused }) => (
+            <Text style={{ fontSize: 20, color: focused ? brandColors.primary : colors.textMuted }}>
+              ⋯
+            </Text>
+          ),
         }}
       />
     </Tab.Navigator>

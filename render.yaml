@@ -1,0 +1,29 @@
+# Render Deployment Blueprint for Nexora Mart (NMART)
+services:
+  - type: web
+    name: nmart-backend
+    runtime: python
+    buildCommand: "pip install -r backend/requirements.txt"
+    startCommand: "cd backend && uvicorn app.main:app --host 0.0.0.0 --port $PORT"
+    healthCheckPath: /health
+    plan: starter
+    envVars:
+      - key: ENVIRONMENT
+        value: production
+      - key: PROJECT_NAME
+        value: "NMART API"
+      - key: API_V1_PREFIX
+        value: /api
+      - key: SECRET_KEY
+        generateValue: true
+      - key: ALGORITHM
+        value: HS256
+      - key: ACCESS_TOKEN_EXPIRE_MINUTES
+        value: "1440"
+      - key: DATABASE_URL
+        value: sqlite:///./nmart.db
+      - key: REDIS_ENABLED
+        value: "false"
+      - key: ALLOWED_ORIGINS
+        value: "https://*.onrender.com,http://localhost:5173,http://localhost:3000"
+
