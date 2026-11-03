@@ -1,7 +1,10 @@
 /**
  * Backend API Endpoints Configuration
  */
-export const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000/api';
+export const API_BASE_URL =
+  import.meta.env.VITE_API_URL ||
+  import.meta.env.VITE_API_BASE_URL ||
+  (import.meta.env.PROD ? 'https://nexora-mart-i996.onrender.com/api' : 'http://localhost:8000/api');
 
 export const API_ENDPOINTS = {
   AUTH: {

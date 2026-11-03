@@ -4,10 +4,12 @@ services:
     name: nmart-backend
     runtime: python
     buildCommand: "pip install -r backend/requirements.txt"
-    startCommand: "cd backend && uvicorn app.main:app --host 0.0.0.0 --port $PORT"
-    healthCheckPath: /health
+    startCommand: "uvicorn main:app --host 0.0.0.0 --port $PORT"
+    healthCheckPath: /
     plan: starter
     envVars:
+      - key: PYTHON_VERSION
+        value: "3.11.9"
       - key: ENVIRONMENT
         value: production
       - key: PROJECT_NAME
@@ -20,10 +22,9 @@ services:
         value: HS256
       - key: ACCESS_TOKEN_EXPIRE_MINUTES
         value: "1440"
-      - key: DATABASE_URL
-        value: sqlite:///./nmart.db
+      - key: DB_SSL_MODE
+        value: REQUIRED
       - key: REDIS_ENABLED
         value: "false"
       - key: ALLOWED_ORIGINS
-        value: "https://*.onrender.com,http://localhost:5173,http://localhost:3000"
-
+        value: "https://nexora-mart.vercel.app,https://nexora-mart-i996.onrender.com,http://localhost:5173,http://localhost:3000"

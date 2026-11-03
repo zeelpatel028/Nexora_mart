@@ -50,7 +50,7 @@ export async function request(endpoint, options = {}) {
       ? await response.json()
       : await response.text();
   } catch (networkErr) {
-    const error = new Error('Cannot connect to backend server. Please ensure the backend is running at http://localhost:8000.');
+    const error = new Error(`Cannot connect to backend server. Please verify backend status at ${API_BASE_URL}.`);
     error.status = 0;
     error.cause = networkErr;
     throw error;

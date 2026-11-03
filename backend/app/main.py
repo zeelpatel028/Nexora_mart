@@ -159,32 +159,47 @@ def create_application() -> FastAPI:
     app.include_router(report_router, prefix=settings.API_V1_PREFIX)
     app.include_router(unit_router, prefix=settings.API_V1_PREFIX)
 
-    @app.get("/", tags=["Root"])
+    @app.get("/", tags=["Root"], operation_id="root_get")
     def root():
-        """API Directory: Lists service status and documentation URLs"""
+        """API Root & Health Check: Supports GET and HEAD requests for Render deployment health checks"""
         return {
+            "status": "success",
+            "message": "Nexora Mart API Running",
             "service": settings.PROJECT_NAME,
             "version": "2.0.0",
-            "status": "operational",
             "environment": settings.ENVIRONMENT,
             "docs_url": "/docs",
             "redoc_url": "/redoc",
             "cache": redis_client.get_status()
         }
 
-    @app.get("/health", tags=["Health"])
+    @app.head("/", include_in_schema=False)
+    def root_head():
+        """Render container health check HEAD endpoint (resolves HTTP 405 Method Not Allowed)"""
+        return root()
+
+    @app.get("/health", tags=["Health"], operation_id="health_check_get")
     def health_check():
         return {
-            "status": "healthy",
+            "status": "success",
+            "message": "Nexora Mart API Healthy",
             "service": settings.PROJECT_NAME,
             "environment": settings.ENVIRONMENT,
             "redis": redis_client.get_status()
         }
+
+    @app.head("/health", include_in_schema=False)
+    def health_check_head():
+        return health_check()
 
     return app
 
 app = create_application()
 
 if __name__ == "__main__":
+    import os
     import uvicorn
-    uvicorn.run("app.main:app", host="127.0.0.1", port=8000, reload=True)
+    port = int(os.environ.get("PORT", 8000))
+    host = os.environ.get("HOST", "0.0.0.0")
+    is_dev = os.environ.get("ENVIRONMENT", "development") == "development"
+    uvicorn.run("app.main:app", host=host, port=port, reload=is_dev)
