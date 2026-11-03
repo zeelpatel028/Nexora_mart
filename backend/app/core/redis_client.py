@@ -16,7 +16,7 @@ class RedisManager:
         self._is_connected: bool = False
 
     def get_client(self) -> Optional[redis.Redis]:
-        if not settings.REDIS_ENABLED:
+        if not settings.REDIS_ENABLED or not settings.REDIS_URL:
             return None
 
         if self._client is None:
@@ -56,8 +56,11 @@ class RedisManager:
             return False
 
     def get_status(self) -> dict:
-        safe_url = settings.REDIS_URL.split('@')[-1] if '@' in settings.REDIS_URL else settings.REDIS_URL
-        if not settings.REDIS_ENABLED:
+        safe_url = (
+            settings.REDIS_URL.split('@')[-1] if '@' in settings.REDIS_URL else settings.REDIS_URL
+        ) if settings.REDIS_URL else "not-configured"
+
+        if not settings.REDIS_ENABLED or not settings.REDIS_URL:
             return {"status": "disabled", "endpoint": safe_url}
 
         connected = self.is_connected()
