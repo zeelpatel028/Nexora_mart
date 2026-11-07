@@ -1,12 +1,12 @@
 /**
  * Nexora Mart Brand Design Tokens & Colors
- * Matched 1:1 with Web Specifications & Color Design System
+ * Pixel-Perfect match with Reference UI Designs (Light & Dark)
  */
 export const Colors = {
   // Brand Orange System
-  primary: '#FF6A1A',          // Signature vibrant Nexora Orange (Web match)
+  primary: '#FF6A1A',          // Signature vibrant Nexora Orange
   primaryOrange: '#FF6A1A',
-  secondaryOrange: '#FF9800',   // Warm secondary orange
+  secondaryOrange: '#FF7E26',   // Warm secondary orange
   lightOrange: '#FFF3E0',       // Soft orange highlight
   darkOrange: '#E65100',        // Deep contrast orange
   primaryHover: '#E5570D',
@@ -15,9 +15,9 @@ export const Colors = {
   secondaryLight: '#FFCA58',
 
   // Gradient stops
-  gradientStart: '#FF5B18',
-  gradientMid: '#FF781E',
-  gradientEnd: '#FFA126',
+  gradientStart: '#FF7A1A',
+  gradientMid: '#FF6A1A',
+  gradientEnd: '#FF5400',
 
   // Status & Utility
   success: '#10B981',
@@ -29,50 +29,56 @@ export const Colors = {
   info: '#3B82F6',
   infoLight: '#EFF6FF',
 
-  // Light Theme (Exact Web & Design Spec Match)
+  // Light Theme (Exact Reference UI Match)
   light: {
-    background: '#FFF9F3',      // Soft cream backdrop from website
-    pageBg: '#FFF9F3',
+    background: '#FFFFFF',      // Pure clean white backdrop from reference UI
+    pageBg: '#FFFFFF',
     surface: '#FFFFFF',         // Card white surface
-    surfaceSubtle: '#F8F9FA',
-    border: '#E8ECEF',          // Subtle divider/input border
-    borderLight: '#E5E7EB',
-    textPrimary: '#0B0B2B',     // Deep Navy brand text
-    textSecondary: '#5F6375',   // Subtitle text
-    textMuted: '#757575',
-    textPlaceholder: '#768499',
+    surfaceSubtle: '#F9FAFB',
+    border: '#E5E7EB',          // Subtle divider/input border
+    borderLight: '#F3F4F6',
+    textPrimary: '#111827',     // Dark bold text
+    textSecondary: '#6B7280',   // Muted subtitle text
+    textMuted: '#9CA3AF',
+    textPlaceholder: '#9CA3AF',
     inputBg: '#FFFFFF',
-    inputBorder: '#E8ECEF',
+    inputBorder: '#E5E7EB',
+    inputBorderFocused: '#FF6A1A',
     cardBg: '#FFFFFF',
-    cardBorder: 'rgba(255, 255, 255, 0.90)',
-    cardShadow: 'rgba(255, 106, 26, 0.12)',
-    divider: '#E5DFD7',
+    cardBorder: '#E5E7EB',
+    cardShadow: 'rgba(0, 0, 0, 0.05)',
+    divider: '#E5E7EB',
     socialBg: '#FFFFFF',
-    socialBorder: '#E8ECEF',
-    socialText: '#0B0B2B',
+    socialBorder: '#E5E7EB',
+    socialText: '#1F2937',
+    toggleBg: '#FFFFFF',
+    toggleBorder: '#E5E7EB',
   },
 
-  // Dark Theme (Exact Web & Design Spec Match)
+  // Dark Theme (Exact Reference UI Match)
   dark: {
-    background: '#111520',      // Deep dark slate-navy
-    pageBg: '#111520',
-    surface: '#181E2B',         // Dark slate solid card
-    surfaceSubtle: '#1F2738',
-    border: '#283348',          // Slate input border
-    borderLight: '#262E3F',     // Card border
+    background: '#121316',      // Deep dark sleek charcoal backdrop
+    pageBg: '#121316',
+    surface: '#1C1E24',         // Dark slate solid card
+    surfaceSubtle: '#22252D',
+    border: '#2D323E',          // Slate input border
+    borderLight: '#262A34',     // Card border
     textPrimary: '#FFFFFF',     // Clean white text
-    textSecondary: '#8E9CAE',   // Muted grey subtitle
-    textMuted: '#BDBDBD',
-    textPlaceholder: '#768499',
-    inputBg: '#1B2232',         // Deep slate-navy input field
-    inputBorder: '#283348',
-    cardBg: '#181E2B',
-    cardBorder: '#262E3F',
-    cardShadow: 'rgba(0, 0, 0, 0.65)',
-    divider: '#252D3E',
-    socialBg: '#1B2232',
-    socialBorder: '#283348',
+    textSecondary: '#9CA3AF',   // Muted grey subtitle
+    textMuted: '#6B7280',
+    textPlaceholder: '#6B7280',
+    inputBg: '#1C1E24',         // Deep charcoal input field
+    inputBorder: '#2D323E',
+    inputBorderFocused: '#FF6A1A',
+    cardBg: '#1C1E24',
+    cardBorder: '#2D323E',
+    cardShadow: 'rgba(0, 0, 0, 0.55)',
+    divider: '#262C38',
+    socialBg: '#1C1E24',
+    socialBorder: '#2D323E',
     socialText: '#FFFFFF',
+    toggleBg: '#1C1E24',
+    toggleBorder: '#2D323E',
   },
 };
 

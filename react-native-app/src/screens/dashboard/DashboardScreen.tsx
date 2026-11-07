@@ -10,13 +10,16 @@ import {
   Dimensions,
   Modal,
   SafeAreaView,
+  Platform,
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import Svg, { Path, Defs, LinearGradient, Stop, Circle, Polyline, Line, Rect } from 'react-native-svg';
 import { RootStackParamList } from '../../navigation/types';
 import { useAuth } from '../../hooks/useAuth';
 import { useTheme } from '../../hooks/useTheme';
 import { storeService, reportService } from '../../services';
+import storage from '../../utils/storage';
 import { Store, DashboardSummary, AnalyticsOverview } from '../../models/types';
 import {
   ShoppingCartIcon,
@@ -33,6 +36,12 @@ import {
   LogOutIcon,
   RefreshIcon,
   UserIcon,
+  StoreIcon,
+  HomeIcon,
+  ReceiptIcon,
+  CreditCardIcon,
+  SunIcon,
+  MoonIcon,
 } from '../../components/branding/Icons';
 
 type DashNavProp = NativeStackNavigationProp<RootStackParamList>;
@@ -42,19 +51,34 @@ const { width: screenWidth } = Dimensions.get('window');
 export const DashboardScreen: React.FC = () => {
   const navigation = useNavigation<DashNavProp>();
   const { user, logout } = useAuth();
-  const { colors, brandColors } = useTheme();
+  const { isDark, colors, brandColors, toggleTheme } = useTheme();
 
   const [store, setStore] = useState<Store | null>(null);
   const [summary, setSummary] = useState<DashboardSummary | null>(null);
   const [analytics, setAnalytics] = useState<AnalyticsOverview | null>(null);
   const [refreshing, setRefreshing] = useState(false);
-  const [timeframe, setTimeframe] = useState('This Week');
+  const [timeframe, setTimeframe] = useState<'This Week' | 'This Month'>('This Week');
+
+  // Modals
   const [menuModalVisible, setMenuModalVisible] = useState(false);
   const [notificationsVisible, setNotificationsVisible] = useState(false);
+  const [storeSetupPopupVisible, setStoreSetupPopupVisible] = useState(false);
   const [selectedDayInfo, setSelectedDayInfo] = useState<{ day: string; sales: number; orders: number } | null>(null);
 
-  const merchantName =
-    user?.first_name || user?.name || (user?.email ? user.email.split('@')[0] : 'Owner');
+  const merchantName = user?.first_name || 'Owner';
+
+  // Format today's date dynamically (e.g. 07 November 2026)
+  const todayFormatted = (() => {
+    const d = new Date();
+    const day = String(d.getDate()).padStart(2, '0');
+    const months = [
+      'January', 'February', 'March', 'April', 'May', 'June',
+      'July', 'August', 'September', 'October', 'November', 'December'
+    ];
+    const month = months[d.getMonth()];
+    const year = d.getFullYear();
+    return `Today: ${day} ${month} ${year}`;
+  })();
 
   const loadData = useCallback(async () => {
     try {
@@ -66,6 +90,12 @@ export const DashboardScreen: React.FC = () => {
       if (sData) setStore(sData);
       if (sumData) setSummary(sumData);
       if (anData) setAnalytics(anData);
+
+      // Check if store setup popup was dismissed or completed
+      const hasDismissed = await storage.getItem('nmart_setup_popup_dismissed');
+      if (!hasDismissed) {
+        setStoreSetupPopupVisible(true);
+      }
     } catch (err) {
       console.warn('Dashboard load failed:', err);
     }
@@ -81,104 +111,166 @@ export const DashboardScreen: React.FC = () => {
     setRefreshing(false);
   };
 
-  // KPI data with authentic fallbacks from provided design
-  const stats = analytics?.stats || [
+  const handleDismissSetup = async () => {
+    setStoreSetupPopupVisible(false);
+    await storage.setItem('nmart_setup_popup_dismissed', 'true');
+  };
+
+  const handleGoToAccountDetails = async () => {
+    setStoreSetupPopupVisible(false);
+    await storage.setItem('nmart_setup_popup_dismissed', 'true');
+    navigation.navigate('AccountDetail');
+  };
+
+  // 4 Core Stat Boxes
+  const statBoxes = [
     {
-      id: 'sales',
-      title: "Today's Sales",
+      id: 'today_sales',
+      title: 'Today Sales',
       value: summary?.today_sales ? `₹ ${summary.today_sales.toLocaleString()}` : '₹ 45,850',
-      trend: '↑ +12.5%',
-      is_positive: true,
-      color_scheme: 'orange' as const,
+      badge: '↑ +14.2%',
+      color: '#FF6A1A',
+      icon: (c: string) => <IndianRupeeIcon size={20} color={c} strokeWidth={2.5} />,
     },
     {
-      id: 'orders',
-      title: 'Total Orders',
+      id: 'total_bills',
+      title: 'Total Bills Count',
       value: summary?.total_orders ? `${summary.total_orders}` : '248',
-      trend: '↑ +8.2%',
-      is_positive: true,
-      color_scheme: 'red' as const,
+      badge: '248 Bills',
+      color: '#3B82F6',
+      icon: (c: string) => <ReceiptIcon size={20} color={c} />,
     },
     {
-      id: 'products',
-      title: 'Total Products',
-      value: summary?.active_products ? `${summary.active_products}` : '1,250',
-      subtitle: 'Active stock',
-      color_scheme: 'blue' as const,
+      id: 'debit_bills',
+      title: 'Debit Customer Bills Count',
+      value: '34',
+      badge: '34 Khata',
+      color: '#F59E0B',
+      icon: (c: string) => <UsersIcon size={20} color={c} />,
     },
     {
-      id: 'employees',
-      title: 'Employees',
-      value: '12',
-      subtitle: 'Active staff',
-      color_scheme: 'green' as const,
+      id: 'super_total',
+      title: 'Super Total Bills Count',
+      value: '1,890',
+      badge: 'Lifetime',
+      color: '#10B981',
+      icon: (c: string) => <ShoppingBagIcon size={20} color={c} />,
     },
   ];
 
-  const salesData = analytics?.sales_overview || [
-    { day: 'Mon', sales: 18500, orders: 85 },
-    { day: 'Tue', sales: 22400, orders: 110 },
-    { day: 'Wed', sales: 19800, orders: 78 },
-    { day: 'Thu', sales: 27900, orders: 135 },
-    { day: 'Fri', sales: 34100, orders: 162 },
-    { day: 'Sat', sales: 38900, orders: 178 },
-    { day: 'Sun', sales: 36200, orders: 164 },
+  // Sales Trend Data for Line Plot
+  const salesData = [
+    { day: 'Mon', sales: 18500, orders: 85, x: 25, y: 110 },
+    { day: 'Tue', sales: 24400, orders: 110, x: 75, y: 85 },
+    { day: 'Wed', sales: 21800, orders: 95, x: 125, y: 98 },
+    { day: 'Thu', sales: 31900, orders: 135, x: 175, y: 55 },
+    { day: 'Fri', sales: 36200, orders: 162, x: 225, y: 40 },
+    { day: 'Sat', sales: 42500, orders: 185, x: 275, y: 20 },
+    { day: 'Sun', sales: 38900, orders: 168, x: 325, y: 32 },
   ];
 
-  const recentActivities = analytics?.recent_activities || [
+  // Quick Access 2 Rows x 4 Cols Grid
+  const quickAccessGrid = [
+    // Row 1
+    { id: 'make_bill', name: 'Make Bill', icon: (c: string) => <ShoppingCartIcon size={22} color={c} />, nav: 'PosBilling' as const },
+    { id: 'view_bill', name: 'View Bill', icon: (c: string) => <ReceiptIcon size={22} color={c} />, nav: 'SalesList' as const },
+    { id: 'product', name: 'Product', icon: (c: string) => <PackageIcon size={22} color={c} />, nav: 'ProductList' as const },
+    { id: 'debit_customer', name: 'Debit Customer', icon: (c: string) => <UsersIcon size={22} color={c} />, nav: 'CustomerList' as const },
+    // Row 2
+    { id: 'supper', name: 'Supper', icon: (c: string) => <TruckIcon size={22} color={c} />, nav: 'SupplierList' as const },
+    { id: 'order', name: 'Order', icon: (c: string) => <ShoppingBagIcon size={22} color={c} />, nav: 'PurchaseList' as const },
+    { id: 'store_expense', name: 'Store Expense', icon: (c: string) => <IndianRupeeIcon size={22} color={c} />, nav: 'Finance' as const },
+    { id: 'employee', name: 'Employee', icon: (c: string) => <UserRoundIcon size={22} color={c} />, nav: 'CustomerList' as const },
+  ];
+
+  // Top 5 Recent Activities
+  const recentActivities = [
     {
       id: 'act-1',
-      title: 'New sale completed',
-      description: 'Order #1025 • ₹ 850',
-      timestamp: '5 minutes ago',
-      icon: 'cart',
+      title: 'Bills',
+      desc: 'Invoice #INV-STR001-001025 generated • ₹ 1,450',
+      time: '3 mins ago',
+      color: '#FF6A1A',
+      icon: <ReceiptIcon size={16} color="#FFFFFF" />,
     },
     {
       id: 'act-2',
-      title: 'Product added',
-      description: 'Rice 1kg added to inventory',
-      timestamp: '20 minutes ago',
-      icon: 'box',
+      title: 'Add product name',
+      desc: 'Basmati Rice 5kg added to catalog (PRD-STR001-000214)',
+      time: '15 mins ago',
+      color: '#3B82F6',
+      icon: <PackageIcon size={16} color="#FFFFFF" />,
     },
     {
       id: 'act-3',
-      title: 'Employee login',
-      description: 'Rahul logged in',
-      timestamp: '30 minutes ago',
-      icon: 'user',
+      title: 'Supper bills',
+      desc: 'Supplier Bill #PUR-STR001-00042 received • ₹ 18,200',
+      time: '42 mins ago',
+      color: '#10B981',
+      icon: <TruckIcon size={16} color="#FFFFFF" />,
     },
     {
       id: 'act-4',
-      title: 'Stock updated',
-      description: 'Wheat Flour stock updated (50 units)',
-      timestamp: '1 hour ago',
-      icon: 'refresh',
+      title: 'Add supper',
+      desc: 'New Supplier "National Agro Supplies" registered',
+      time: '1 hour ago',
+      color: '#8B5CF6',
+      icon: <TruckIcon size={16} color="#FFFFFF" />,
+    },
+    {
+      id: 'act-5',
+      title: 'Add debit customer',
+      desc: 'Customer "Ramesh Shah" added to Debit Khata (₹ 5,000 limit)',
+      time: '2 hours ago',
+      color: '#F59E0B',
+      icon: <UsersIcon size={16} color="#FFFFFF" />,
     },
   ];
 
-  const lowStockProducts = analytics?.low_stock_products || [
-    { id: 1, name: 'Rice (5kg)', stock: '8 units', status: 'Low Stock', status_color: 'danger' as const },
-    { id: 2, name: 'Cooking Oil (1L)', stock: '12 units', status: 'Low Stock', status_color: 'danger' as const },
-    { id: 3, name: 'Sugar (1kg)', stock: '15 units', status: 'Running Low', status_color: 'warning' as const },
-    { id: 4, name: 'Toor Dal (1kg)', stock: '20 units', status: 'Running Low', status_color: 'warning' as const },
-    { id: 5, name: 'Tea (250g)', stock: '28 units', status: 'Running Low', status_color: 'warning' as const },
+  // Top 5 Low Stock Products
+  const lowStockProducts = [
+    { id: 1, name: 'Basmati Rice (5kg)', stock: '3 units', status: 'Critical', color: '#EF4444' },
+    { id: 2, name: 'Refined Oil (1L)', stock: '5 units', status: 'Low Stock', color: '#EF4444' },
+    { id: 3, name: 'Wheat Flour (10kg)', stock: '7 units', status: 'Running Low', color: '#F59E0B' },
+    { id: 4, name: 'Organic Sugar (1kg)', stock: '9 units', status: 'Running Low', color: '#F59E0B' },
+    { id: 5, name: 'Green Tea (250g)', stock: '11 units', status: 'Running Low', color: '#F59E0B' },
   ];
 
-  const maxSales = 40000;
-  const maxOrders = 200;
+  // Upcoming Product Orders
+  const upcomingOrders = [
+    { id: 'ORD-STR001-000104', customer: 'Vijay Patel', items: '8 Items', amount: '₹ 3,450', date: 'Tomorrow, 10:00 AM', status: 'Confirmed' },
+    { id: 'ORD-STR001-000105', customer: 'Deepak Sharma', items: '4 Items', amount: '₹ 1,890', date: 'Tomorrow, 02:30 PM', status: 'Preparing' },
+    { id: 'ORD-STR001-000106', customer: 'Meera Verma', items: '12 Items', amount: '₹ 5,200', date: '09 Nov, 11:00 AM', status: 'Scheduled' },
+  ];
+
+  // Sidebar Menu Items (11 Items)
+  const sidebarMenuItems = [
+    { id: 'home', label: 'Home', icon: (c: string) => <HomeIcon size={20} color={c} />, action: () => setMenuModalVisible(false) },
+    { id: 'make_bill', label: 'Make Bill', icon: (c: string) => <ShoppingCartIcon size={20} color={c} />, action: () => { setMenuModalVisible(false); navigation.navigate('PosBilling'); } },
+    { id: 'view_bill', label: 'View Bill', icon: (c: string) => <ReceiptIcon size={20} color={c} />, action: () => { setMenuModalVisible(false); navigation.navigate('SalesList'); } },
+    { id: 'product', label: 'Product', icon: (c: string) => <PackageIcon size={20} color={c} />, action: () => { setMenuModalVisible(false); navigation.navigate('ProductList'); } },
+    { id: 'debit_customer', label: 'Debit Customer', icon: (c: string) => <UsersIcon size={20} color={c} />, action: () => { setMenuModalVisible(false); navigation.navigate('CustomerList'); } },
+    { id: 'supper', label: 'Supper', icon: (c: string) => <TruckIcon size={20} color={c} />, action: () => { setMenuModalVisible(false); navigation.navigate('SupplierList'); } },
+    { id: 'order', label: 'Order', icon: (c: string) => <ShoppingBagIcon size={20} color={c} />, action: () => { setMenuModalVisible(false); navigation.navigate('PurchaseList'); } },
+    { id: 'store_expense', label: 'Store Expense', icon: (c: string) => <IndianRupeeIcon size={20} color={c} />, action: () => { setMenuModalVisible(false); navigation.navigate('Finance'); } },
+    { id: 'employee', label: 'Employee', icon: (c: string) => <UserRoundIcon size={20} color={c} />, action: () => { setMenuModalVisible(false); navigation.navigate('CustomerList'); } },
+    { id: 'sales_analicis', label: 'Sales Analicis', icon: (c: string) => <ChartColumnIcon size={20} color={c} />, action: () => { setMenuModalVisible(false); navigation.navigate('Reports'); } },
+    { id: 'account', label: 'Account', icon: (c: string) => <StoreIcon size={20} color={c} />, action: () => { setMenuModalVisible(false); navigation.navigate('AccountDetail'); } },
+  ];
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
       <StatusBar barStyle="light-content" backgroundColor="#FF6A1A" />
 
-      {/* 1. TOP ORANGE HEADER */}
+      {/* 1. TOP HEADER WITH ORANGE BANNER */}
       <SafeAreaView style={styles.headerSafeArea}>
         <View style={styles.topHeader}>
-          {/* Left: Hamburger menu */}
+          {/* Hamburger Menu Button */}
           <TouchableOpacity
             style={styles.headerIconBtn}
             onPress={() => setMenuModalVisible(true)}
             activeOpacity={0.7}
+            accessibilityLabel="Open Navigation Sidebar"
           >
             <View style={styles.hamburger}>
               <View style={styles.hamLine} />
@@ -187,16 +279,24 @@ export const DashboardScreen: React.FC = () => {
             </View>
           </TouchableOpacity>
 
-          {/* Center/Left: Brand Logo */}
+          {/* Centered Brand Title */}
           <View style={styles.brandTitleContainer}>
             <View style={styles.cartIconBadge}>
-              <ShoppingCartIcon size={16} color="#FFFFFF" />
+              <StoreIcon size={16} color="#FFFFFF" />
             </View>
             <Text style={styles.headerBrandTitle}>NEXORA MART</Text>
           </View>
 
-          {/* Right: Notifications & Profile */}
+          {/* Right Header Actions: Theme Toggle & Notifications */}
           <View style={styles.headerRightActions}>
+            <TouchableOpacity
+              style={styles.notificationBtn}
+              onPress={toggleTheme}
+              activeOpacity={0.7}
+            >
+              {isDark ? <MoonIcon size={18} color="#FFFFFF" /> : <SunIcon size={18} color="#FFFFFF" />}
+            </TouchableOpacity>
+
             <TouchableOpacity
               style={styles.notificationBtn}
               onPress={() => setNotificationsVisible(true)}
@@ -205,18 +305,6 @@ export const DashboardScreen: React.FC = () => {
               <BellIcon size={20} color="#FFFFFF" />
               <View style={styles.badgeCircle}>
                 <Text style={styles.badgeText}>3</Text>
-              </View>
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              style={styles.profileAvatarPill}
-              onPress={() => setMenuModalVisible(true)}
-              activeOpacity={0.8}
-            >
-              <View style={styles.avatarInner}>
-                <Text style={styles.avatarLetter}>
-                  {merchantName.charAt(0).toUpperCase()}
-                </Text>
               </View>
             </TouchableOpacity>
           </View>
@@ -236,111 +324,72 @@ export const DashboardScreen: React.FC = () => {
         }
         showsVerticalScrollIndicator={false}
       >
-        {/* Greeting Section */}
-        <View style={styles.greetingSection}>
-          <Text style={styles.greetingTitle}>Good Morning, {merchantName}!</Text>
-          <View style={styles.greetingMetaRow}>
-            <Text style={styles.greetingSubtitle}>
-              Here's your store overview for today.
-            </Text>
-            <Text style={styles.greetingDate}>
-              {analytics?.date_display || 'Tue, 3 Nov 2026'}
-            </Text>
-          </View>
+        {/* ==========================================
+            WELCOME BANNER
+           ========================================== */}
+        <View style={[styles.greetingSection, { backgroundColor: isDark ? '#1C1E24' : '#FFFFFF', borderColor: isDark ? '#2D323E' : '#E5E7EB' }]}>
+          <Text style={[styles.greetingTitle, { color: isDark ? '#FFFFFF' : '#111827' }]}>
+            Welcome Back, Owner
+          </Text>
+          <Text style={[styles.greetingDate, { color: brandColors.primary }]}>
+            {todayFormatted}
+          </Text>
         </View>
 
-        {/* 3. 2x2 GRID OF STAT KPI CARDS */}
+        {/* ==========================================
+            3. 4 STAT BOXES
+           ========================================== */}
         <View style={styles.kpiGrid}>
-          {/* Card 1: Today's Sales */}
-          <View style={[styles.kpiCard, styles.kpiBorderOrange]}>
-            <View style={styles.kpiTopRow}>
-              <View style={[styles.statIconBox, { backgroundColor: '#FF6A1A' }]}>
-                <IndianRupeeIcon size={18} color="#FFFFFF" strokeWidth={2.5} />
+          {statBoxes.map((box) => (
+            <View
+              key={box.id}
+              style={[
+                styles.kpiCard,
+                {
+                  backgroundColor: isDark ? '#181A20' : '#FFFFFF',
+                  borderColor: isDark ? '#2D323E' : '#E5E7EB',
+                  borderTopColor: box.color,
+                  borderTopWidth: 3,
+                },
+              ]}
+            >
+              <View style={styles.kpiTopRow}>
+                <View style={[styles.statIconBox, { backgroundColor: box.color }]}>
+                  {box.icon('#FFFFFF')}
+                </View>
+                <View style={[styles.kpiBadge, { backgroundColor: `${box.color}15` }]}>
+                  <Text style={[styles.kpiBadgeText, { color: box.color }]}>{box.badge}</Text>
+                </View>
               </View>
-              <View style={styles.miniBars}>
-                <View style={[styles.miniBar, { height: 6, backgroundColor: '#FED7AA' }]} />
-                <View style={[styles.miniBar, { height: 10, backgroundColor: '#FED7AA' }]} />
-                <View style={[styles.miniBar, { height: 15, backgroundColor: '#FFA266' }]} />
-                <View style={[styles.miniBar, { height: 20, backgroundColor: '#FF6A1A' }]} />
-              </View>
+              <Text style={[styles.kpiLabel, { color: isDark ? '#9CA3AF' : '#6B7280' }]}>{box.title}</Text>
+              <Text style={[styles.kpiValue, { color: isDark ? '#FFFFFF' : '#111827' }]}>{box.value}</Text>
             </View>
-            <Text style={styles.kpiLabel}>{stats[0]?.title || "Today's Sales"}</Text>
-            <Text style={styles.kpiValue}>{stats[0]?.value || '₹ 45,850'}</Text>
-            <View style={styles.trendRow}>
-              <Text style={styles.trendGreen}>{stats[0]?.trend || '↑ +12.5%'}</Text>
-            </View>
-          </View>
-
-          {/* Card 2: Total Orders */}
-          <View style={[styles.kpiCard, styles.kpiBorderRed]}>
-            <View style={styles.kpiTopRow}>
-              <View style={[styles.statIconBox, { backgroundColor: '#EF4444' }]}>
-                <ShoppingBagIcon size={18} color="#FFFFFF" />
-              </View>
-              <View style={styles.miniBars}>
-                <View style={[styles.miniBar, { height: 6, backgroundColor: '#FECACA' }]} />
-                <View style={[styles.miniBar, { height: 10, backgroundColor: '#FECACA' }]} />
-                <View style={[styles.miniBar, { height: 15, backgroundColor: '#FCA5A5' }]} />
-                <View style={[styles.miniBar, { height: 20, backgroundColor: '#EF4444' }]} />
-              </View>
-            </View>
-            <Text style={styles.kpiLabel}>{stats[1]?.title || 'Total Orders'}</Text>
-            <Text style={styles.kpiValue}>{stats[1]?.value || '248'}</Text>
-            <View style={styles.trendRow}>
-              <Text style={styles.trendGreen}>{stats[1]?.trend || '↑ +8.2%'}</Text>
-            </View>
-          </View>
-
-          {/* Card 3: Total Products */}
-          <View style={[styles.kpiCard, styles.kpiBorderBlue]}>
-            <View style={styles.kpiTopRow}>
-              <View style={[styles.statIconBox, { backgroundColor: '#3B82F6' }]}>
-                <PackageIcon size={18} color="#FFFFFF" />
-              </View>
-              <View style={styles.miniBars}>
-                <View style={[styles.miniBar, { height: 6, backgroundColor: '#BFDBFE' }]} />
-                <View style={[styles.miniBar, { height: 10, backgroundColor: '#BFDBFE' }]} />
-                <View style={[styles.miniBar, { height: 15, backgroundColor: '#93C5FD' }]} />
-                <View style={[styles.miniBar, { height: 20, backgroundColor: '#3B82F6' }]} />
-              </View>
-            </View>
-            <Text style={styles.kpiLabel}>{stats[2]?.title || 'Total Products'}</Text>
-            <Text style={styles.kpiValue}>{stats[2]?.value || '1,250'}</Text>
-            <Text style={styles.kpiSub}>{stats[2]?.subtitle || 'Active stock'}</Text>
-          </View>
-
-          {/* Card 4: Employees */}
-          <View style={[styles.kpiCard, styles.kpiBorderGreen]}>
-            <View style={styles.kpiTopRow}>
-              <View style={[styles.statIconBox, { backgroundColor: '#10B981' }]}>
-                <UsersIcon size={18} color="#FFFFFF" />
-              </View>
-              <View style={styles.miniBars}>
-                <View style={[styles.miniBar, { height: 6, backgroundColor: '#BBF7D0' }]} />
-                <View style={[styles.miniBar, { height: 10, backgroundColor: '#BBF7D0' }]} />
-                <View style={[styles.miniBar, { height: 15, backgroundColor: '#86EFAC' }]} />
-                <View style={[styles.miniBar, { height: 20, backgroundColor: '#10B981' }]} />
-              </View>
-            </View>
-            <Text style={styles.kpiLabel}>{stats[3]?.title || 'Employees'}</Text>
-            <Text style={styles.kpiValue}>{stats[3]?.value || '12'}</Text>
-            <Text style={styles.kpiSub}>{stats[3]?.subtitle || 'Active staff'}</Text>
-          </View>
+          ))}
         </View>
 
-        {/* 4. SALES OVERVIEW COMBO CHART */}
-        <View style={styles.chartCard}>
+        {/* ==========================================
+            4. SALES OVERVIEW LINE PLOT
+           ========================================== */}
+        <View style={[styles.chartCard, { backgroundColor: isDark ? '#181A20' : '#FFFFFF', borderColor: isDark ? '#2D323E' : '#E5E7EB' }]}>
           <View style={styles.chartHeader}>
-            <Text style={styles.chartTitle}>Sales Overview</Text>
+            <View>
+              <Text style={[styles.chartTitle, { color: isDark ? '#FFFFFF' : '#111827' }]}>
+                Sales Overview
+              </Text>
+              <Text style={{ fontSize: 12, color: isDark ? '#9CA3AF' : '#6B7280', marginTop: 2 }}>
+                Revenue & Sales Trajectory
+              </Text>
+            </View>
+
             <TouchableOpacity
-              style={styles.timeframeBadge}
+              style={[styles.timeframeBadge, { backgroundColor: isDark ? '#232732' : '#F3F4F6', borderColor: isDark ? '#2D323E' : '#E5E7EB' }]}
               onPress={() => setTimeframe(timeframe === 'This Week' ? 'This Month' : 'This Week')}
             >
-              <Text style={styles.timeframeText}>{timeframe} ⌄</Text>
+              <Text style={[styles.timeframeText, { color: brandColors.primary }]}>{timeframe} ⌄</Text>
             </TouchableOpacity>
           </View>
 
-          {/* Interactive Tooltip if day tapped */}
+          {/* Interactive Tooltip on Node Tap */}
           {selectedDayInfo && (
             <View style={styles.chartTooltipBanner}>
               <Text style={styles.chartTooltipText}>
@@ -349,174 +398,188 @@ export const DashboardScreen: React.FC = () => {
             </View>
           )}
 
-          {/* Native Responsive Combo Chart */}
-          <View style={styles.chartBodyWrapper}>
-            {/* Horizontal Grid lines */}
-            <View style={styles.gridOverlay}>
-              {[40000, 30000, 20000, 10000, 0].map((v) => (
-                <View key={v} style={styles.gridRow}>
-                  <Text style={styles.axisLabelLeft}>{v === 0 ? '0' : `${v / 1000}K`}</Text>
-                  <View style={[styles.gridDashedLine, v === 0 && styles.gridSolidLine]} />
-                  <Text style={styles.axisLabelRight}>{v === 0 ? '0' : `${Math.round((v / 40000) * 200)}`}</Text>
-                </View>
+          {/* SVG Smooth Line Plot */}
+          <View style={styles.svgPlotWrapper}>
+            <Svg width="100%" height={150} viewBox="0 0 350 140">
+              <Defs>
+                <LinearGradient id="salesLineGrad" x1="0" y1="0" x2="0" y2="1">
+                  <Stop offset="0%" stopColor="#FF6A1A" stopOpacity="0.45" />
+                  <Stop offset="100%" stopColor="#FF6A1A" stopOpacity="0.0" />
+                </LinearGradient>
+              </Defs>
+
+              {/* Grid Lines */}
+              <Line x1="10" y1="30" x2="340" y2="30" stroke={isDark ? '#262A34' : '#F1F5F9'} strokeWidth="1" strokeDasharray="4,4" />
+              <Line x1="10" y1="65" x2="340" y2="65" stroke={isDark ? '#262A34' : '#F1F5F9'} strokeWidth="1" strokeDasharray="4,4" />
+              <Line x1="10" y1="100" x2="340" y2="100" stroke={isDark ? '#262A34' : '#F1F5F9'} strokeWidth="1" strokeDasharray="4,4" />
+              <Line x1="10" y1="130" x2="340" y2="130" stroke={isDark ? '#2D323E' : '#E2E8F0'} strokeWidth="1" />
+
+              {/* Area Under Curve */}
+              <Path
+                d="M 25 110 L 75 85 L 125 98 L 175 55 L 225 40 L 275 20 L 325 32 L 325 130 L 25 130 Z"
+                fill="url(#salesLineGrad)"
+              />
+
+              {/* Connecting Line Plot */}
+              <Polyline
+                points="25,110 75,85 125,98 175,55 225,40 275,20 325,32"
+                fill="none"
+                stroke="#FF6A1A"
+                strokeWidth="3"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              />
+
+              {/* Data Nodes */}
+              {salesData.map((d) => (
+                <Circle
+                  key={d.day}
+                  cx={d.x}
+                  cy={d.y}
+                  r={selectedDayInfo?.day === d.day ? 6 : 4}
+                  fill="#FFFFFF"
+                  stroke="#FF6A1A"
+                  strokeWidth="2.5"
+                />
               ))}
-            </View>
+            </Svg>
 
-            {/* Bars and Line Nodes for 7 Days */}
-            <View style={styles.barsPlotArea}>
-              {salesData.map((d) => {
-                const barHeightPct = Math.min(100, Math.max(8, (d.sales / maxSales) * 100));
-                const orderBottomPct = Math.min(95, Math.max(5, (d.orders / maxOrders) * 100));
-                const isSelected = selectedDayInfo?.day === d.day;
-
-                return (
-                  <TouchableOpacity
-                    key={d.day}
-                    style={styles.dayColumn}
-                    activeOpacity={0.8}
-                    onPress={() => setSelectedDayInfo(isSelected ? null : d)}
+            {/* Day Labels Row */}
+            <View style={styles.chartDaysRow}>
+              {salesData.map((d) => (
+                <TouchableOpacity
+                  key={d.day}
+                  style={styles.dayTextWrap}
+                  onPress={() => setSelectedDayInfo(selectedDayInfo?.day === d.day ? null : d)}
+                >
+                  <Text
+                    style={[
+                      styles.dayText,
+                      { color: isDark ? '#9CA3AF' : '#64748B' },
+                      selectedDayInfo?.day === d.day && { color: brandColors.primary, fontWeight: '700' },
+                    ]}
                   >
-                    <View style={styles.columnInnerTrack}>
-                      {/* Order Point Marker */}
-                      <View style={[styles.orderPointMarker, { bottom: `${orderBottomPct}%` }]}>
-                        <View style={styles.orderPointDot} />
-                      </View>
-
-                      {/* Sales Bar */}
-                      <View
-                        style={[
-                          styles.salesBarShape,
-                          { height: `${barHeightPct}%` },
-                          isSelected && styles.salesBarSelected,
-                        ]}
-                      />
-                    </View>
-
-                    {/* Day Label */}
-                    <Text style={[styles.dayLabelText, isSelected && styles.dayLabelSelected]}>
-                      {d.day}
-                    </Text>
-                  </TouchableOpacity>
-                );
-              })}
-            </View>
-          </View>
-
-          {/* Chart Legend */}
-          <View style={styles.chartLegend}>
-            <View style={styles.legendItem}>
-              <View style={[styles.legendDot, { backgroundColor: '#FF6A1A' }]} />
-              <Text style={styles.legendText}>Sales (₹)</Text>
-            </View>
-            <View style={styles.legendItem}>
-              <View style={styles.legendLineWrap}>
-                <View style={styles.legendLine} />
-                <View style={styles.legendCircle} />
-                <View style={styles.legendLine} />
-              </View>
-              <Text style={styles.legendText}>Orders</Text>
+                    {d.day}
+                  </Text>
+                </TouchableOpacity>
+              ))}
             </View>
           </View>
         </View>
 
-        {/* 5. QUICK ACCESS SECTION */}
-        <View style={styles.quickAccessSection}>
-          <View style={styles.sectionHeader}>
-            <Text style={styles.sectionTitle}>Quick Access</Text>
-            <TouchableOpacity onPress={() => navigation.navigate('ProductList')}>
-              <Text style={styles.viewAllText}>View All →</Text>
-            </TouchableOpacity>
-          </View>
+        {/* ==========================================
+            5. QUICK ACCESS (2 ROWS X 4 COLS)
+           ========================================== */}
+        <View style={[styles.sectionCard, { backgroundColor: isDark ? '#181A20' : '#FFFFFF', borderColor: isDark ? '#2D323E' : '#E5E7EB' }]}>
+          <Text style={[styles.sectionTitle, { color: isDark ? '#FFFFFF' : '#111827' }]}>
+            Quick Access
+          </Text>
 
           <View style={styles.quickGrid}>
-            {[
-              { id: 'sales', label: 'Sales', renderIcon: () => <ShoppingCartIcon size={22} color={brandColors.primary} />, action: () => navigation.navigate('PosBilling') },
-              { id: 'products', label: 'Products', renderIcon: () => <PackageIcon size={22} color={brandColors.primary} />, action: () => navigation.navigate('ProductList') },
-              { id: 'inventory', label: 'Inventory', renderIcon: () => <BoxesIcon size={22} color={brandColors.primary} />, action: () => navigation.navigate('Inventory') },
-              { id: 'employees', label: 'Employees', renderIcon: () => <UserRoundIcon size={22} color={brandColors.primary} />, action: () => navigation.navigate('CustomerList') },
-              { id: 'customers', label: 'Customers', renderIcon: () => <UsersIcon size={22} color={brandColors.primary} />, action: () => navigation.navigate('CustomerList') },
-              { id: 'suppliers', label: 'Suppliers', renderIcon: () => <TruckIcon size={22} color={brandColors.primary} />, action: () => navigation.navigate('SupplierList') },
-              { id: 'reports', label: 'Reports', renderIcon: () => <ChartColumnIcon size={22} color={brandColors.primary} />, action: () => navigation.navigate('Reports') },
-              { id: 'settings', label: 'Settings', renderIcon: () => <SettingsIcon size={22} color={brandColors.primary} />, action: () => navigation.navigate('Settings') },
-            ].map((tile) => (
+            {quickAccessGrid.map((tile) => (
               <TouchableOpacity
                 key={tile.id}
-                style={styles.quickTile}
-                onPress={tile.action}
+                style={[
+                  styles.quickTile,
+                  { backgroundColor: isDark ? '#22252F' : '#F8FAFC', borderColor: isDark ? '#2D323E' : '#E2E8F0' },
+                ]}
+                onPress={() => navigation.navigate(tile.nav as any)}
                 activeOpacity={0.7}
               >
-                <View style={styles.quickIconBox}>
-                  {tile.renderIcon()}
+                <View style={[styles.quickIconWrap, { backgroundColor: isDark ? 'rgba(255, 106, 26, 0.15)' : '#FFF0E8' }]}>
+                  {tile.icon(brandColors.primary)}
                 </View>
-                <Text style={styles.quickLabel}>{tile.label}</Text>
+                <Text style={[styles.quickLabel, { color: isDark ? '#E2E8F0' : '#1E293B' }]} numberOfLines={1}>
+                  {tile.name}
+                </Text>
               </TouchableOpacity>
             ))}
           </View>
         </View>
 
-        {/* 6. RECENT ACTIVITIES */}
-        <View style={styles.sectionCard}>
-          <View style={styles.sectionHeader}>
-            <Text style={styles.sectionTitle}>Recent Activities</Text>
+        {/* ==========================================
+            6. RECENT ACTIVITIES (TOP 5)
+           ========================================== */}
+        <View style={[styles.sectionCard, { backgroundColor: isDark ? '#181A20' : '#FFFFFF', borderColor: isDark ? '#2D323E' : '#E5E7EB' }]}>
+          <View style={styles.cardHeaderRow}>
+            <Text style={[styles.sectionTitle, { color: isDark ? '#FFFFFF' : '#111827' }]}>
+              Recent Activities
+            </Text>
             <TouchableOpacity onPress={() => navigation.navigate('Reports')}>
-              <Text style={styles.viewAllText}>View All →</Text>
+              <Text style={{ color: brandColors.primary, fontSize: 13, fontWeight: '600' }}>View All →</Text>
             </TouchableOpacity>
           </View>
 
           <View style={styles.activitiesList}>
             {recentActivities.map((act) => (
-              <View key={act.id} style={styles.activityRow}>
-                <View style={styles.actIconWrap}>
-                  {act.icon === 'cart' ? (
-                    <ShoppingCartIcon size={16} color={brandColors.primary} />
-                  ) : act.icon === 'box' ? (
-                    <PackageIcon size={16} color="#3B82F6" />
-                  ) : act.icon === 'user' ? (
-                    <UserIcon size={16} color="#10B981" />
-                  ) : (
-                    <RefreshIcon size={16} color="#F59E0B" />
-                  )}
+              <View key={act.id} style={[styles.activityRow, { borderBottomColor: isDark ? '#262A34' : '#F1F5F9' }]}>
+                <View style={[styles.actIconWrap, { backgroundColor: act.color }]}>
+                  {act.icon}
                 </View>
-                <View style={{ flex: 1 }}>
-                  <Text style={styles.actTitle}>{act.title}</Text>
-                  <Text style={styles.actDesc}>{act.description}</Text>
+                <View style={{ flex: 1, marginLeft: 12 }}>
+                  <Text style={[styles.actTitle, { color: isDark ? '#FFFFFF' : '#111827' }]}>{act.title}</Text>
+                  <Text style={[styles.actDesc, { color: isDark ? '#9CA3AF' : '#64748B' }]}>{act.desc}</Text>
                 </View>
-                <Text style={styles.actTime}>{act.timestamp}</Text>
+                <Text style={[styles.actTime, { color: isDark ? '#6B7280' : '#94A3B8' }]}>{act.time}</Text>
               </View>
             ))}
           </View>
         </View>
 
-        {/* 7. LOW STOCK PRODUCTS */}
-        <View style={styles.sectionCard}>
-          <View style={styles.sectionHeader}>
-            <Text style={styles.sectionTitle}>Low Stock Products</Text>
+        {/* ==========================================
+            7. LOW STOCK PRODUCT (TOP 5)
+           ========================================== */}
+        <View style={[styles.sectionCard, { backgroundColor: isDark ? '#181A20' : '#FFFFFF', borderColor: isDark ? '#2D323E' : '#E5E7EB' }]}>
+          <View style={styles.cardHeaderRow}>
+            <Text style={[styles.sectionTitle, { color: isDark ? '#FFFFFF' : '#111827' }]}>
+              Low Stock Products (Top 5)
+            </Text>
             <TouchableOpacity onPress={() => navigation.navigate('Inventory')}>
-              <Text style={styles.viewAllText}>View All →</Text>
+              <Text style={{ color: brandColors.primary, fontSize: 13, fontWeight: '600' }}>Manage Stock →</Text>
             </TouchableOpacity>
           </View>
 
           <View style={styles.lowStockTable}>
             {lowStockProducts.map((item) => (
-              <View key={item.id} style={styles.lowStockRow}>
-                <View style={styles.lowStockLeft}>
-                  <Text style={styles.lowStockEmoji}>📦</Text>
-                  <Text style={styles.lowStockName}>{item.name}</Text>
+              <View key={item.id} style={[styles.lowStockRow, { borderBottomColor: isDark ? '#262A34' : '#F1F5F9' }]}>
+                <View style={{ flex: 1 }}>
+                  <Text style={[styles.lowStockName, { color: isDark ? '#FFFFFF' : '#111827' }]}>{item.name}</Text>
+                  <Text style={[styles.lowStockQty, { color: isDark ? '#9CA3AF' : '#64748B' }]}>Only {item.stock} left in store</Text>
                 </View>
-                <Text style={styles.lowStockQty}>{item.stock}</Text>
-                <View
-                  style={[
-                    styles.statusPill,
-                    item.status_color === 'danger' ? styles.statusPillRed : styles.statusPillAmber,
-                  ]}
-                >
-                  <Text
-                    style={[
-                      styles.statusPillText,
-                      item.status_color === 'danger' ? styles.statusTextRed : styles.statusTextAmber,
-                    ]}
-                  >
-                    {item.status}
+                <View style={[styles.statusPill, { backgroundColor: `${item.color}15`, borderColor: item.color }]}>
+                  <Text style={[styles.statusText, { color: item.color }]}>{item.status}</Text>
+                </View>
+              </View>
+            ))}
+          </View>
+        </View>
+
+        {/* ==========================================
+            8. UPCOMING PRODUCT ORDERS
+           ========================================== */}
+        <View style={[styles.sectionCard, { backgroundColor: isDark ? '#181A20' : '#FFFFFF', borderColor: isDark ? '#2D323E' : '#E5E7EB' }]}>
+          <View style={styles.cardHeaderRow}>
+            <Text style={[styles.sectionTitle, { color: isDark ? '#FFFFFF' : '#111827' }]}>
+              Upcoming Product Orders
+            </Text>
+            <TouchableOpacity onPress={() => navigation.navigate('PurchaseList')}>
+              <Text style={{ color: brandColors.primary, fontSize: 13, fontWeight: '600' }}>View Orders →</Text>
+            </TouchableOpacity>
+          </View>
+
+          <View style={styles.ordersList}>
+            {upcomingOrders.map((ord) => (
+              <View key={ord.id} style={[styles.orderCard, { backgroundColor: isDark ? '#232732' : '#F8FAFC', borderColor: isDark ? '#2D323E' : '#E2E8F0' }]}>
+                <View style={styles.orderTopRow}>
+                  <Text style={[styles.orderId, { color: brandColors.primary }]}>{ord.id}</Text>
+                  <Text style={[styles.orderAmount, { color: isDark ? '#FFFFFF' : '#111827' }]}>{ord.amount}</Text>
+                </View>
+                <View style={styles.orderBottomRow}>
+                  <Text style={[styles.orderCust, { color: isDark ? '#CBD5E1' : '#334155' }]}>
+                    👤 {ord.customer} • {ord.items}
+                  </Text>
+                  <Text style={[styles.orderDate, { color: isDark ? '#9CA3AF' : '#64748B' }]}>
+                    ⏰ {ord.date}
                   </Text>
                 </View>
               </View>
@@ -524,10 +587,119 @@ export const DashboardScreen: React.FC = () => {
           </View>
         </View>
 
-        <View style={{ height: 24 }} />
+        <View style={{ height: 32 }} />
       </ScrollView>
 
-      {/* MODAL: Notifications */}
+      {/* ==========================================
+          STORE SETUP MODAL POPUP
+         ========================================== */}
+      <Modal
+        visible={storeSetupPopupVisible}
+        transparent
+        animationType="fade"
+        onRequestClose={handleDismissSetup}
+      >
+        <View style={styles.modalBackdrop}>
+          <View style={[styles.setupCard, { backgroundColor: isDark ? '#1C1E24' : '#FFFFFF' }]}>
+            <View style={styles.setupIconBox}>
+              <StoreIcon size={32} color="#FF6A1A" />
+            </View>
+            <Text style={[styles.setupTitle, { color: isDark ? '#FFFFFF' : '#111827' }]}>
+              Complete Your Store Setup
+            </Text>
+            <Text style={[styles.setupSubtitle, { color: isDark ? '#9CA3AF' : '#64748B' }]}>
+              Please add your store details, address, business tax numbers, and prefix configurations to enable multi-store invoice generation.
+            </Text>
+
+            <TouchableOpacity
+              style={[styles.setupActionBtn, { backgroundColor: brandColors.primary }]}
+              onPress={handleGoToAccountDetails}
+              activeOpacity={0.88}
+            >
+              <Text style={styles.setupActionText}>Add Store Details →</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={styles.setupLaterBtn}
+              onPress={handleDismissSetup}
+              activeOpacity={0.7}
+            >
+              <Text style={{ color: isDark ? '#9CA3AF' : '#64748B', fontWeight: '600' }}>
+                Maybe Later
+              </Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
+
+      {/* ==========================================
+          STORE NAVIGATION SIDEBAR (11 ITEMS)
+         ========================================== */}
+      <Modal
+        visible={menuModalVisible}
+        transparent
+        animationType="slide"
+        onRequestClose={() => setMenuModalVisible(false)}
+      >
+        <TouchableOpacity
+          style={styles.drawerBackdrop}
+          activeOpacity={1}
+          onPress={() => setMenuModalVisible(false)}
+        >
+          <View style={[styles.drawerCard, { backgroundColor: isDark ? '#1C1E24' : '#FFFFFF' }]}>
+            {/* Drawer Header */}
+            <View style={styles.drawerHeader}>
+              <View style={[styles.drawerAvatar, { backgroundColor: brandColors.primary }]}>
+                <Text style={styles.drawerAvatarText}>
+                  {merchantName.charAt(0).toUpperCase()}
+                </Text>
+              </View>
+              <View style={{ flex: 1, marginLeft: 12 }}>
+                <Text style={[styles.drawerUserName, { color: isDark ? '#FFFFFF' : '#111827' }]}>
+                  {merchantName}
+                </Text>
+                <Text style={[styles.drawerUserSub, { color: brandColors.primary }]}>
+                  {store?.name || 'Nexora Mart'} • Owner
+                </Text>
+              </View>
+            </View>
+
+            {/* Drawer Navigation List (11 Items) */}
+            <ScrollView style={styles.drawerList} showsVerticalScrollIndicator={false}>
+              {sidebarMenuItems.map((item) => (
+                <TouchableOpacity
+                  key={item.id}
+                  style={[styles.drawerItem, { borderBottomColor: isDark ? '#262A34' : '#F1F5F9' }]}
+                  onPress={item.action}
+                  activeOpacity={0.7}
+                >
+                  <View style={styles.drawerIconBox}>
+                    {item.icon(brandColors.primary)}
+                  </View>
+                  <Text style={[styles.drawerItemText, { color: isDark ? '#FFFFFF' : '#1E293B' }]}>
+                    {item.label}
+                  </Text>
+                </TouchableOpacity>
+              ))}
+            </ScrollView>
+
+            {/* Logout Button */}
+            <TouchableOpacity
+              style={styles.logoutBtn}
+              onPress={async () => {
+                setMenuModalVisible(false);
+                await logout();
+              }}
+              activeOpacity={0.8}
+            >
+              <LogOutIcon size={18} color="#EF4444" />
+              <Text style={styles.logoutBtnText}>Sign Out</Text>
+            </TouchableOpacity>
+          </View>
+        </TouchableOpacity>
+      </Modal>
+
+      {/* NOTIFICATIONS MODAL */}
       <Modal
         visible={notificationsVisible}
         transparent
@@ -539,123 +711,33 @@ export const DashboardScreen: React.FC = () => {
           activeOpacity={1}
           onPress={() => setNotificationsVisible(false)}
         >
-          <View style={styles.notificationsCard}>
-            <Text style={styles.modalHeaderTitle}>Notifications (3)</Text>
+          <View style={[styles.notificationsCard, { backgroundColor: isDark ? '#1C1E24' : '#FFFFFF' }]}>
+            <Text style={[styles.modalHeaderTitle, { color: isDark ? '#FFFFFF' : '#111827' }]}>
+              Notifications (3)
+            </Text>
             <View style={styles.notifItem}>
               <Text style={styles.notifAlertTitle}>⚠️ Low Stock Alert</Text>
-              <Text style={styles.notifDesc}>Rice (5kg) is below reorder level (8 units left).</Text>
+              <Text style={{ color: isDark ? '#9CA3AF' : '#64748B', fontSize: 13 }}>
+                Basmati Rice (5kg) is below minimum threshold (3 units left).
+              </Text>
             </View>
             <View style={styles.notifItem}>
-              <Text style={styles.notifSuccessTitle}>✅ New Sale Recorded</Text>
-              <Text style={styles.notifDesc}>Order #1025 for ₹ 850 completed successfully.</Text>
+              <Text style={styles.notifSuccessTitle}>✅ New Bill Generated</Text>
+              <Text style={{ color: isDark ? '#9CA3AF' : '#64748B', fontSize: 13 }}>
+                Invoice #INV-STR001-001025 completed for ₹ 1,450.
+              </Text>
             </View>
             <View style={styles.notifItem}>
-              <Text style={styles.notifInfoTitle}>ℹ️ Staff Login</Text>
-              <Text style={styles.notifDesc}>Rahul logged into cash register 30 minutes ago.</Text>
+              <Text style={styles.notifInfoTitle}>📦 Upcoming Order</Text>
+              <Text style={{ color: isDark ? '#9CA3AF' : '#64748B', fontSize: 13 }}>
+                Order #ORD-STR001-000104 scheduled for tomorrow morning.
+              </Text>
             </View>
             <TouchableOpacity
-              style={styles.modalCloseBtn}
+              style={[styles.modalCloseBtn, { backgroundColor: brandColors.primary }]}
               onPress={() => setNotificationsVisible(false)}
             >
-              <Text style={styles.modalCloseBtnText}>Close</Text>
-            </TouchableOpacity>
-          </View>
-        </TouchableOpacity>
-      </Modal>
-
-      {/* MODAL: Menu Drawer */}
-      <Modal
-        visible={menuModalVisible}
-        transparent
-        animationType="slide"
-        onRequestClose={() => setMenuModalVisible(false)}
-      >
-        <TouchableOpacity
-          style={styles.modalBackdrop}
-          activeOpacity={1}
-          onPress={() => setMenuModalVisible(false)}
-        >
-          <View style={styles.drawerCard}>
-            <View style={styles.drawerHeader}>
-              <View style={styles.drawerAvatar}>
-                <Text style={styles.drawerAvatarText}>
-                  {merchantName.charAt(0).toUpperCase()}
-                </Text>
-              </View>
-              <View style={{ flex: 1, marginLeft: 12 }}>
-                <Text style={styles.drawerUserName}>{merchantName}</Text>
-                <Text style={styles.drawerUserSub}>
-                  {store?.name || "Merchant's Store"} • Owner
-                </Text>
-              </View>
-            </View>
-
-            <View style={styles.drawerList}>
-              <TouchableOpacity
-                style={styles.drawerItem}
-                onPress={() => {
-                  setMenuModalVisible(false);
-                  navigation.navigate('PosBilling');
-                }}
-              >
-                <ShoppingCartIcon size={20} color={brandColors.primary} />
-                <Text style={styles.drawerItemText}>POS Billing Terminal</Text>
-              </TouchableOpacity>
-
-              <TouchableOpacity
-                style={styles.drawerItem}
-                onPress={() => {
-                  setMenuModalVisible(false);
-                  navigation.navigate('ProductList');
-                }}
-              >
-                <PackageIcon size={20} color={brandColors.primary} />
-                <Text style={styles.drawerItemText}>Product Catalog</Text>
-              </TouchableOpacity>
-
-              <TouchableOpacity
-                style={styles.drawerItem}
-                onPress={() => {
-                  setMenuModalVisible(false);
-                  navigation.navigate('Inventory');
-                }}
-              >
-                <BoxesIcon size={20} color={brandColors.primary} />
-                <Text style={styles.drawerItemText}>Inventory & Stock</Text>
-              </TouchableOpacity>
-
-              <TouchableOpacity
-                style={styles.drawerItem}
-                onPress={() => {
-                  setMenuModalVisible(false);
-                  navigation.navigate('Reports');
-                }}
-              >
-                <ChartColumnIcon size={20} color={brandColors.primary} />
-                <Text style={styles.drawerItemText}>Business Reports</Text>
-              </TouchableOpacity>
-
-              <TouchableOpacity
-                style={styles.drawerItem}
-                onPress={() => {
-                  setMenuModalVisible(false);
-                  navigation.navigate('Settings');
-                }}
-              >
-                <SettingsIcon size={20} color={brandColors.primary} />
-                <Text style={styles.drawerItemText}>Settings & Server Host</Text>
-              </TouchableOpacity>
-            </View>
-
-            <TouchableOpacity
-              style={styles.logoutBtn}
-              onPress={async () => {
-                setMenuModalVisible(false);
-                await logout();
-              }}
-            >
-              <LogOutIcon size={18} color="#DC2626" />
-              <Text style={styles.logoutBtnText}>Sign Out</Text>
+              <Text style={{ color: '#FFFFFF', fontWeight: '700' }}>Close</Text>
             </TouchableOpacity>
           </View>
         </TouchableOpacity>
@@ -667,629 +749,400 @@ export const DashboardScreen: React.FC = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#FFF9F3',
   },
   headerSafeArea: {
     backgroundColor: '#FF6A1A',
   },
   topHeader: {
-    height: 58,
-    backgroundColor: '#FF6A1A',
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
     paddingHorizontal: 16,
+    paddingVertical: 12,
   },
   headerIconBtn: {
-    width: 36,
-    height: 36,
-    justifyContent: 'center',
+    padding: 6,
   },
   hamburger: {
-    width: 20,
-    height: 14,
+    width: 22,
+    height: 16,
     justifyContent: 'space-between',
   },
   hamLine: {
-    width: 20,
+    width: '100%',
     height: 2.2,
     backgroundColor: '#FFFFFF',
-    borderRadius: 1,
+    borderRadius: 2,
   },
   brandTitleContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
   },
   cartIconBadge: {
-    width: 28,
-    height: 28,
+    width: 26,
+    height: 26,
     borderRadius: 6,
-    backgroundColor: 'rgba(255, 255, 255, 0.2)',
+    backgroundColor: 'rgba(255,255,255,0.25)',
     alignItems: 'center',
     justifyContent: 'center',
-  },
-  cartIconText: {
-    fontSize: 14,
+    marginRight: 8,
   },
   headerBrandTitle: {
-    fontSize: 17,
-    fontWeight: '900',
     color: '#FFFFFF',
+    fontSize: 17,
+    fontWeight: '800',
     letterSpacing: 0.5,
   },
   headerRightActions: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 12,
   },
   notificationBtn: {
+    padding: 6,
+    marginLeft: 8,
     position: 'relative',
-    width: 34,
-    height: 34,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  bellIcon: {
-    fontSize: 18,
   },
   badgeCircle: {
     position: 'absolute',
     top: 2,
     right: 2,
-    width: 15,
-    height: 15,
-    borderRadius: 7.5,
-    backgroundColor: '#FFFFFF',
+    width: 16,
+    height: 16,
+    borderRadius: 8,
+    backgroundColor: '#EF4444',
     alignItems: 'center',
     justifyContent: 'center',
   },
   badgeText: {
-    fontSize: 9,
-    fontWeight: '800',
-    color: '#FF6A1A',
-  },
-  profileAvatarPill: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    borderWidth: 1.5,
-    borderColor: '#FFFFFF',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  avatarInner: {
-    width: 26,
-    height: 26,
-    borderRadius: 13,
-    backgroundColor: 'rgba(255, 255, 255, 0.3)',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  avatarLetter: {
     color: '#FFFFFF',
-    fontSize: 13,
+    fontSize: 10,
     fontWeight: '800',
   },
   scrollContent: {
-    paddingHorizontal: 16,
-    paddingTop: 16,
-    paddingBottom: 24,
+    padding: 16,
   },
   greetingSection: {
-    marginBottom: 16,
+    padding: 16,
+    borderRadius: 16,
+    borderWidth: 1,
+    marginBottom: 14,
   },
   greetingTitle: {
     fontSize: 20,
     fontWeight: '800',
-    color: '#111520',
-    marginBottom: 4,
-  },
-  greetingMetaRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
-  greetingSubtitle: {
-    fontSize: 12.5,
-    color: '#64748B',
   },
   greetingDate: {
-    fontSize: 12,
+    fontSize: 14,
     fontWeight: '600',
-    color: '#64748B',
+    marginTop: 4,
   },
   kpiGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: 12,
-    marginBottom: 16,
+    justifyContent: 'space-between',
+    marginBottom: 14,
   },
   kpiCard: {
-    width: (screenWidth - 44) / 2,
-    backgroundColor: '#FFFFFF',
+    width: '48.5%',
     borderRadius: 14,
-    padding: 14,
     borderWidth: 1,
-    borderColor: '#F0EBE6',
-    shadowColor: '#000',
-    shadowOpacity: 0.02,
-    shadowRadius: 4,
-    elevation: 1,
-  },
-  kpiBorderOrange: {
-    borderColor: '#FFE4D4',
-  },
-  kpiBorderRed: {
-    borderColor: '#FEE2E2',
-  },
-  kpiBorderBlue: {
-    borderColor: '#DBEAFE',
-  },
-  kpiBorderGreen: {
-    borderColor: '#D1FAE5',
+    padding: 14,
+    marginBottom: 11,
   },
   kpiTopRow: {
     flexDirection: 'row',
+    alignItems: 'center',
     justifyContent: 'space-between',
-    alignItems: 'flex-start',
-    marginBottom: 10,
+    marginBottom: 8,
   },
   statIconBox: {
-    width: 36,
-    height: 36,
-    borderRadius: 9,
+    width: 34,
+    height: 34,
+    borderRadius: 10,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  rupeeIcon: {
-    color: '#FFFFFF',
-    fontSize: 18,
-    fontWeight: '900',
+  kpiBadge: {
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 6,
   },
-  statEmoji: {
-    fontSize: 16,
-  },
-  miniBars: {
-    flexDirection: 'row',
-    alignItems: 'flex-end',
-    gap: 2.5,
-    height: 18,
-  },
-  miniBar: {
-    width: 3.5,
-    borderRadius: 1.5,
+  kpiBadgeText: {
+    fontSize: 11,
+    fontWeight: '700',
   },
   kpiLabel: {
     fontSize: 12,
-    color: '#64748B',
-    fontWeight: '500',
-    marginBottom: 2,
-  },
-  kpiValue: {
-    fontSize: 19,
-    fontWeight: '800',
-    color: '#111520',
+    fontWeight: '600',
     marginBottom: 4,
   },
-  trendRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  trendGreen: {
-    fontSize: 12,
-    fontWeight: '700',
-    color: '#10B981',
-  },
-  kpiSub: {
-    fontSize: 11.5,
-    color: '#64748B',
+  kpiValue: {
+    fontSize: 18,
+    fontWeight: '800',
   },
   chartCard: {
-    backgroundColor: '#FFFFFF',
     borderRadius: 16,
-    padding: 16,
     borderWidth: 1,
-    borderColor: '#F0EBE6',
-    marginBottom: 16,
-    shadowColor: '#000',
-    shadowOpacity: 0.02,
-    shadowRadius: 4,
-    elevation: 1,
+    padding: 16,
+    marginBottom: 14,
   },
   chartHeader: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
     alignItems: 'center',
+    justifyContent: 'space-between',
     marginBottom: 12,
   },
   chartTitle: {
-    fontSize: 15,
+    fontSize: 17,
     fontWeight: '700',
-    color: '#111520',
   },
   timeframeBadge: {
-    paddingHorizontal: 10,
-    paddingVertical: 4,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
     borderRadius: 8,
     borderWidth: 1,
-    borderColor: '#E2E8F0',
   },
   timeframeText: {
-    fontSize: 12,
-    fontWeight: '600',
-    color: '#64748B',
+    fontSize: 12.5,
+    fontWeight: '700',
   },
   chartTooltipBanner: {
-    backgroundColor: '#0F172A',
+    backgroundColor: 'rgba(255, 106, 26, 0.12)',
     borderRadius: 8,
-    paddingVertical: 4,
-    paddingHorizontal: 10,
+    padding: 8,
     marginBottom: 8,
-    alignSelf: 'center',
+    alignItems: 'center',
   },
   chartTooltipText: {
-    color: '#FFFFFF',
+    color: '#FF6A1A',
+    fontWeight: '700',
+    fontSize: 12,
+  },
+  svgPlotWrapper: {
+    width: '100%',
+    alignItems: 'center',
+  },
+  chartDaysRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    width: '100%',
+    paddingHorizontal: 10,
+    marginTop: 6,
+  },
+  dayTextWrap: {
+    padding: 4,
+  },
+  dayText: {
     fontSize: 11.5,
     fontWeight: '600',
   },
-  chartBodyWrapper: {
-    height: 160,
-    marginVertical: 4,
-    position: 'relative',
-    justifyContent: 'space-between',
-  },
-  gridOverlay: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 22,
-    justifyContent: 'space-between',
-  },
-  gridRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-  },
-  axisLabelLeft: {
-    width: 26,
-    fontSize: 9,
-    color: '#94A3B8',
-    textAlign: 'right',
-    marginRight: 6,
-  },
-  axisLabelRight: {
-    width: 24,
-    fontSize: 9,
-    color: '#94A3B8',
-    textAlign: 'left',
-    marginLeft: 6,
-  },
-  gridDashedLine: {
-    flex: 1,
-    height: 1,
-    backgroundColor: '#F3EFEA',
-  },
-  gridSolidLine: {
-    backgroundColor: '#E5DFD7',
-  },
-  barsPlotArea: {
-    position: 'absolute',
-    left: 32,
-    right: 32,
-    top: 0,
-    bottom: 0,
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-  },
-  dayColumn: {
-    flex: 1,
-    alignItems: 'center',
-    height: '100%',
-  },
-  columnInnerTrack: {
-    flex: 1,
-    width: '100%',
-    alignItems: 'center',
-    justifyContent: 'flex-end',
-    position: 'relative',
-  },
-  salesBarShape: {
-    width: 14,
-    backgroundColor: '#FF6A1A',
-    borderTopLeftRadius: 4,
-    borderTopRightRadius: 4,
-    opacity: 0.85,
-  },
-  salesBarSelected: {
-    backgroundColor: '#EA580C',
-    opacity: 1,
+  sectionCard: {
+    borderRadius: 16,
     borderWidth: 1,
-    borderColor: '#0B0B2B',
+    padding: 16,
+    marginBottom: 14,
   },
-  orderPointMarker: {
-    position: 'absolute',
-    zIndex: 10,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  orderPointDot: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-    backgroundColor: '#FFFFFF',
-    borderWidth: 2,
-    borderColor: '#EA580C',
-  },
-  dayLabelText: {
-    fontSize: 10,
-    color: '#64748B',
-    fontWeight: '600',
-    marginTop: 6,
-  },
-  dayLabelSelected: {
-    color: '#FF6A1A',
-    fontWeight: '800',
-  },
-  chartLegend: {
-    flexDirection: 'row',
-    justifyContent: 'center',
-    gap: 24,
-    paddingTop: 10,
-    borderTopWidth: 1,
-    borderTopColor: '#F8F5F2',
-  },
-  legendItem: {
+  cardHeaderRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 6,
-  },
-  legendDot: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-  },
-  legendLineWrap: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 1.5,
-  },
-  legendLine: {
-    width: 6,
-    height: 2,
-    backgroundColor: '#EA580C',
-  },
-  legendCircle: {
-    width: 5,
-    height: 5,
-    borderRadius: 2.5,
-    borderWidth: 1.5,
-    borderColor: '#EA580C',
-    backgroundColor: '#FFFFFF',
-  },
-  legendText: {
-    fontSize: 12,
-    color: '#64748B',
-    fontWeight: '600',
-  },
-  quickAccessSection: {
-    marginBottom: 16,
-  },
-  sectionHeader: {
-    flexDirection: 'row',
     justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 10,
+    marginBottom: 14,
   },
   sectionTitle: {
-    fontSize: 15,
+    fontSize: 17,
     fontWeight: '700',
-    color: '#111520',
-  },
-  viewAllText: {
-    fontSize: 12.5,
-    fontWeight: '600',
-    color: '#FF6A1A',
+    marginBottom: 12,
   },
   quickGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: 8,
+    justifyContent: 'space-between',
   },
   quickTile: {
-    width: (screenWidth - 56) / 4,
-    backgroundColor: '#FFFFFF',
+    width: '23%',
     borderRadius: 12,
-    paddingVertical: 12,
-    alignItems: 'center',
     borderWidth: 1,
-    borderColor: '#F0EBE6',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 12,
+    marginBottom: 10,
   },
-  quickIconBox: {
-    width: 38,
-    height: 38,
+  quickIconWrap: {
+    width: 40,
+    height: 40,
     borderRadius: 10,
-    backgroundColor: '#FFF4EC',
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: 6,
   },
-  quickEmoji: {
-    fontSize: 18,
-  },
   quickLabel: {
-    fontSize: 11.5,
-    fontWeight: '700',
-    color: '#111520',
-  },
-  sectionCard: {
-    backgroundColor: '#FFFFFF',
-    borderRadius: 16,
-    padding: 16,
-    borderWidth: 1,
-    borderColor: '#F0EBE6',
-    marginBottom: 16,
+    fontSize: 11,
+    fontWeight: '600',
+    textAlign: 'center',
   },
   activitiesList: {
-    gap: 12,
+    marginTop: 2,
   },
   activityRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 10,
+    paddingVertical: 10,
+    borderBottomWidth: 1,
   },
   actIconWrap: {
     width: 32,
     height: 32,
     borderRadius: 8,
-    backgroundColor: '#FFF4EC',
     alignItems: 'center',
     justifyContent: 'center',
   },
   actTitle: {
-    fontSize: 13,
+    fontSize: 13.5,
     fontWeight: '700',
-    color: '#111520',
   },
   actDesc: {
-    fontSize: 11.5,
-    color: '#64748B',
+    fontSize: 12,
+    marginTop: 2,
   },
   actTime: {
     fontSize: 11,
-    color: '#94A3B8',
   },
   lowStockTable: {
-    gap: 10,
+    marginTop: 2,
   },
   lowStockRow: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingVertical: 4,
-  },
-  lowStockLeft: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-    flex: 1,
-  },
-  lowStockEmoji: {
-    fontSize: 16,
+    paddingVertical: 10,
+    borderBottomWidth: 1,
   },
   lowStockName: {
-    fontSize: 13,
+    fontSize: 14,
     fontWeight: '600',
-    color: '#111520',
   },
   lowStockQty: {
-    fontSize: 12.5,
-    fontWeight: '700',
-    color: '#EF4444',
-    marginRight: 12,
+    fontSize: 12,
+    marginTop: 2,
   },
   statusPill: {
-    paddingHorizontal: 8,
-    paddingVertical: 3,
-    borderRadius: 10,
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 8,
+    borderWidth: 1,
   },
-  statusPillRed: {
-    backgroundColor: '#FEE2E2',
-  },
-  statusPillAmber: {
-    backgroundColor: '#FEF3C7',
-  },
-  statusPillText: {
-    fontSize: 10.5,
+  statusText: {
+    fontSize: 11,
     fontWeight: '700',
   },
-  statusTextRed: {
-    color: '#DC2626',
+  ordersList: {
+    marginTop: 2,
   },
-  statusTextAmber: {
-    color: '#D97706',
+  orderCard: {
+    borderRadius: 12,
+    borderWidth: 1,
+    padding: 12,
+    marginBottom: 10,
+  },
+  orderTopRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 6,
+  },
+  orderId: {
+    fontSize: 13.5,
+    fontWeight: '700',
+  },
+  orderAmount: {
+    fontSize: 15,
+    fontWeight: '800',
+  },
+  orderBottomRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  orderCust: {
+    fontSize: 12,
+  },
+  orderDate: {
+    fontSize: 11.5,
+    fontWeight: '500',
   },
   modalBackdrop: {
     flex: 1,
-    backgroundColor: 'rgba(11, 11, 43, 0.4)',
-    justifyContent: 'center',
+    backgroundColor: 'rgba(0,0,0,0.6)',
     alignItems: 'center',
-    padding: 20,
+    justifyContent: 'center',
+    padding: 24,
   },
-  notificationsCard: {
+  setupCard: {
     width: '100%',
-    maxWidth: 320,
-    backgroundColor: '#FFFFFF',
-    borderRadius: 16,
-    padding: 20,
+    borderRadius: 20,
+    padding: 22,
+    alignItems: 'center',
   },
-  modalHeaderTitle: {
-    fontSize: 16,
-    fontWeight: '800',
-    color: '#111520',
+  setupIconBox: {
+    width: 64,
+    height: 64,
+    borderRadius: 32,
+    backgroundColor: 'rgba(255, 106, 26, 0.15)',
+    alignItems: 'center',
+    justifyContent: 'center',
     marginBottom: 14,
   },
-  notifItem: {
-    backgroundColor: '#F8F7F5',
-    borderRadius: 10,
-    padding: 10,
+  setupTitle: {
+    fontSize: 19,
+    fontWeight: '800',
+    textAlign: 'center',
     marginBottom: 8,
   },
-  notifAlertTitle: {
-    fontSize: 12.5,
-    fontWeight: '700',
-    color: '#EF4444',
-    marginBottom: 2,
+  setupSubtitle: {
+    fontSize: 13.5,
+    lineHeight: 20,
+    textAlign: 'center',
+    marginBottom: 20,
   },
-  notifSuccessTitle: {
-    fontSize: 12.5,
-    fontWeight: '700',
-    color: '#10B981',
-    marginBottom: 2,
-  },
-  notifInfoTitle: {
-    fontSize: 12.5,
-    fontWeight: '700',
-    color: '#3B82F6',
-    marginBottom: 2,
-  },
-  notifDesc: {
-    fontSize: 11.5,
-    color: '#475569',
-  },
-  modalCloseBtn: {
-    marginTop: 10,
-    paddingVertical: 10,
-    borderRadius: 8,
-    backgroundColor: '#FF6A1A',
+  setupActionBtn: {
+    width: '100%',
+    height: 48,
+    borderRadius: 12,
     alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 12,
   },
-  modalCloseBtnText: {
+  setupActionText: {
     color: '#FFFFFF',
+    fontSize: 15,
     fontWeight: '700',
-    fontSize: 13,
+  },
+  setupLaterBtn: {
+    paddingVertical: 8,
+  },
+  drawerBackdrop: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.5)',
   },
   drawerCard: {
-    width: '100%',
-    maxWidth: 340,
-    backgroundColor: '#FFFFFF',
-    borderRadius: 20,
-    padding: 20,
+    width: '78%',
+    height: '100%',
+    paddingTop: Platform.OS === 'ios' ? 48 : 28,
+    paddingHorizontal: 18,
+    paddingBottom: 24,
   },
   drawerHeader: {
     flexDirection: 'row',
     alignItems: 'center',
     paddingBottom: 16,
     borderBottomWidth: 1,
-    borderBottomColor: '#F0EBE6',
-    marginBottom: 16,
+    borderBottomColor: 'rgba(0,0,0,0.08)',
+    marginBottom: 12,
   },
   drawerAvatar: {
     width: 44,
     height: 44,
     borderRadius: 22,
-    backgroundColor: '#FF6A1A',
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -1300,44 +1153,86 @@ const styles = StyleSheet.create({
   },
   drawerUserName: {
     fontSize: 16,
-    fontWeight: '800',
-    color: '#111520',
+    fontWeight: '700',
   },
   drawerUserSub: {
-    fontSize: 12,
-    color: '#64748B',
+    fontSize: 12.5,
+    fontWeight: '600',
+    marginTop: 2,
   },
   drawerList: {
-    gap: 8,
-    marginBottom: 16,
+    flex: 1,
   },
   drawerItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: 10,
-    paddingHorizontal: 12,
-    borderRadius: 10,
-    backgroundColor: '#F8F7F5',
+    paddingVertical: 13,
+    borderBottomWidth: 1,
   },
-  drawerItemIcon: {
-    fontSize: 18,
+  drawerIconBox: {
+    width: 32,
+    alignItems: 'center',
     marginRight: 12,
   },
   drawerItemText: {
-    fontSize: 14,
+    fontSize: 14.5,
     fontWeight: '600',
-    color: '#111520',
   },
   logoutBtn: {
-    paddingVertical: 12,
-    borderRadius: 10,
-    backgroundColor: '#FEE2E2',
+    flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 12,
+    borderRadius: 12,
+    backgroundColor: 'rgba(239, 68, 68, 0.1)',
+    marginTop: 10,
   },
   logoutBtnText: {
-    color: '#DC2626',
-    fontWeight: '700',
+    color: '#EF4444',
     fontSize: 14,
+    fontWeight: '700',
+    marginLeft: 8,
+  },
+  notificationsCard: {
+    width: '100%',
+    borderRadius: 18,
+    padding: 20,
+  },
+  modalHeaderTitle: {
+    fontSize: 17,
+    fontWeight: '700',
+    marginBottom: 14,
+  },
+  notifItem: {
+    marginBottom: 12,
+    paddingBottom: 10,
+    borderBottomWidth: 1,
+    borderBottomColor: 'rgba(0,0,0,0.05)',
+  },
+  notifAlertTitle: {
+    fontSize: 13.5,
+    fontWeight: '700',
+    color: '#F59E0B',
+    marginBottom: 2,
+  },
+  notifSuccessTitle: {
+    fontSize: 13.5,
+    fontWeight: '700',
+    color: '#10B981',
+    marginBottom: 2,
+  },
+  notifInfoTitle: {
+    fontSize: 13.5,
+    fontWeight: '700',
+    color: '#3B82F6',
+    marginBottom: 2,
+  },
+  modalCloseBtn: {
+    height: 42,
+    borderRadius: 10,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: 6,
   },
 });
 

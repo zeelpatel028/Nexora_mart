@@ -28,59 +28,59 @@ BACKUP_JSON = os.path.join(os.path.dirname(__file__), "database_backup", "nmart_
 SYSTEM_SHOP_CATEGORIES = [
     {
         "id": 1,
-        "name": "Supermarket & Grocery",
+        "name": "Grocery Store",
         "code": "GROCERY",
         "description": "Food, beverages, household groceries, staples, and fresh produce",
         "icon": "shopping-cart"
     },
     {
         "id": 2,
-        "name": "Electronics & Mobile",
-        "code": "ELECTRONICS",
-        "description": "Smartphones, laptops, accessories, consumer electronics, and appliances",
-        "icon": "smartphone"
-    },
-    {
-        "id": 3,
-        "name": "Clothing & Fashion",
+        "name": "Clothing Store",
         "code": "CLOTHING",
         "description": "Men, women, kids apparel, fashion wear, garments, and fabrics",
         "icon": "shirt"
     },
     {
-        "id": 4,
-        "name": "Pharmacy & Medical",
+        "id": 3,
+        "name": "Medical / Pharmacy Store",
         "code": "PHARMACY",
-        "description": "Medicines, healthcare supplies, surgicals, and wellness products",
+        "description": "Medicines, healthcare supplies, pharmaceuticals, and wellness products",
         "icon": "cross"
     },
     {
+        "id": 4,
+        "name": "Mobile & Electronics Store",
+        "code": "ELECTRONICS",
+        "description": "Smartphones, laptops, accessories, consumer electronics, and appliances",
+        "icon": "smartphone"
+    },
+    {
         "id": 5,
-        "name": "Footwear",
-        "code": "FOOTWEAR",
-        "description": "Shoes, sandals, sneakers, formal footwear, and shoe accessories",
-        "icon": "footprints"
+        "name": "Plastic Store",
+        "code": "PLASTIC",
+        "description": "Plastic containers, household ware, homeware, and industrial plastics",
+        "icon": "box"
     },
     {
         "id": 6,
-        "name": "Hardware & Electrical",
-        "code": "HARDWARE",
-        "description": "Tools, electrical fittings, construction materials, and plumbing",
-        "icon": "hammer"
+        "name": "Handloom store",
+        "code": "HANDLOOM",
+        "description": "Traditional textiles, handmade fabrics, sarees, and home linen",
+        "icon": "layers"
     },
     {
         "id": 7,
-        "name": "Book Store & Stationery",
-        "code": "BOOKSTORE",
-        "description": "Books, novels, educational materials, office stationery, and art supplies",
-        "icon": "book-open"
+        "name": "Furniture Store",
+        "code": "FURNITURE",
+        "description": "Home, office, wooden furniture, interior decor, and furnishings",
+        "icon": "armchair"
     },
     {
         "id": 8,
-        "name": "Cosmetics & Beauty",
-        "code": "COSMETICS",
-        "description": "Skincare, makeup, perfumes, hair care, and personal grooming",
-        "icon": "sparkles"
+        "name": "Agro Store",
+        "code": "AGRO",
+        "description": "Agricultural tools, seeds, fertilizers, pesticides, and farm equipment",
+        "icon": "sprout"
     }
 ]
 

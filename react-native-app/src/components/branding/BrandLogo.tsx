@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text, Image, StyleSheet } from 'react-native';
+import { View, Text, StyleSheet, Image } from 'react-native';
 import { useTheme } from '../../hooks/useTheme';
 
 interface BrandLogoProps {
@@ -8,69 +8,119 @@ interface BrandLogoProps {
   showTitle?: boolean;
   showTagline?: boolean;
   tagline?: string;
+  variant?: 'standard' | '3d';
   style?: object;
 }
 
 export const BrandLogo: React.FC<BrandLogoProps> = ({
-  size = 88,
-  textSize = 25,
+  size = 50,
+  textSize = 26,
   showTitle = true,
   showTagline = true,
-  tagline = 'Smart Shopping, Delivered Fresh',
+  tagline = 'All-in-One Store Management',
+  variant = 'standard',
   style,
 }) => {
-  const { isDark, colors, brandColors } = useTheme();
+  const { isDark, brandColors } = useTheme();
 
   return (
     <View style={[styles.container, style]}>
-      {/* Ambient Orange Glow behind Logo */}
-      <View
-        style={[
-          styles.glow,
-          {
-            width: size * 1.45,
-            height: size * 1.45,
-            borderRadius: (size * 1.45) / 2,
-            backgroundColor: isDark
-              ? 'rgba(255, 106, 26, 0.22)'
-              : 'rgba(255, 122, 26, 0.16)',
-          },
-        ]}
-      />
+      {variant === '3d' ? (
+        <View style={[styles.imageWrapper, { width: size * 1.5, height: size * 1.5 }]}>
+          <Image
+            source={require('../../assets/logo-3d.png')}
+            style={{ width: size * 1.5, height: size * 1.5 }}
+            resizeMode="contain"
+          />
+        </View>
+      ) : (
+        /* Reference UI Match: 3 Speed Lines + Orange Rounded M Badge */
+        <View style={styles.iconRow}>
+          {/* 3 Horizontal Speed/Motion Lines */}
+          <View style={styles.speedLinesCol}>
+            <View
+              style={[
+                styles.speedLine,
+                {
+                  width: size * 0.32,
+                  height: Math.max(3, size * 0.07),
+                  backgroundColor: brandColors.primary,
+                },
+              ]}
+            />
+            <View
+              style={[
+                styles.speedLine,
+                {
+                  width: size * 0.48,
+                  height: Math.max(3, size * 0.07),
+                  backgroundColor: brandColors.primary,
+                },
+              ]}
+            />
+            <View
+              style={[
+                styles.speedLine,
+                {
+                  width: size * 0.32,
+                  height: Math.max(3, size * 0.07),
+                  backgroundColor: brandColors.primary,
+                },
+              ]}
+            />
+          </View>
 
-      {/* 3D M Logo Image */}
-      <View style={[styles.imageWrapper, { width: size, height: size }]}>
-        <Image
-          source={require('../../assets/logo-m.png')}
-          style={{ width: size, height: size, borderRadius: 22 }}
-          resizeMode="contain"
-        />
-      </View>
+          {/* Orange Rounded Badge with Stylized "M" */}
+          <View
+            style={[
+              styles.badge,
+              {
+                width: size,
+                height: size,
+                borderRadius: size * 0.3,
+                backgroundColor: brandColors.primary,
+              },
+            ]}
+          >
+            <Text
+              style={[
+                styles.mLetter,
+                {
+                  fontSize: size * 0.62,
+                  lineHeight: size * 0.72,
+                },
+              ]}
+            >
+              M
+            </Text>
+          </View>
+        </View>
+      )}
 
       {/* NEXORA MART Wordmark */}
       {showTitle && (
         <View style={styles.titleRow}>
           <Text
             style={[
-              styles.brandFirst,
+              styles.brandNexora,
               {
                 fontSize: textSize,
-                color: isDark ? '#FFFFFF' : '#0B0B2B',
+                color: isDark ? '#FFFFFF' : '#111827',
               },
             ]}
           >
-            NEXORA{' '}
+            Nexora{' '}
           </Text>
           <Text
             style={[
-              styles.brandSecond,
+              styles.brandMart,
               {
                 fontSize: textSize,
                 color: brandColors.primary,
               },
             ]}
           >
-            MART
+            Mart
           </Text>
         </View>
       )}
@@ -80,7 +130,7 @@ export const BrandLogo: React.FC<BrandLogoProps> = ({
         <Text
           style={[
             styles.tagline,
-            { color: isDark ? '#8E9CAE' : '#6B6F80' },
+            { color: isDark ? '#9CA3AF' : '#6B7280' },
           ]}
         >
           {tagline}
@@ -94,42 +144,61 @@ const styles = StyleSheet.create({
   container: {
     alignItems: 'center',
     justifyContent: 'center',
-    position: 'relative',
-  },
-  glow: {
-    position: 'absolute',
-    top: -10,
-    zIndex: -1,
   },
   imageWrapper: {
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: 8,
+    marginBottom: 6,
+  },
+  iconRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 10,
+  },
+  speedLinesCol: {
+    alignItems: 'flex-end',
+    justifyContent: 'space-between',
+    height: 28,
+    marginRight: 6,
+  },
+  speedLine: {
+    borderRadius: 3,
+  },
+  badge: {
+    alignItems: 'center',
+    justifyContent: 'center',
     shadowColor: '#FF6A1A',
-    shadowOffset: { width: 0, height: 6 },
+    shadowOffset: { width: 0, height: 3 },
     shadowOpacity: 0.35,
-    shadowRadius: 16,
-    elevation: 8,
+    shadowRadius: 6,
+    elevation: 4,
+  },
+  mLetter: {
+    color: '#FFFFFF',
+    fontWeight: '900',
+    fontStyle: 'italic',
+    textAlign: 'center',
   },
   titleRow: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    marginTop: 2,
   },
-  brandFirst: {
-    fontWeight: '700',
-    letterSpacing: 1.2,
-  },
-  brandSecond: {
+  brandNexora: {
     fontWeight: '800',
-    letterSpacing: 1.2,
+    letterSpacing: -0.5,
+  },
+  brandMart: {
+    fontWeight: '800',
+    letterSpacing: -0.5,
   },
   tagline: {
-    fontSize: 12,
+    fontSize: 13.5,
     fontWeight: '400',
     marginTop: 4,
-    letterSpacing: 0.3,
+    textAlign: 'center',
+    letterSpacing: -0.2,
   },
 });
 

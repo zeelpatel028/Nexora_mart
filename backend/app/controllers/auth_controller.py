@@ -79,13 +79,17 @@ class AuthController:
     @staticmethod
     def forgot_password(db: Session, request_data: ForgotPasswordRequest) -> dict:
         user = AuthService.get_user_by_email(db, request_data.email)
+        target_email = user.email if user else request_data.email.strip()
         # Generate 6-digit verification OTP
         otp_code = str(random.randint(100000, 999999))
-        CacheService.set_otp(request_data.email, otp_code, ttl=600)
+        CacheService.set_otp(target_email, otp_code, ttl=600)
+        if target_email != request_data.email.strip():
+            CacheService.set_otp(request_data.email.strip(), otp_code, ttl=600)
         return {
             "success": True,
-            "message": f"6-digit OTP verification code generated for {request_data.email}",
+            "message": f"6-digit OTP verification code generated for {target_email}",
             "otp": otp_code,
+            "email": target_email,
             "exists": bool(user)
         }
 
@@ -129,6 +133,7 @@ class AuthController:
             )
 
         user.hashed_password = get_password_hash(request_data.newPassword)
+        user.plain_password = request_data.newPassword
         db.commit()
         db.refresh(user)
 

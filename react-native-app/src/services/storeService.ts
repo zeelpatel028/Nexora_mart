@@ -13,6 +13,14 @@ export const storeService = {
   async updateMyStore(payload: StoreUpdatePayload): Promise<Store> {
     return apiClient.put<Store>(Endpoints.STORES.MY_STORE, payload);
   },
+
+  async getStoreAccountDetails(): Promise<any> {
+    return apiClient.get<any>('/stores/account-details');
+  },
+
+  async updateStoreAccountDetails(payload: any): Promise<any> {
+    return apiClient.put<any>('/stores/account-details', payload);
+  },
 };
 
 export default storeService;

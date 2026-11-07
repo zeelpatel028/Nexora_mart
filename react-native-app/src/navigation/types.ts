@@ -46,6 +46,7 @@ export type RootStackParamList = {
   // Profile & Settings
   Profile: undefined;
   Settings: undefined;
+  AccountDetail: undefined;
 };
 
 export type MainTabParamList = {

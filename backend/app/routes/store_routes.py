@@ -232,3 +232,214 @@ def update_my_store(
     db.commit()
     db.refresh(store)
     return _format_store_response(store)
+
+@router.get("/account-details")
+def get_store_account_details(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    """Retrieve comprehensive store account details for the Account Detail Page"""
+    store = StoreService.get_user_store(db, current_user)
+    addr = store.addresses[0] if store.addresses else None
+    biz = store.business_details
+    cfg = store.configuration
+    owner = store.owner_details
+    cat = store.shop_category
+
+    reg_date = store.registration_date or store.created_at.strftime("%d-%m-%Y") if store.created_at else "07-11-2026"
+
+    # Fetch document sequences for prefixes
+    seqs = {s.document_type: s.prefix for s in store.sequences} if store.sequences else {}
+
+    return {
+        "basic_store_info": {
+            "store_id": getattr(store, "store_code", None) or f"STR{store.id:03d}",
+            "store_name": store.name,
+            "store_code": store.code or f"NXM{store.id:03d}",
+            "store_type": getattr(store, "store_type", None) or (cat.name if cat else "Supermarket"),
+            "store_category": getattr(store, "store_category", None) or "Retail",
+            "store_description": getattr(store, "description", None) or "Grocery & General Store",
+            "store_logo": store.logo_url or "logo.png",
+            "store_image": getattr(store, "image_url", None) or "store.jpg",
+            "store_status": getattr(store, "store_status", None) or ("Active" if store.is_active else "Inactive"),
+            "registration_date": reg_date
+        },
+        "store_owner_details": {
+            "owner_id": getattr(owner, "owner_id", None) or f"OWN{current_user.id:03d}",
+            "owner_name": owner.owner_name if owner else current_user.full_name,
+            "owner_email": owner.contact_email if owner and owner.contact_email else current_user.email,
+            "owner_phone": owner.contact_phone if owner and owner.contact_phone else current_user.phone,
+            "alternate_phone": getattr(owner, "alternate_phone", None) or "",
+            "owner_address": getattr(owner, "owner_address", None) or (addr.city if addr else "Ahmedabad"),
+            "owner_profile_image": getattr(owner, "owner_profile_image", None) or "owner.png"
+        },
+        "store_address_details": {
+            "address_line1": addr.address_line1 if addr else "",
+            "landmark": getattr(addr, "landmark", None) or "",
+            "city": addr.city if addr else "Ahmedabad",
+            "state": addr.state if addr else "Gujarat",
+            "district": getattr(addr, "district", None) or (addr.city if addr else "Ahmedabad"),
+            "country": addr.country if addr else "India",
+            "pincode": addr.postal_code if addr else "380001"
+        },
+        "business_details": {
+            "gst_number": biz.gstin if biz else "",
+            "pan_number": getattr(biz, "pan_number", None) or (owner.pan_number if owner else ""),
+            "business_registration_number": getattr(biz, "trade_license_no", None) or "",
+            "business_email": getattr(biz, "business_email", None) or (owner.contact_email if owner else current_user.email),
+            "business_phone": getattr(biz, "business_phone", None) or (owner.contact_phone if owner else current_user.phone)
+        },
+        "store_configuration": {
+            "store_opening_time": getattr(cfg, "store_opening_time", None) or "09:00 AM",
+            "store_closing_time": getattr(cfg, "store_closing_time", None) or "10:00 PM",
+            "working_days": getattr(cfg, "working_days", None) or "Monday - Saturday",
+            "currency": cfg.currency if hasattr(cfg, "currency") and cfg.currency else "INR (₹)",
+            "default_tax_rate": getattr(cfg, "tax_rate", 5.0) or 5.0,
+            "invoice_prefix": seqs.get("INVOICE", getattr(cfg, "invoice_prefix", "INV")),
+            "invoice_starting_number": getattr(cfg, "invoice_starting_number", 1) or 1,
+            "low_stock_alert": getattr(cfg, "low_stock_threshold", 5) or 5,
+            "return_period": getattr(cfg, "return_period", None) or "7 Days",
+            "store_language": getattr(cfg, "store_language", None) or "English"
+        },
+        "system_information": {
+            "created_at": store.created_at.strftime("%d-%m-%Y %H:%M:%S") if store.created_at else "07-11-2026 10:00:00",
+            "updated_at": store.updated_at.strftime("%d-%m-%Y %H:%M:%S") if store.updated_at else "07-11-2026 23:38:00",
+            "created_by": getattr(store, "created_by", None) or f"{current_user.full_name} (OWN{current_user.id:03d})",
+            "updated_by": getattr(store, "updated_by", None) or "Owner",
+            "last_login": current_user.last_login.strftime("%d-%m-%Y %H:%M:%S") if getattr(current_user, "last_login", None) else "07-11-2026 23:30:00",
+            "account_status": "Active & Verified" if current_user.is_active else "Inactive"
+        },
+        "store_prefixes": {
+            "invoice": seqs.get("INVOICE", "INV"),
+            "debit_customer": seqs.get("DEBIT_CUSTOMER", "DBC"),
+            "walkin_customer": seqs.get("WALKIN_CUSTOMER", "WIC"),
+            "supplier": seqs.get("SUPPLIER", "SUP"),
+            "order": seqs.get("ORDER", "ORD"),
+            "multi_store_code": f"STR{store.id:03d}",
+            "multi_store_example": f"INV-STR{store.id:03d}-000001"
+        }
+    }
+
+@router.put("/account-details")
+def update_store_account_details(
+    payload: dict,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    """Save & update full store account details from the Account Detail Page"""
+    store = StoreService.get_user_store(db, current_user)
+    basic = payload.get("basic_store_info", {})
+    owner_info = payload.get("store_owner_details", {})
+    address_info = payload.get("store_address_details", {})
+    biz_info = payload.get("business_details", {})
+    config_info = payload.get("store_configuration", {})
+    prefix_info = payload.get("store_prefixes", {})
+
+    if basic.get("store_name"):
+        store.name = basic["store_name"]
+    if basic.get("store_code"):
+        store.code = basic["store_code"]
+    if basic.get("store_type"):
+        store.store_type = basic["store_type"]
+    if basic.get("store_description"):
+        store.description = basic["store_description"]
+    if basic.get("store_status"):
+        store.store_status = basic["store_status"]
+
+    # Owner
+    if store.owner_details:
+        if owner_info.get("owner_name"):
+            store.owner_details.owner_name = owner_info["owner_name"]
+        if owner_info.get("owner_phone"):
+            store.owner_details.contact_phone = owner_info["owner_phone"]
+        if owner_info.get("alternate_phone"):
+            store.owner_details.alternate_phone = owner_info["alternate_phone"]
+        if owner_info.get("owner_email"):
+            store.owner_details.contact_email = owner_info["owner_email"]
+        if owner_info.get("owner_address"):
+            store.owner_details.owner_address = owner_info["owner_address"]
+
+    # Address
+    if store.addresses:
+        addr = store.addresses[0]
+        if address_info.get("address_line1"):
+            addr.address_line1 = address_info["address_line1"]
+        if address_info.get("landmark"):
+            addr.landmark = address_info["landmark"]
+        if address_info.get("city"):
+            addr.city = address_info["city"]
+        if address_info.get("state"):
+            addr.state = address_info["state"]
+        if address_info.get("district"):
+            addr.district = address_info["district"]
+        if address_info.get("country"):
+            addr.country = address_info["country"]
+        if address_info.get("pincode"):
+            addr.postal_code = address_info["pincode"]
+
+    # Business
+    if store.business_details:
+        biz = store.business_details
+        if biz_info.get("gst_number"):
+            biz.gstin = biz_info["gst_number"]
+        if biz_info.get("pan_number"):
+            biz.pan_number = biz_info["pan_number"]
+        if biz_info.get("business_registration_number"):
+            biz.trade_license_no = biz_info["business_registration_number"]
+        if biz_info.get("business_email"):
+            biz.business_email = biz_info["business_email"]
+        if biz_info.get("business_phone"):
+            biz.business_phone = biz_info["business_phone"]
+
+    # Config
+    if store.configuration:
+        cfg = store.configuration
+        if config_info.get("store_opening_time"):
+            cfg.store_opening_time = config_info["store_opening_time"]
+        if config_info.get("store_closing_time"):
+            cfg.store_closing_time = config_info["store_closing_time"]
+        if config_info.get("working_days"):
+            cfg.working_days = config_info["working_days"]
+        if config_info.get("default_tax_rate") is not None:
+            cfg.tax_rate = float(config_info["default_tax_rate"])
+        if config_info.get("invoice_prefix"):
+            cfg.invoice_prefix = config_info["invoice_prefix"]
+        if config_info.get("invoice_starting_number"):
+            cfg.invoice_starting_number = int(config_info["invoice_starting_number"])
+        if config_info.get("low_stock_alert"):
+            cfg.low_stock_threshold = int(config_info["low_stock_alert"])
+        if config_info.get("return_period"):
+            cfg.return_period = config_info["return_period"]
+        if config_info.get("store_language"):
+            cfg.store_language = config_info["store_language"]
+
+    # Prefixes (Document Sequences)
+    if prefix_info:
+        for doc_type, pfx in [
+            ("INVOICE", prefix_info.get("invoice")),
+            ("DEBIT_CUSTOMER", prefix_info.get("debit_customer")),
+            ("WALKIN_CUSTOMER", prefix_info.get("walkin_customer")),
+            ("SUPPLIER", prefix_info.get("supplier")),
+            ("ORDER", prefix_info.get("order")),
+        ]:
+            if pfx:
+                seq = db.query(DocumentSequence).filter(
+                    DocumentSequence.store_id == store.id,
+                    DocumentSequence.document_type == doc_type
+                ).first()
+                if seq:
+                    seq.prefix = pfx
+                else:
+                    new_seq = DocumentSequence(
+                        store_id=store.id,
+                        document_type=doc_type,
+                        prefix=pfx,
+                        next_number=1,
+                        padding=6,
+                        multi_store_code=f"STR{store.id:03d}",
+                        sample_example=f"{pfx}-STR{store.id:03d}-000001"
+                    )
+                    db.add(new_seq)
+
+    db.commit()
+    return {"success": True, "message": "Store account details updated successfully."}

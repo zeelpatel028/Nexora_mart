@@ -9,9 +9,11 @@ import {
   KeyboardAvoidingView,
   Platform,
   ActivityIndicator,
-  Modal,
   Alert,
   StatusBar,
+  Image,
+  Modal,
+  useWindowDimensions,
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
@@ -29,47 +31,60 @@ import {
   EyeIcon,
   EyeOffIcon,
   ArrowRightIcon,
-  ChevronDownIcon,
+  ArrowLeftIcon,
+  GoogleIcon,
   CheckIcon,
+  ChevronDownIcon,
+  SunIcon,
+  MoonIcon,
 } from '../../components/branding/Icons';
 import { isValidEmail, isValidPhone } from '../../utils/validators';
 
 type RegisterNavProp = NativeStackNavigationProp<RootStackParamList, 'Register'>;
 
-const STORE_TYPES = [
-  'Retail & Supermarket',
-  'Supermarket & Grocery',
-  'Electronics & Gadgets',
-  'Fashion & Apparel',
-  'Pharmacy & Healthcare',
-  'Fresh Fruits & Vegetables',
-  'General Retail',
+export const STORE_TYPES = [
+  'Grocery Store',
+  'Clothing Store',
+  'Medical / Pharmacy Store',
+  'Mobile & Electronics Store',
+  'Plastic Store',
+  'Handloom store',
+  'Furniture Store',
+  'Agro Store',
 ];
 
 export const RegisterScreen: React.FC = () => {
   const navigation = useNavigation<RegisterNavProp>();
   const { register } = useAuth();
-  const { isDark, colors, brandColors } = useTheme();
+  const { isDark, colors, brandColors, toggleTheme } = useTheme();
+  const { width } = useWindowDimensions();
 
-  const [fullName, setFullName] = useState('');
+  const [firstName, setFirstName] = useState('');
+  const [surname, setSurname] = useState('');
   const [email, setEmail] = useState('');
   const [phone, setPhone] = useState('');
-  const [storeType, setStoreType] = useState(STORE_TYPES[0]);
+  const [shopType, setShopType] = useState(STORE_TYPES[0]);
   const [password, setPassword] = useState('');
-  const [confirmPassword, setConfirmPassword] = useState('');
-  const [agreeTerms, setAgreeTerms] = useState(true);
 
+  const [showShopPicker, setShowShopPicker] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
-  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
-  const [showStorePicker, setShowStorePicker] = useState(false);
+  const [agreeTerms, setAgreeTerms] = useState(true);
   const [loading, setLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
 
   const [focusedField, setFocusedField] = useState<string | null>(null);
 
+  // Shop illustration responsive dimensions (aspect ratio ~1.96:1)
+  const illustrationWidth = Math.min(width * 0.72, 300);
+  const illustrationHeight = illustrationWidth / 1.96;
+
   const validate = () => {
-    if (!fullName.trim()) {
-      setErrorMsg('Please enter your full name');
+    if (!firstName.trim()) {
+      setErrorMsg('Please enter your first name');
+      return false;
+    }
+    if (!surname.trim()) {
+      setErrorMsg('Please enter your surname');
       return false;
     }
     if (!email.trim()) {
@@ -88,6 +103,10 @@ export const RegisterScreen: React.FC = () => {
       setErrorMsg('Please enter a valid phone number');
       return false;
     }
+    if (!shopType) {
+      setErrorMsg('Please select your shop type');
+      return false;
+    }
     if (!password) {
       setErrorMsg('Please enter a password');
       return false;
@@ -96,12 +115,8 @@ export const RegisterScreen: React.FC = () => {
       setErrorMsg('Password must be at least 6 characters');
       return false;
     }
-    if (password !== confirmPassword) {
-      setErrorMsg('Passwords do not match');
-      return false;
-    }
     if (!agreeTerms) {
-      setErrorMsg('Please accept the Terms & Conditions to proceed');
+      setErrorMsg('You must agree to the Terms & Conditions and Privacy Policy');
       return false;
     }
     return true;
@@ -111,37 +126,22 @@ export const RegisterScreen: React.FC = () => {
     setErrorMsg('');
     if (!validate()) return;
 
-    // Split Full Name into First Name & Surname for backend schema
-    const nameParts = fullName.trim().split(/\s+/);
-    const firstName = nameParts[0] || 'Merchant';
-    const surname = nameParts.slice(1).join(' ') || firstName;
-
     setLoading(true);
     try {
       await register({
-        firstName,
-        surname,
+        firstName: firstName.trim(),
+        surname: surname.trim(),
         email: email.trim().toLowerCase(),
         phone: phone.trim(),
-        storeType,
+        storeType: shopType,
         password,
       });
 
-      Alert.alert(
-        'Store Created 🎉',
-        `Welcome to Nexora Mart, ${firstName}! Your merchant workspace is active.`,
-        [
-          {
-            text: 'Launch Store',
-            onPress: () => {
-              navigation.reset({
-                index: 0,
-                routes: [{ name: 'MainTabs' }],
-              });
-            },
-          },
-        ]
-      );
+      // Navigate to Home screen with setup modal trigger
+      navigation.reset({
+        index: 0,
+        routes: [{ name: 'MainTabs' }],
+      });
     } catch (err: any) {
       const msg = err.message || 'Registration failed. Please try again.';
       setErrorMsg(msg);
@@ -150,20 +150,12 @@ export const RegisterScreen: React.FC = () => {
     }
   };
 
-  const getInputWrapperStyle = (fieldName: string) => {
-    const isFocused = focusedField === fieldName;
-    return [
-      styles.inputWrapper,
-      {
-        backgroundColor: isDark ? colors.inputBg : '#FFFFFF',
-        borderColor: isFocused
-          ? brandColors.primary
-          : isDark
-          ? colors.inputBorder
-          : '#E8ECEF',
-        borderWidth: isFocused ? 1.5 : 1,
-      },
-    ];
+  const handleGoogleSignUp = () => {
+    Alert.alert(
+      'Google Sign-Up',
+      'Connecting to Google authentication service...',
+      [{ text: 'OK' }]
+    );
   };
 
   return (
@@ -174,7 +166,7 @@ export const RegisterScreen: React.FC = () => {
         translucent
       />
 
-      {/* Background Waves */}
+      {/* Organic Top-Left & Bottom-Right Corner Waves */}
       <WaveBackground />
 
       <KeyboardAvoidingView
@@ -186,28 +178,77 @@ export const RegisterScreen: React.FC = () => {
           keyboardShouldPersistTaps="handled"
           showsVerticalScrollIndicator={false}
         >
-          {/* Top Branding Section */}
-          <View style={styles.topSection}>
-            <BrandLogo size={76} textSize={24} showTagline={false} />
+          {/* Top Bar with Back Button & Theme Toggle Button */}
+          <View style={styles.topBar}>
+            <TouchableOpacity
+              style={[
+                styles.navCircularBtn,
+                {
+                  backgroundColor: colors.toggleBg,
+                  borderColor: colors.toggleBorder,
+                  shadowColor: '#000000',
+                },
+              ]}
+              onPress={() => navigation.goBack()}
+              activeOpacity={0.75}
+              accessibilityLabel="Go Back"
+            >
+              <ArrowLeftIcon
+                size={18}
+                color={isDark ? '#FFFFFF' : '#111827'}
+              />
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={[
+                styles.navCircularBtn,
+                {
+                  backgroundColor: colors.toggleBg,
+                  borderColor: colors.toggleBorder,
+                  shadowColor: '#000000',
+                },
+              ]}
+              onPress={toggleTheme}
+              activeOpacity={0.75}
+              accessibilityLabel="Toggle Theme Mode"
+            >
+              {isDark ? (
+                <MoonIcon size={18} color="#FFFFFF" />
+              ) : (
+                <SunIcon size={19} color={brandColors.primary} />
+              )}
+            </TouchableOpacity>
           </View>
 
-          {/* Form Card */}
-          <View
-            style={[
-              styles.card,
-              {
-                backgroundColor: isDark ? colors.surface : '#FFFFFF',
-                borderColor: isDark ? colors.border : '#E8ECEF',
-                shadowColor: isDark ? '#000000' : brandColors.primary,
-              },
-            ]}
-          >
-            {/* Header: Title & Subtitle */}
-            <View style={styles.cardHeader}>
+          {/* Brand Logo & Wordmark Header */}
+          <View style={styles.logoSection}>
+            <BrandLogo size={46} textSize={25} />
+          </View>
+
+          {/* 3D Storefront Illustration */}
+          <View style={styles.illustrationSection}>
+            <Image
+              source={
+                isDark
+                  ? require('../../assets/shop-dark.png')
+                  : require('../../assets/shop-light.png')
+              }
+              style={{
+                width: illustrationWidth,
+                height: illustrationHeight,
+              }}
+              resizeMode="contain"
+            />
+          </View>
+
+          {/* Form Content Area */}
+          <View style={styles.formContainer}>
+            {/* Title & Subtitle */}
+            <View style={styles.headerBlock}>
               <Text
                 style={[
                   styles.title,
-                  { color: isDark ? '#FFFFFF' : '#0B0B2B' },
+                  { color: isDark ? '#FFFFFF' : '#111827' },
                 ]}
               >
                 Create Account
@@ -215,10 +256,10 @@ export const RegisterScreen: React.FC = () => {
               <Text
                 style={[
                   styles.subtitle,
-                  { color: isDark ? '#8E9CAE' : '#5F6375' },
+                  { color: isDark ? '#9CA3AF' : '#6B7280' },
                 ]}
               >
-                Sign up to continue to Nmart
+                Join Nexora Mart and manage your store easily
               </Text>
             </View>
 
@@ -229,41 +270,108 @@ export const RegisterScreen: React.FC = () => {
               </View>
             ) : null}
 
-            {/* 1. Full Name */}
-            <View style={getInputWrapperStyle('fullName')}>
-              <View style={styles.inputIconLeft}>
-                <UserIcon size={18} color={brandColors.primary} />
-              </View>
-              <TextInput
+            {/* 1. First Name & Surname Row */}
+            <View style={styles.nameRow}>
+              {/* First Name */}
+              <View
                 style={[
-                  styles.textInput,
-                  { color: isDark ? '#FFFFFF' : '#0B0B2B' },
+                  styles.inputWrapper,
+                  styles.nameInput,
+                  {
+                    backgroundColor: colors.inputBg,
+                    borderColor:
+                      focusedField === 'firstName'
+                        ? brandColors.primary
+                        : colors.inputBorder,
+                    borderWidth: focusedField === 'firstName' ? 1.5 : 1,
+                  },
                 ]}
-                placeholder="Full Name (e.g. Alex Morgan)"
-                placeholderTextColor={isDark ? '#768499' : '#94A3B8'}
-                value={fullName}
-                onChangeText={(text) => {
-                  setFullName(text);
-                  if (errorMsg) setErrorMsg('');
-                }}
-                onFocus={() => setFocusedField('fullName')}
-                onBlur={() => setFocusedField(null)}
-                autoCapitalize="words"
-              />
+              >
+                <View style={styles.inputIconLeft}>
+                  <UserIcon
+                    size={18}
+                    color={focusedField === 'firstName' ? brandColors.primary : '#9CA3AF'}
+                  />
+                </View>
+                <TextInput
+                  style={[
+                    styles.textInput,
+                    { color: isDark ? '#FFFFFF' : '#111827' },
+                  ]}
+                  placeholder="First Name"
+                  placeholderTextColor={colors.textPlaceholder}
+                  value={firstName}
+                  onChangeText={(text) => {
+                    setFirstName(text);
+                    if (errorMsg) setErrorMsg('');
+                  }}
+                  onFocus={() => setFocusedField('firstName')}
+                  onBlur={() => setFocusedField(null)}
+                  autoCapitalize="words"
+                />
+              </View>
+
+              {/* Surname */}
+              <View
+                style={[
+                  styles.inputWrapper,
+                  styles.nameInput,
+                  {
+                    backgroundColor: colors.inputBg,
+                    borderColor:
+                      focusedField === 'surname'
+                        ? brandColors.primary
+                        : colors.inputBorder,
+                    borderWidth: focusedField === 'surname' ? 1.5 : 1,
+                  },
+                ]}
+              >
+                <TextInput
+                  style={[
+                    styles.textInput,
+                    { color: isDark ? '#FFFFFF' : '#111827' },
+                  ]}
+                  placeholder="Surname"
+                  placeholderTextColor={colors.textPlaceholder}
+                  value={surname}
+                  onChangeText={(text) => {
+                    setSurname(text);
+                    if (errorMsg) setErrorMsg('');
+                  }}
+                  onFocus={() => setFocusedField('surname')}
+                  onBlur={() => setFocusedField(null)}
+                  autoCapitalize="words"
+                />
+              </View>
             </View>
 
-            {/* 2. Email Address */}
-            <View style={getInputWrapperStyle('email')}>
+            {/* 2. Email Address Input */}
+            <View
+              style={[
+                styles.inputWrapper,
+                {
+                  backgroundColor: colors.inputBg,
+                  borderColor:
+                    focusedField === 'email'
+                      ? brandColors.primary
+                      : colors.inputBorder,
+                  borderWidth: focusedField === 'email' ? 1.5 : 1,
+                },
+              ]}
+            >
               <View style={styles.inputIconLeft}>
-                <MailIcon size={18} color={brandColors.primary} />
+                <MailIcon
+                  size={19}
+                  color={focusedField === 'email' ? brandColors.primary : '#9CA3AF'}
+                />
               </View>
               <TextInput
                 style={[
                   styles.textInput,
-                  { color: isDark ? '#FFFFFF' : '#0B0B2B' },
+                  { color: isDark ? '#FFFFFF' : '#111827' },
                 ]}
-                placeholder="Email address"
-                placeholderTextColor={isDark ? '#768499' : '#94A3B8'}
+                placeholder="Email Address"
+                placeholderTextColor={colors.textPlaceholder}
                 value={email}
                 onChangeText={(text) => {
                   setEmail(text);
@@ -273,21 +381,37 @@ export const RegisterScreen: React.FC = () => {
                 onBlur={() => setFocusedField(null)}
                 keyboardType="email-address"
                 autoCapitalize="none"
+                autoCorrect={false}
               />
             </View>
 
-            {/* 3. Mobile Number */}
-            <View style={getInputWrapperStyle('phone')}>
+            {/* 3. Mobile Number Input */}
+            <View
+              style={[
+                styles.inputWrapper,
+                {
+                  backgroundColor: colors.inputBg,
+                  borderColor:
+                    focusedField === 'phone'
+                      ? brandColors.primary
+                      : colors.inputBorder,
+                  borderWidth: focusedField === 'phone' ? 1.5 : 1,
+                },
+              ]}
+            >
               <View style={styles.inputIconLeft}>
-                <PhoneIcon size={18} color={brandColors.primary} />
+                <PhoneIcon
+                  size={19}
+                  color={focusedField === 'phone' ? brandColors.primary : '#9CA3AF'}
+                />
               </View>
               <TextInput
                 style={[
                   styles.textInput,
-                  { color: isDark ? '#FFFFFF' : '#0B0B2B' },
+                  { color: isDark ? '#FFFFFF' : '#111827' },
                 ]}
-                placeholder="Mobile Number (e.g. 9876543210)"
-                placeholderTextColor={isDark ? '#768499' : '#94A3B8'}
+                placeholder="Phone Number"
+                placeholderTextColor={colors.textPlaceholder}
                 value={phone}
                 onChangeText={(text) => {
                   setPhone(text);
@@ -299,39 +423,64 @@ export const RegisterScreen: React.FC = () => {
               />
             </View>
 
-            {/* 4. Store / Business Category */}
+            {/* 4. Select Shop Type Dropdown */}
             <TouchableOpacity
-              style={getInputWrapperStyle('storeType')}
-              onPress={() => setShowStorePicker(true)}
+              style={[
+                styles.inputWrapper,
+                {
+                  backgroundColor: colors.inputBg,
+                  borderColor: showShopPicker
+                    ? brandColors.primary
+                    : colors.inputBorder,
+                  borderWidth: showShopPicker ? 1.5 : 1,
+                },
+              ]}
+              onPress={() => setShowShopPicker(true)}
               activeOpacity={0.8}
             >
               <View style={styles.inputIconLeft}>
-                <StoreIcon size={18} color={brandColors.primary} />
+                <StoreIcon size={19} color={brandColors.primary} />
               </View>
-              <Text
-                style={[
-                  styles.pickerText,
-                  { color: isDark ? '#FFFFFF' : '#0B0B2B' },
-                ]}
-                numberOfLines={1}
-              >
-                {storeType}
-              </Text>
-              <ChevronDownIcon size={16} color={isDark ? '#768499' : '#94A3B8'} />
+              <View style={styles.selectTextWrap}>
+                <Text
+                  style={[
+                    styles.selectValueText,
+                    { color: isDark ? '#FFFFFF' : '#111827' },
+                  ]}
+                >
+                  {shopType}
+                </Text>
+              </View>
+              <ChevronDownIcon size={18} color={colors.textPlaceholder} />
             </TouchableOpacity>
 
-            {/* 5. Password */}
-            <View style={getInputWrapperStyle('password')}>
+            {/* 5. Password Input */}
+            <View
+              style={[
+                styles.inputWrapper,
+                {
+                  backgroundColor: colors.inputBg,
+                  borderColor:
+                    focusedField === 'password'
+                      ? brandColors.primary
+                      : colors.inputBorder,
+                  borderWidth: focusedField === 'password' ? 1.5 : 1,
+                },
+              ]}
+            >
               <View style={styles.inputIconLeft}>
-                <LockIcon size={18} color={brandColors.primary} />
+                <LockIcon
+                  size={19}
+                  color={focusedField === 'password' ? brandColors.primary : '#9CA3AF'}
+                />
               </View>
               <TextInput
                 style={[
                   styles.textInput,
-                  { color: isDark ? '#FFFFFF' : '#0B0B2B' },
+                  { color: isDark ? '#FFFFFF' : '#111827' },
                 ]}
-                placeholder="Password (min 6 characters)"
-                placeholderTextColor={isDark ? '#768499' : '#94A3B8'}
+                placeholder="Password"
+                placeholderTextColor={colors.textPlaceholder}
                 value={password}
                 onChangeText={(text) => {
                   setPassword(text);
@@ -348,53 +497,18 @@ export const RegisterScreen: React.FC = () => {
                 hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
               >
                 {showPassword ? (
-                  <EyeOffIcon size={18} color={brandColors.primary} />
+                  <EyeOffIcon size={19} color={brandColors.primary} />
                 ) : (
-                  <EyeIcon size={18} color={isDark ? '#768499' : '#94A3B8'} />
+                  <EyeIcon size={19} color={colors.textPlaceholder} />
                 )}
               </TouchableOpacity>
             </View>
 
-            {/* 6. Confirm Password */}
-            <View style={getInputWrapperStyle('confirmPassword')}>
-              <View style={styles.inputIconLeft}>
-                <LockIcon size={18} color={brandColors.primary} />
-              </View>
-              <TextInput
-                style={[
-                  styles.textInput,
-                  { color: isDark ? '#FFFFFF' : '#0B0B2B' },
-                ]}
-                placeholder="Confirm password"
-                placeholderTextColor={isDark ? '#768499' : '#94A3B8'}
-                value={confirmPassword}
-                onChangeText={(text) => {
-                  setConfirmPassword(text);
-                  if (errorMsg) setErrorMsg('');
-                }}
-                onFocus={() => setFocusedField('confirmPassword')}
-                onBlur={() => setFocusedField(null)}
-                secureTextEntry={!showConfirmPassword}
-                autoCapitalize="none"
-              />
-              <TouchableOpacity
-                onPress={() => setShowConfirmPassword(!showConfirmPassword)}
-                style={styles.eyeBtn}
-                hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-              >
-                {showConfirmPassword ? (
-                  <EyeOffIcon size={18} color={brandColors.primary} />
-                ) : (
-                  <EyeIcon size={18} color={isDark ? '#768499' : '#94A3B8'} />
-                )}
-              </TouchableOpacity>
-            </View>
-
-            {/* 7. Terms & Conditions Checkbox */}
+            {/* 6. Terms & Conditions Checkbox */}
             <TouchableOpacity
               style={styles.termsRow}
               onPress={() => setAgreeTerms(!agreeTerms)}
-              activeOpacity={0.7}
+              activeOpacity={0.75}
             >
               <View
                 style={[
@@ -403,13 +517,11 @@ export const RegisterScreen: React.FC = () => {
                     borderColor: agreeTerms
                       ? brandColors.primary
                       : isDark
-                      ? '#283348'
-                      : '#CBD5E1',
+                      ? '#374151'
+                      : '#D1D5DB',
                     backgroundColor: agreeTerms
                       ? brandColors.primary
-                      : isDark
-                      ? '#1B2232'
-                      : '#FFFFFF',
+                      : 'transparent',
                   },
                 ]}
               >
@@ -418,18 +530,21 @@ export const RegisterScreen: React.FC = () => {
               <Text
                 style={[
                   styles.termsText,
-                  { color: isDark ? '#8E9CAE' : '#5F6375' },
+                  { color: isDark ? '#9CA3AF' : '#6B7280' },
                 ]}
               >
                 I agree to the{' '}
                 <Text style={{ color: brandColors.primary, fontWeight: '600' }}>
                   Terms & Conditions
                 </Text>{' '}
-                and Privacy Policy
+                and{' '}
+                <Text style={{ color: brandColors.primary, fontWeight: '600' }}>
+                  Privacy Policy.
+                </Text>
               </Text>
             </TouchableOpacity>
 
-            {/* 8. Orange Sign Up Button */}
+            {/* 7. Create Account Button with Arrow */}
             <TouchableOpacity
               style={[
                 styles.submitBtn,
@@ -445,17 +560,64 @@ export const RegisterScreen: React.FC = () => {
               ) : (
                 <View style={styles.submitBtnContent}>
                   <Text style={styles.submitBtnText}>Create Account</Text>
-                  <ArrowRightIcon size={20} color="#FFFFFF" />
+                  <ArrowRightIcon size={18} color="#FFFFFF" />
                 </View>
               )}
             </TouchableOpacity>
 
-            {/* 9. Footer: Already have an account? Log In */}
+            {/* 8. Divider: or sign up with */}
+            <View style={styles.dividerRow}>
+              <View
+                style={[
+                  styles.dividerLine,
+                  { backgroundColor: colors.divider },
+                ]}
+              />
+              <Text
+                style={[
+                  styles.dividerText,
+                  { color: isDark ? '#9CA3AF' : '#6B7280' },
+                ]}
+              >
+                or sign up with
+              </Text>
+              <View
+                style={[
+                  styles.dividerLine,
+                  { backgroundColor: colors.divider },
+                ]}
+              />
+            </View>
+
+            {/* 9. Continue with Google Button */}
+            <TouchableOpacity
+              style={[
+                styles.googleBtn,
+                {
+                  backgroundColor: colors.socialBg,
+                  borderColor: colors.socialBorder,
+                },
+              ]}
+              onPress={handleGoogleSignUp}
+              activeOpacity={0.8}
+            >
+              <GoogleIcon size={20} />
+              <Text
+                style={[
+                  styles.googleBtnText,
+                  { color: colors.socialText },
+                ]}
+              >
+                Continue with Google
+              </Text>
+            </TouchableOpacity>
+
+            {/* 10. Footer: Already have an account? Login */}
             <View style={styles.footerRow}>
               <Text
                 style={[
                   styles.footerLabel,
-                  { color: isDark ? '#8E9CAE' : '#5F6375' },
+                  { color: isDark ? '#9CA3AF' : '#6B7280' },
                 ]}
               >
                 Already have an account?{' '}
@@ -470,7 +632,7 @@ export const RegisterScreen: React.FC = () => {
                     { color: brandColors.primary },
                   ]}
                 >
-                  Log In
+                  Login
                 </Text>
               </TouchableOpacity>
             </View>
@@ -478,76 +640,86 @@ export const RegisterScreen: React.FC = () => {
         </ScrollView>
       </KeyboardAvoidingView>
 
-      {/* Store Category Picker Modal */}
+      {/* SHOP TYPE SELECTOR MODAL */}
       <Modal
-        visible={showStorePicker}
+        visible={showShopPicker}
         transparent
-        animationType="fade"
-        onRequestClose={() => setShowStorePicker(false)}
+        animationType="slide"
+        onRequestClose={() => setShowShopPicker(false)}
       >
         <TouchableOpacity
-          style={styles.modalOverlay}
+          style={styles.modalBackdrop}
           activeOpacity={1}
-          onPress={() => setShowStorePicker(false)}
+          onPress={() => setShowShopPicker(false)}
         >
           <View
             style={[
-              styles.modalSheet,
-              {
-                backgroundColor: isDark ? '#181E2B' : '#FFFFFF',
-                borderColor: isDark ? '#283348' : '#E8ECEF',
-              },
+              styles.pickerSheet,
+              { backgroundColor: isDark ? '#1C1E24' : '#FFFFFF' },
             ]}
           >
-            <Text
-              style={[
-                styles.modalTitle,
-                { color: isDark ? '#FFFFFF' : '#0B0B2B' },
-              ]}
-            >
-              Select Retail Category
-            </Text>
-            {STORE_TYPES.map((type) => {
-              const isSelected = storeType === type;
-              return (
-                <TouchableOpacity
-                  key={type}
-                  style={[
-                    styles.modalOption,
-                    {
-                      backgroundColor: isSelected
-                        ? isDark
-                          ? 'rgba(255, 106, 26, 0.16)'
-                          : 'rgba(255, 106, 26, 0.08)'
-                        : 'transparent',
-                    },
-                  ]}
-                  onPress={() => {
-                    setStoreType(type);
-                    setShowStorePicker(false);
-                  }}
-                >
-                  <Text
+            <View style={styles.pickerHeader}>
+              <Text
+                style={[
+                  styles.pickerTitle,
+                  { color: isDark ? '#FFFFFF' : '#111827' },
+                ]}
+              >
+                Select Store Type
+              </Text>
+              <TouchableOpacity
+                onPress={() => setShowShopPicker(false)}
+                style={styles.pickerDoneBtn}
+              >
+                <Text style={{ color: brandColors.primary, fontWeight: '700' }}>Done</Text>
+              </TouchableOpacity>
+            </View>
+
+            <ScrollView showsVerticalScrollIndicator={false}>
+              {STORE_TYPES.map((type) => {
+                const isSelected = shopType === type;
+                return (
+                  <TouchableOpacity
+                    key={type}
                     style={[
-                      styles.modalOptionText,
-                      {
-                        color: isSelected
-                          ? brandColors.primary
-                          : isDark
-                          ? '#FFFFFF'
-                          : '#0B0B2B',
-                        fontWeight: isSelected ? '700' : '500',
+                      styles.pickerItem,
+                      isSelected && {
+                        backgroundColor: isDark
+                          ? 'rgba(255, 106, 26, 0.15)'
+                          : 'rgba(255, 106, 26, 0.08)',
                       },
                     ]}
+                    onPress={() => {
+                      setShopType(type);
+                      setShowShopPicker(false);
+                    }}
+                    activeOpacity={0.7}
                   >
-                    {type}
-                  </Text>
-                  {isSelected ? (
-                    <CheckIcon size={16} color={brandColors.primary} />
-                  ) : null}
-                </TouchableOpacity>
-              );
-            })}
+                    <View style={styles.pickerItemLeft}>
+                      <StoreIcon
+                        size={18}
+                        color={isSelected ? brandColors.primary : '#9CA3AF'}
+                      />
+                      <Text
+                        style={[
+                          styles.pickerItemText,
+                          { color: isDark ? '#FFFFFF' : '#111827' },
+                          isSelected && {
+                            color: brandColors.primary,
+                            fontWeight: '700',
+                          },
+                        ]}
+                      >
+                        {type}
+                      </Text>
+                    </View>
+                    {isSelected && (
+                      <CheckIcon size={16} color={brandColors.primary} />
+                    )}
+                  </TouchableOpacity>
+                );
+              })}
+            </ScrollView>
           </View>
         </TouchableOpacity>
       </Modal>
@@ -564,114 +736,141 @@ const styles = StyleSheet.create({
   },
   scrollContent: {
     flexGrow: 1,
-    paddingHorizontal: 16,
-    paddingTop: 36,
-    paddingBottom: 24,
+    paddingHorizontal: 22,
+    paddingTop: Platform.OS === 'android' ? (StatusBar.currentHeight || 28) + 12 : 52,
+    paddingBottom: 28,
   },
-  topSection: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: 10,
-    minHeight: 100,
-  },
-  card: {
-    width: '100%',
-    borderRadius: 24,
-    borderWidth: 1,
-    padding: 18,
-    shadowOffset: { width: 0, height: 10 },
-    shadowOpacity: 0.25,
-    shadowRadius: 20,
-    elevation: 8,
-  },
-  cardHeader: {
-    marginBottom: 10,
-  },
-  title: {
-    fontSize: 22,
-    fontWeight: '800',
-    letterSpacing: -0.3,
-    marginBottom: 2,
-  },
-  subtitle: {
-    fontSize: 12,
-    fontWeight: '500',
-  },
-  errorBanner: {
-    backgroundColor: 'rgba(220, 38, 38, 0.16)',
-    borderColor: 'rgba(220, 38, 38, 0.32)',
-    borderWidth: 1,
-    borderRadius: 8,
-    paddingVertical: 6,
-    paddingHorizontal: 10,
-    marginBottom: 8,
-  },
-  errorBannerText: {
-    color: '#F87171',
-    fontSize: 11,
-    fontWeight: '600',
-  },
-  inputWrapper: {
-    height: 44,
-    borderRadius: 12,
+  topBar: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 12,
-    marginBottom: 8,
+    justifyContent: 'space-between',
+    marginBottom: 6,
   },
-  inputIconLeft: {
-    marginRight: 8,
+  navCircularBtn: {
+    width: 38,
+    height: 38,
+    borderRadius: 19,
+    borderWidth: 1,
     alignItems: 'center',
     justifyContent: 'center',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.08,
+    shadowRadius: 4,
+    elevation: 2,
+  },
+  logoSection: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: 2,
+    marginBottom: 10,
+  },
+  illustrationSection: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 14,
+  },
+  formContainer: {
+    width: '100%',
+  },
+  headerBlock: {
+    marginBottom: 16,
+  },
+  title: {
+    fontSize: 24,
+    fontWeight: '800',
+    letterSpacing: -0.4,
+  },
+  subtitle: {
+    fontSize: 13.5,
+    fontWeight: '400',
+    marginTop: 4,
+    letterSpacing: -0.2,
+  },
+  errorBanner: {
+    backgroundColor: 'rgba(239, 68, 68, 0.1)',
+    borderColor: 'rgba(239, 68, 68, 0.3)',
+    borderWidth: 1,
+    borderRadius: 10,
+    paddingVertical: 10,
+    paddingHorizontal: 14,
+    marginBottom: 14,
+  },
+  errorBannerText: {
+    color: '#EF4444',
+    fontSize: 13,
+    fontWeight: '500',
+  },
+  nameRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+  },
+  nameInput: {
+    flex: 0.485,
+  },
+  inputWrapper: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    height: 52,
+    borderRadius: 14,
+    paddingHorizontal: 14,
+    marginBottom: 11,
+  },
+  inputIconLeft: {
+    width: 28,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: 6,
   },
   textInput: {
     flex: 1,
     height: '100%',
-    fontSize: 13,
-    fontWeight: '500',
-    padding: 0,
+    fontSize: 14.5,
+    fontWeight: '400',
+    paddingVertical: 0,
   },
-  pickerText: {
+  selectTextWrap: {
     flex: 1,
-    fontSize: 13,
+  },
+  selectValueText: {
+    fontSize: 14.5,
     fontWeight: '500',
   },
   eyeBtn: {
-    padding: 4,
-    marginLeft: 6,
+    padding: 6,
   },
   termsRow: {
     flexDirection: 'row',
-    alignItems: 'center',
+    alignItems: 'flex-start',
     marginTop: 4,
-    marginBottom: 8,
+    marginBottom: 18,
+    paddingRight: 8,
   },
   checkboxBox: {
-    width: 17,
-    height: 17,
-    borderRadius: 5,
+    width: 18,
+    height: 18,
+    borderRadius: 4,
     borderWidth: 1.5,
     alignItems: 'center',
     justifyContent: 'center',
     marginRight: 8,
+    marginTop: 2,
   },
   termsText: {
     flex: 1,
-    fontSize: 11,
-    lineHeight: 16,
+    fontSize: 13,
+    lineHeight: 18,
+    fontWeight: '400',
   },
   submitBtn: {
-    height: 46,
-    borderRadius: 9999,
+    height: 52,
+    borderRadius: 14,
     alignItems: 'center',
     justifyContent: 'center',
-    marginTop: 6,
-    marginBottom: 12,
     shadowColor: '#FF6A1A',
-    shadowOffset: { width: 0, height: 6 },
+    shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.38,
-    shadowRadius: 16,
-    elevation: 6,
+    shadowRadius: 10,
+    elevation: 5,
   },
   submitBtnDisabled: {
     opacity: 0.7,
@@ -680,57 +879,110 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 8,
   },
   submitBtnText: {
     color: '#FFFFFF',
-    fontSize: 15,
+    fontSize: 16,
     fontWeight: '700',
+    marginRight: 8,
+    letterSpacing: -0.2,
+  },
+  dividerRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: 20,
+    marginBottom: 16,
+  },
+  dividerLine: {
+    flex: 1,
+    height: 1,
+  },
+  dividerText: {
+    paddingHorizontal: 12,
+    fontSize: 13,
+    fontWeight: '400',
+  },
+  googleBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    height: 52,
+    borderRadius: 14,
+    borderWidth: 1,
+    shadowColor: '#000000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 3,
+    elevation: 1,
+  },
+  googleBtnText: {
+    marginLeft: 10,
+    fontSize: 15,
+    fontWeight: '600',
+    letterSpacing: -0.2,
   },
   footerRow: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    marginTop: 2,
+    marginTop: 22,
+    marginBottom: 12,
   },
   footerLabel: {
-    fontSize: 13,
+    fontSize: 14,
     fontWeight: '400',
   },
   footerAction: {
-    fontSize: 13,
+    fontSize: 14,
     fontWeight: '700',
   },
-  modalOverlay: {
+  modalBackdrop: {
     flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.65)',
-    justifyContent: 'center',
-    alignItems: 'center',
-    padding: 20,
+    backgroundColor: 'rgba(0,0,0,0.55)',
+    justifyContent: 'flex-end',
   },
-  modalSheet: {
-    width: '100%',
-    maxWidth: 380,
-    borderRadius: 20,
-    borderWidth: 1,
-    padding: 18,
+  pickerSheet: {
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    paddingHorizontal: 20,
+    paddingTop: 18,
+    paddingBottom: Platform.OS === 'ios' ? 36 : 24,
+    maxHeight: '65%',
   },
-  modalTitle: {
-    fontSize: 16,
-    fontWeight: '800',
-    marginBottom: 12,
-  },
-  modalOption: {
+  pickerHeader: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingVertical: 12,
-    paddingHorizontal: 12,
-    borderRadius: 10,
+    marginBottom: 14,
+    paddingBottom: 10,
+    borderBottomWidth: 1,
+    borderBottomColor: 'rgba(0,0,0,0.06)',
+  },
+  pickerTitle: {
+    fontSize: 18,
+    fontWeight: '700',
+  },
+  pickerDoneBtn: {
+    paddingVertical: 6,
+    paddingHorizontal: 10,
+  },
+  pickerItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingVertical: 14,
+    paddingHorizontal: 14,
+    borderRadius: 12,
     marginBottom: 4,
   },
-  modalOptionText: {
-    fontSize: 14,
+  pickerItemLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  pickerItemText: {
+    fontSize: 15,
+    fontWeight: '500',
+    marginLeft: 12,
   },
 });
 

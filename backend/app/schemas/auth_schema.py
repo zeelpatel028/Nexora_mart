@@ -2,7 +2,7 @@ from typing import Optional
 from pydantic import BaseModel, EmailStr, Field
 
 class UserLoginRequest(BaseModel):
-    email: EmailStr
+    email: str = Field(..., min_length=1, description="Email, phone or username")
     password: str = Field(..., min_length=1)
 
 class UserRegisterRequest(BaseModel):
@@ -14,14 +14,14 @@ class UserRegisterRequest(BaseModel):
     password: str = Field(..., min_length=6)
 
 class ForgotPasswordRequest(BaseModel):
-    email: EmailStr
+    email: str = Field(..., min_length=1, description="Username or email")
 
 class VerifyOtpRequest(BaseModel):
-    email: EmailStr
+    email: str = Field(..., min_length=1)
     otp: str = Field(..., min_length=4, max_length=10)
 
 class ResetPasswordRequest(BaseModel):
-    email: EmailStr
+    email: str = Field(..., min_length=1)
     otp: str = Field(..., min_length=4, max_length=10)
     newPassword: str = Field(..., min_length=6)
 

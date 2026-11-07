@@ -11,89 +11,123 @@ import {
   Platform,
   ActivityIndicator,
   StatusBar,
+  Image,
+  useWindowDimensions,
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { useTheme } from '../../hooks/useTheme';
 import authService from '../../services/authService';
 import { WaveBackground } from '../../components/branding/WaveBackground';
+import { BrandLogo } from '../../components/branding/BrandLogo';
 import {
-  KeyIcon,
   MailIcon,
   LockIcon,
+  EyeIcon,
+  EyeOffIcon,
   ArrowRightIcon,
-  CheckIcon,
-  ChevronLeftIcon,
+  ArrowLeftIcon,
+  KeyIcon,
+  SunIcon,
+  MoonIcon,
 } from '../../components/branding/Icons';
-import { isValidEmail } from '../../utils/validators';
 
 export const ForgotPasswordScreen: React.FC = () => {
   const navigation = useNavigation();
-  const { isDark, colors, brandColors } = useTheme();
+  const { isDark, colors, brandColors, toggleTheme } = useTheme();
+  const { width } = useWindowDimensions();
 
-  // Step 1: Request OTP; Step 2: Verify OTP & New Password; Step 3: Success
-  const [step, setStep] = useState<'request' | 'verify' | 'success'>('request');
+  // Step 1: Request OTP; Step 2: Verify OTP; Step 3: Set New Password; Step 4: Success
+  const [step, setStep] = useState<'request' | 'verify' | 'new_password' | 'success'>('request');
 
-  const [email, setEmail] = useState('');
+  const [identifier, setIdentifier] = useState('');
   const [otp, setOtp] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
-  const [error, setError] = useState('');
-  const [loading, setLoading] = useState(false);
-  const [serverOtpInfo, setServerOtpInfo] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
+  const [errorMsg, setErrorMsg] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [focusedField, setFocusedField] = useState<string | null>(null);
+
+  // Shop illustration responsive dimensions
+  const illustrationWidth = Math.min(width * 0.72, 300);
+  const illustrationHeight = illustrationWidth / 1.96;
+
+  // Step 1: Request OTP
   const handleRequestOtp = async () => {
-    setError('');
-    if (!email.trim()) {
-      setError('Email is required');
-      return;
-    }
-    if (!isValidEmail(email)) {
-      setError('Please enter a valid email address');
+    setErrorMsg('');
+    const trimmed = identifier.trim();
+    if (!trimmed) {
+      setErrorMsg('Please enter your username or registered email');
       return;
     }
 
     setLoading(true);
     try {
-      const res = await authService.forgotPassword(email);
-      if (res.otp) {
-        setServerOtpInfo(`Verification OTP: ${res.otp}`);
-      }
+      const res = await authService.forgotPassword(trimmed);
       setStep('verify');
       Alert.alert(
-        'OTP Dispatched',
-        `A 6-digit verification code has been dispatched for ${email.trim()}.${
-          res.otp ? `\n(Code: ${res.otp})` : ''
+        'OTP Sent 🎉',
+        `A 6-digit verification code has been dispatched.${
+          res.otp ? `\n\n(Verification Code: ${res.otp})` : ''
         }`
       );
     } catch (err: any) {
-      setError(err.message || 'Failed to submit password reset request.');
+      setErrorMsg(err.message || 'Failed to generate password reset code.');
     } finally {
       setLoading(false);
     }
   };
 
-  const handleResetPassword = async () => {
-    setError('');
-    if (!otp.trim()) {
-      setError('Please enter the 6-digit OTP code');
-      return;
-    }
-    if (!newPassword || newPassword.length < 6) {
-      setError('New password must be at least 6 characters');
-      return;
-    }
-    if (newPassword !== confirmPassword) {
-      setError('Passwords do not match');
+  // Step 2: Verify OTP
+  const handleVerifyOtp = async () => {
+    setErrorMsg('');
+    const code = otp.trim();
+    if (!code || code.length < 4) {
+      setErrorMsg('Please enter the 6-digit OTP code');
       return;
     }
 
     setLoading(true);
     try {
-      await authService.resetPassword(email, otp.trim(), newPassword);
-      setStep('success');
-      Alert.alert('Password Reset', 'Your password has been successfully reset! You can now sign in.');
+      await authService.verifyOtp(identifier.trim(), code);
+      setStep('new_password');
     } catch (err: any) {
-      setError(err.message || 'Failed to verify OTP and reset password.');
+      setErrorMsg(err.message || 'Invalid or expired OTP code.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Step 3: Reset Password in DB
+  const handleResetPassword = async () => {
+    setErrorMsg('');
+    if (!newPassword || newPassword.length < 6) {
+      setErrorMsg('New password must be at least 6 characters');
+      return;
+    }
+    if (newPassword !== confirmPassword) {
+      setErrorMsg('Passwords do not match');
+      return;
+    }
+
+    setLoading(true);
+    try {
+      await authService.resetPassword(identifier.trim(), otp.trim(), newPassword);
+      setStep('success');
+      Alert.alert(
+        'Password Reset Successful! 🎉',
+        'Your account password has been updated in the database. You can now log in.',
+        [
+          {
+            text: 'Login Now',
+            onPress: () => navigation.goBack(),
+          },
+        ]
+      );
+    } catch (err: any) {
+      setErrorMsg(err.message || 'Failed to update password.');
     } finally {
       setLoading(false);
     }
@@ -106,28 +140,9 @@ export const ForgotPasswordScreen: React.FC = () => {
         backgroundColor="transparent"
         translucent
       />
-      <WaveBackground />
 
-      {/* Top Header Navigation */}
-      <View style={styles.topHeader}>
-        <TouchableOpacity
-          style={[
-            styles.backBtn,
-            {
-              backgroundColor: isDark ? colors.surface : '#FFFFFF',
-              borderColor: isDark ? colors.border : '#E8ECEF',
-            },
-          ]}
-          onPress={() => navigation.goBack()}
-          activeOpacity={0.8}
-        >
-          <ChevronLeftIcon size={20} color={isDark ? '#FFFFFF' : '#0B0B2B'} />
-        </TouchableOpacity>
-        <Text style={[styles.headerTitle, { color: isDark ? '#FFFFFF' : '#0B0B2B' }]}>
-          Reset Password
-        </Text>
-        <View style={{ width: 40 }} />
-      </View>
+      {/* Organic Corner Waves */}
+      <WaveBackground />
 
       <KeyboardAvoidingView
         style={styles.flexOne}
@@ -138,84 +153,142 @@ export const ForgotPasswordScreen: React.FC = () => {
           keyboardShouldPersistTaps="handled"
           showsVerticalScrollIndicator={false}
         >
-          <View
-            style={[
-              styles.card,
-              {
-                backgroundColor: isDark ? colors.surface : '#FFFFFF',
-                borderColor: isDark ? colors.border : '#E8ECEF',
-                shadowColor: isDark ? '#000000' : brandColors.primary,
-              },
-            ]}
-          >
-            <View
+          {/* Top Bar with Back Button & Theme Toggle Button */}
+          <View style={styles.topBar}>
+            <TouchableOpacity
               style={[
-                styles.iconBadge,
+                styles.navCircularBtn,
                 {
-                  backgroundColor: isDark
-                    ? 'rgba(255, 106, 26, 0.16)'
-                    : 'rgba(255, 106, 26, 0.10)',
+                  backgroundColor: colors.toggleBg,
+                  borderColor: colors.toggleBorder,
+                  shadowColor: '#000000',
                 },
               ]}
+              onPress={() => navigation.goBack()}
+              activeOpacity={0.75}
+              accessibilityLabel="Go Back"
             >
-              <KeyIcon size={32} color={brandColors.primary} />
+              <ArrowLeftIcon
+                size={18}
+                color={isDark ? '#FFFFFF' : '#111827'}
+              />
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={[
+                styles.navCircularBtn,
+                {
+                  backgroundColor: colors.toggleBg,
+                  borderColor: colors.toggleBorder,
+                  shadowColor: '#000000',
+                },
+              ]}
+              onPress={toggleTheme}
+              activeOpacity={0.75}
+              accessibilityLabel="Toggle Theme Mode"
+            >
+              {isDark ? (
+                <MoonIcon size={18} color="#FFFFFF" />
+              ) : (
+                <SunIcon size={19} color={brandColors.primary} />
+              )}
+            </TouchableOpacity>
+          </View>
+
+          {/* Brand Logo & Wordmark Header */}
+          <View style={styles.logoSection}>
+            <BrandLogo size={46} textSize={25} />
+          </View>
+
+          {/* 3D Storefront Illustration */}
+          <View style={styles.illustrationSection}>
+            <Image
+              source={
+                isDark
+                  ? require('../../assets/shop-dark.png')
+                  : require('../../assets/shop-light.png')
+              }
+              style={{
+                width: illustrationWidth,
+                height: illustrationHeight,
+              }}
+              resizeMode="contain"
+            />
+          </View>
+
+          {/* Form Content Area */}
+          <View style={styles.formContainer}>
+            {/* Header Title */}
+            <View style={styles.headerBlock}>
+              <Text
+                style={[
+                  styles.title,
+                  { color: isDark ? '#FFFFFF' : '#111827' },
+                ]}
+              >
+                {step === 'request'
+                  ? 'Forgot Password'
+                  : step === 'verify'
+                  ? 'Verify OTP'
+                  : 'Set New Password'}
+              </Text>
+              <Text
+                style={[
+                  styles.subtitle,
+                  { color: isDark ? '#9CA3AF' : '#6B7280' },
+                ]}
+              >
+                {step === 'request'
+                  ? 'Enter your username or email to receive a reset code'
+                  : step === 'verify'
+                  ? `Enter the 6-digit code sent for ${identifier}`
+                  : 'Enter and confirm your new secure store password'}
+              </Text>
             </View>
 
-            <Text style={[styles.title, { color: isDark ? '#FFFFFF' : '#0B0B2B' }]}>
-              {step === 'verify'
-                ? 'Verify OTP & Reset'
-                : step === 'success'
-                ? 'Password Reset!'
-                : 'Forgot Password?'}
-            </Text>
-
-            <Text style={[styles.description, { color: isDark ? '#8E9CAE' : '#5F6375' }]}>
-              {step === 'verify'
-                ? `Enter the 6-digit OTP code dispatched to ${email} along with your new password.`
-                : step === 'success'
-                ? 'Your password has been updated successfully. Please sign in with your new credentials.'
-                : "Enter your merchant email address below and we'll send you a 6-digit verification OTP."}
-            </Text>
-
-            {serverOtpInfo ? (
-              <View style={styles.otpPill}>
-                <Text style={styles.otpPillText}>⚡ {serverOtpInfo}</Text>
-              </View>
-            ) : null}
-
-            {error ? (
+            {/* Error Banner */}
+            {errorMsg ? (
               <View style={styles.errorBanner}>
-                <Text style={styles.errorBannerText}>{error}</Text>
+                <Text style={styles.errorBannerText}>{errorMsg}</Text>
               </View>
             ) : null}
 
+            {/* STEP 1: Username / Email Input */}
             {step === 'request' && (
-              <View style={styles.formSection}>
+              <>
                 <View
                   style={[
                     styles.inputWrapper,
                     {
-                      backgroundColor: isDark ? colors.inputBg : '#FFFFFF',
-                      borderColor: isDark ? colors.inputBorder : '#E8ECEF',
+                      backgroundColor: colors.inputBg,
+                      borderColor:
+                        focusedField === 'identifier'
+                          ? brandColors.primary
+                          : colors.inputBorder,
+                      borderWidth: focusedField === 'identifier' ? 1.5 : 1,
                     },
                   ]}
                 >
-                  <View style={styles.inputIcon}>
-                    <MailIcon size={18} color={brandColors.primary} />
+                  <View style={styles.inputIconLeft}>
+                    <MailIcon
+                      size={19}
+                      color={focusedField === 'identifier' ? brandColors.primary : '#9CA3AF'}
+                    />
                   </View>
                   <TextInput
                     style={[
                       styles.textInput,
-                      { color: isDark ? '#FFFFFF' : '#0B0B2B' },
+                      { color: isDark ? '#FFFFFF' : '#111827' },
                     ]}
-                    placeholder="Enter registered email address"
-                    placeholderTextColor={isDark ? '#768499' : '#94A3B8'}
-                    value={email}
-                    onChangeText={(t) => {
-                      setEmail(t);
-                      if (error) setError('');
+                    placeholder="User Name or Email"
+                    placeholderTextColor={colors.textPlaceholder}
+                    value={identifier}
+                    onChangeText={(text) => {
+                      setIdentifier(text);
+                      if (errorMsg) setErrorMsg('');
                     }}
-                    keyboardType="email-address"
+                    onFocus={() => setFocusedField('identifier')}
+                    onBlur={() => setFocusedField(null)}
                     autoCapitalize="none"
                     autoCorrect={false}
                   />
@@ -223,9 +296,9 @@ export const ForgotPasswordScreen: React.FC = () => {
 
                 <TouchableOpacity
                   style={[
-                    styles.primaryBtn,
-                    { backgroundColor: brandColors.primary },
-                    loading && styles.btnDisabled,
+                    styles.submitBtn,
+                    { backgroundColor: brandColors.primary, marginTop: 12 },
+                    loading && styles.submitBtnDisabled,
                   ]}
                   onPress={handleRequestOtp}
                   disabled={loading}
@@ -234,106 +307,192 @@ export const ForgotPasswordScreen: React.FC = () => {
                   {loading ? (
                     <ActivityIndicator color="#FFFFFF" size="small" />
                   ) : (
-                    <View style={styles.btnContent}>
-                      <Text style={styles.btnText}>Send Verification Code</Text>
+                    <View style={styles.submitBtnContent}>
+                      <Text style={styles.submitBtnText}>Send OTP</Text>
                       <ArrowRightIcon size={18} color="#FFFFFF" />
                     </View>
                   )}
                 </TouchableOpacity>
-              </View>
+              </>
             )}
 
+            {/* STEP 2: Verify OTP Input */}
             {step === 'verify' && (
-              <View style={styles.formSection}>
+              <>
                 <View
                   style={[
                     styles.inputWrapper,
                     {
-                      backgroundColor: isDark ? colors.inputBg : '#FFFFFF',
-                      borderColor: isDark ? colors.inputBorder : '#E8ECEF',
+                      backgroundColor: colors.inputBg,
+                      borderColor:
+                        focusedField === 'otp'
+                          ? brandColors.primary
+                          : colors.inputBorder,
+                      borderWidth: focusedField === 'otp' ? 1.5 : 1,
                     },
                   ]}
                 >
+                  <View style={styles.inputIconLeft}>
+                    <KeyIcon
+                      size={19}
+                      color={focusedField === 'otp' ? brandColors.primary : '#9CA3AF'}
+                    />
+                  </View>
                   <TextInput
                     style={[
                       styles.textInput,
-                      { color: isDark ? '#FFFFFF' : '#0B0B2B', textAlign: 'center', letterSpacing: 4, fontWeight: '700' },
+                      { color: isDark ? '#FFFFFF' : '#111827', letterSpacing: 4, fontWeight: '700' },
                     ]}
-                    placeholder="6-digit OTP code"
-                    placeholderTextColor={isDark ? '#768499' : '#94A3B8'}
+                    placeholder="6-Digit OTP"
+                    placeholderTextColor={colors.textPlaceholder}
                     value={otp}
-                    onChangeText={(t) => {
-                      setOtp(t);
-                      if (error) setError('');
+                    onChangeText={(text) => {
+                      setOtp(text);
+                      if (errorMsg) setErrorMsg('');
                     }}
+                    onFocus={() => setFocusedField('otp')}
+                    onBlur={() => setFocusedField(null)}
                     keyboardType="number-pad"
                     maxLength={6}
                   />
                 </View>
 
+                <TouchableOpacity
+                  style={[
+                    styles.submitBtn,
+                    { backgroundColor: brandColors.primary, marginTop: 12 },
+                    loading && styles.submitBtnDisabled,
+                  ]}
+                  onPress={handleVerifyOtp}
+                  disabled={loading}
+                  activeOpacity={0.88}
+                >
+                  {loading ? (
+                    <ActivityIndicator color="#FFFFFF" size="small" />
+                  ) : (
+                    <View style={styles.submitBtnContent}>
+                      <Text style={styles.submitBtnText}>Verify OTP</Text>
+                      <ArrowRightIcon size={18} color="#FFFFFF" />
+                    </View>
+                  )}
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                  style={styles.resendBtn}
+                  onPress={handleRequestOtp}
+                  activeOpacity={0.7}
+                >
+                  <Text style={[styles.resendText, { color: brandColors.primary }]}>
+                    Didn't receive code? Resend OTP
+                  </Text>
+                </TouchableOpacity>
+              </>
+            )}
+
+            {/* STEP 3: Enter New Password */}
+            {step === 'new_password' && (
+              <>
                 <View
                   style={[
                     styles.inputWrapper,
                     {
-                      backgroundColor: isDark ? colors.inputBg : '#FFFFFF',
-                      borderColor: isDark ? colors.inputBorder : '#E8ECEF',
+                      backgroundColor: colors.inputBg,
+                      borderColor:
+                        focusedField === 'newPassword'
+                          ? brandColors.primary
+                          : colors.inputBorder,
+                      borderWidth: focusedField === 'newPassword' ? 1.5 : 1,
                     },
                   ]}
                 >
-                  <View style={styles.inputIcon}>
-                    <LockIcon size={18} color={brandColors.primary} />
+                  <View style={styles.inputIconLeft}>
+                    <LockIcon
+                      size={19}
+                      color={focusedField === 'newPassword' ? brandColors.primary : '#9CA3AF'}
+                    />
                   </View>
                   <TextInput
                     style={[
                       styles.textInput,
-                      { color: isDark ? '#FFFFFF' : '#0B0B2B' },
+                      { color: isDark ? '#FFFFFF' : '#111827' },
                     ]}
-                    placeholder="New password (min 6 characters)"
-                    placeholderTextColor={isDark ? '#768499' : '#94A3B8'}
+                    placeholder="New Password (min 6 chars)"
+                    placeholderTextColor={colors.textPlaceholder}
                     value={newPassword}
-                    onChangeText={(t) => {
-                      setNewPassword(t);
-                      if (error) setError('');
+                    onChangeText={(text) => {
+                      setNewPassword(text);
+                      if (errorMsg) setErrorMsg('');
                     }}
-                    secureTextEntry
+                    onFocus={() => setFocusedField('newPassword')}
+                    onBlur={() => setFocusedField(null)}
+                    secureTextEntry={!showPassword}
                     autoCapitalize="none"
                   />
+                  <TouchableOpacity
+                    onPress={() => setShowPassword(!showPassword)}
+                    style={styles.eyeBtn}
+                  >
+                    {showPassword ? (
+                      <EyeOffIcon size={19} color={brandColors.primary} />
+                    ) : (
+                      <EyeIcon size={19} color={colors.textPlaceholder} />
+                    )}
+                  </TouchableOpacity>
                 </View>
 
                 <View
                   style={[
                     styles.inputWrapper,
                     {
-                      backgroundColor: isDark ? colors.inputBg : '#FFFFFF',
-                      borderColor: isDark ? colors.inputBorder : '#E8ECEF',
+                      backgroundColor: colors.inputBg,
+                      borderColor:
+                        focusedField === 'confirmPassword'
+                          ? brandColors.primary
+                          : colors.inputBorder,
+                      borderWidth: focusedField === 'confirmPassword' ? 1.5 : 1,
                     },
                   ]}
                 >
-                  <View style={styles.inputIcon}>
-                    <LockIcon size={18} color={brandColors.primary} />
+                  <View style={styles.inputIconLeft}>
+                    <LockIcon
+                      size={19}
+                      color={focusedField === 'confirmPassword' ? brandColors.primary : '#9CA3AF'}
+                    />
                   </View>
                   <TextInput
                     style={[
                       styles.textInput,
-                      { color: isDark ? '#FFFFFF' : '#0B0B2B' },
+                      { color: isDark ? '#FFFFFF' : '#111827' },
                     ]}
-                    placeholder="Confirm new password"
-                    placeholderTextColor={isDark ? '#768499' : '#94A3B8'}
+                    placeholder="Confirm New Password"
+                    placeholderTextColor={colors.textPlaceholder}
                     value={confirmPassword}
-                    onChangeText={(t) => {
-                      setConfirmPassword(t);
-                      if (error) setError('');
+                    onChangeText={(text) => {
+                      setConfirmPassword(text);
+                      if (errorMsg) setErrorMsg('');
                     }}
-                    secureTextEntry
+                    onFocus={() => setFocusedField('confirmPassword')}
+                    onBlur={() => setFocusedField(null)}
+                    secureTextEntry={!showConfirmPassword}
                     autoCapitalize="none"
                   />
+                  <TouchableOpacity
+                    onPress={() => setShowConfirmPassword(!showConfirmPassword)}
+                    style={styles.eyeBtn}
+                  >
+                    {showConfirmPassword ? (
+                      <EyeOffIcon size={19} color={brandColors.primary} />
+                    ) : (
+                      <EyeIcon size={19} color={colors.textPlaceholder} />
+                    )}
+                  </TouchableOpacity>
                 </View>
 
                 <TouchableOpacity
                   style={[
-                    styles.primaryBtn,
-                    { backgroundColor: brandColors.primary },
-                    loading && styles.btnDisabled,
+                    styles.submitBtn,
+                    { backgroundColor: brandColors.primary, marginTop: 12 },
+                    loading && styles.submitBtnDisabled,
                   ]}
                   onPress={handleResetPassword}
                   disabled={loading}
@@ -342,43 +501,39 @@ export const ForgotPasswordScreen: React.FC = () => {
                   {loading ? (
                     <ActivityIndicator color="#FFFFFF" size="small" />
                   ) : (
-                    <View style={styles.btnContent}>
-                      <Text style={styles.btnText}>Set New Password</Text>
+                    <View style={styles.submitBtnContent}>
+                      <Text style={styles.submitBtnText}>Update Password</Text>
                       <ArrowRightIcon size={18} color="#FFFFFF" />
                     </View>
                   )}
                 </TouchableOpacity>
-              </View>
+              </>
             )}
 
-            {step === 'success' && (
-              <View style={styles.formSection}>
-                <TouchableOpacity
-                  style={[styles.primaryBtn, { backgroundColor: brandColors.primary }]}
-                  onPress={() => navigation.goBack()}
-                  activeOpacity={0.88}
-                >
-                  <View style={styles.btnContent}>
-                    <Text style={styles.btnText}>Return to Login</Text>
-                    <ArrowRightIcon size={18} color="#FFFFFF" />
-                  </View>
-                </TouchableOpacity>
-              </View>
-            )}
-
-            {/* Back to Login link */}
-            <TouchableOpacity
-              style={styles.cancelLink}
-              onPress={() => navigation.goBack()}
-              activeOpacity={0.7}
-            >
-              <Text style={[styles.cancelText, { color: isDark ? '#8E9CAE' : '#5F6375' }]}>
+            {/* Footer Navigation Back to Login */}
+            <View style={styles.footerRow}>
+              <Text
+                style={[
+                  styles.footerLabel,
+                  { color: isDark ? '#9CA3AF' : '#6B7280' },
+                ]}
+              >
                 Remember your password?{' '}
-                <Text style={{ color: brandColors.primary, fontWeight: '700' }}>
-                  Log In
-                </Text>
               </Text>
-            </TouchableOpacity>
+              <TouchableOpacity
+                onPress={() => navigation.goBack()}
+                activeOpacity={0.7}
+              >
+                <Text
+                  style={[
+                    styles.footerAction,
+                    { color: brandColors.primary },
+                  ]}
+                >
+                  Login
+                </Text>
+              </TouchableOpacity>
+            </View>
           </View>
         </ScrollView>
       </KeyboardAvoidingView>
@@ -393,153 +548,145 @@ const styles = StyleSheet.create({
   flexOne: {
     flex: 1,
   },
-  topHeader: {
+  scrollContent: {
+    flexGrow: 1,
+    paddingHorizontal: 22,
+    paddingTop: Platform.OS === 'android' ? (StatusBar.currentHeight || 28) + 12 : 52,
+    paddingBottom: 28,
+  },
+  topBar: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: 16,
-    paddingTop: Platform.OS === 'android' ? 44 : 20,
-    paddingBottom: 10,
-    zIndex: 10,
+    marginBottom: 6,
   },
-  backBtn: {
-    width: 40,
-    height: 40,
-    borderRadius: 12,
+  navCircularBtn: {
+    width: 38,
+    height: 38,
+    borderRadius: 19,
     borderWidth: 1,
     alignItems: 'center',
     justifyContent: 'center',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.08,
+    shadowRadius: 4,
+    elevation: 2,
   },
-  headerTitle: {
-    fontSize: 17,
-    fontWeight: '700',
-  },
-  scrollContent: {
-    flexGrow: 1,
-    paddingHorizontal: 16,
-    paddingTop: 20,
-    paddingBottom: 24,
+  logoSection: {
+    alignItems: 'center',
     justifyContent: 'center',
+    marginTop: 2,
+    marginBottom: 10,
   },
-  card: {
+  illustrationSection: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 14,
+  },
+  formContainer: {
     width: '100%',
-    borderRadius: 24,
-    borderWidth: 1,
-    padding: 22,
-    alignItems: 'center',
-    shadowOffset: { width: 0, height: 10 },
-    shadowOpacity: 0.25,
-    shadowRadius: 20,
-    elevation: 8,
   },
-  iconBadge: {
-    width: 64,
-    height: 64,
-    borderRadius: 32,
-    alignItems: 'center',
-    justifyContent: 'center',
+  headerBlock: {
     marginBottom: 16,
   },
   title: {
-    fontSize: 22,
+    fontSize: 24,
     fontWeight: '800',
-    marginBottom: 6,
-    textAlign: 'center',
+    letterSpacing: -0.4,
   },
-  description: {
-    fontSize: 13,
-    lineHeight: 18,
-    textAlign: 'center',
-    marginBottom: 16,
-    paddingHorizontal: 8,
-  },
-  otpPill: {
-    backgroundColor: 'rgba(255, 106, 26, 0.12)',
-    borderColor: 'rgba(255, 106, 26, 0.35)',
-    borderWidth: 1,
-    borderRadius: 8,
-    paddingVertical: 6,
-    paddingHorizontal: 12,
-    marginBottom: 12,
-  },
-  otpPillText: {
-    color: '#FF6A1A',
-    fontSize: 12,
-    fontWeight: '700',
+  subtitle: {
+    fontSize: 13.5,
+    fontWeight: '400',
+    marginTop: 4,
+    letterSpacing: -0.2,
   },
   errorBanner: {
-    backgroundColor: 'rgba(220, 38, 38, 0.16)',
-    borderColor: 'rgba(220, 38, 38, 0.32)',
+    backgroundColor: 'rgba(239, 68, 68, 0.1)',
+    borderColor: 'rgba(239, 68, 68, 0.3)',
     borderWidth: 1,
-    borderRadius: 8,
-    paddingVertical: 6,
-    paddingHorizontal: 12,
-    marginBottom: 12,
-    width: '100%',
+    borderRadius: 10,
+    paddingVertical: 10,
+    paddingHorizontal: 14,
+    marginBottom: 14,
   },
   errorBannerText: {
-    color: '#F87171',
-    fontSize: 12,
-    fontWeight: '600',
-    textAlign: 'center',
-  },
-  formSection: {
-    width: '100%',
+    color: '#EF4444',
+    fontSize: 13,
+    fontWeight: '500',
   },
   inputWrapper: {
-    height: 46,
-    borderRadius: 12,
-    borderWidth: 1,
     flexDirection: 'row',
     alignItems: 'center',
+    height: 52,
+    borderRadius: 14,
     paddingHorizontal: 14,
-    marginBottom: 10,
-    width: '100%',
+    marginBottom: 12,
   },
-  inputIcon: {
-    marginRight: 10,
+  inputIconLeft: {
+    width: 28,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: 6,
   },
   textInput: {
     flex: 1,
     height: '100%',
-    fontSize: 14,
-    fontWeight: '500',
-    padding: 0,
+    fontSize: 14.5,
+    fontWeight: '400',
+    paddingVertical: 0,
   },
-  primaryBtn: {
-    height: 46,
-    borderRadius: 9999,
+  eyeBtn: {
+    padding: 6,
+  },
+  submitBtn: {
+    height: 52,
+    borderRadius: 14,
     alignItems: 'center',
     justifyContent: 'center',
-    marginTop: 6,
-    marginBottom: 12,
-    width: '100%',
     shadowColor: '#FF6A1A',
-    shadowOffset: { width: 0, height: 6 },
+    shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.38,
-    shadowRadius: 16,
-    elevation: 6,
+    shadowRadius: 10,
+    elevation: 5,
   },
-  btnDisabled: {
+  submitBtnDisabled: {
     opacity: 0.7,
   },
-  btnContent: {
+  submitBtnContent: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 8,
   },
-  btnText: {
+  submitBtnText: {
     color: '#FFFFFF',
-    fontSize: 15,
+    fontSize: 16,
     fontWeight: '700',
+    marginRight: 8,
+    letterSpacing: -0.2,
   },
-  cancelLink: {
-    marginTop: 8,
+  resendBtn: {
+    alignSelf: 'center',
+    marginTop: 14,
     paddingVertical: 6,
   },
-  cancelText: {
-    fontSize: 13,
+  resendText: {
+    fontSize: 13.5,
+    fontWeight: '600',
+  },
+  footerRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: 26,
+    marginBottom: 12,
+  },
+  footerLabel: {
+    fontSize: 14,
+    fontWeight: '400',
+  },
+  footerAction: {
+    fontSize: 14,
+    fontWeight: '700',
   },
 });
 

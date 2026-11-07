@@ -49,6 +49,7 @@ import InventoryValuationScreen from '../screens/reports/InventoryValuationScree
 import FinanceScreen from '../screens/payments/FinanceScreen';
 import ProfileScreen from '../screens/profile/ProfileScreen';
 import SettingsScreen from '../screens/settings/SettingsScreen';
+import AccountDetailScreen from '../screens/account/AccountDetailScreen';
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
 const Tab = createBottomTabNavigator<MainTabParamList>();
@@ -201,6 +202,7 @@ export const AppNavigator: React.FC = () => {
             <Stack.Screen name="Finance" component={FinanceScreen} />
             <Stack.Screen name="Profile" component={ProfileScreen} />
             <Stack.Screen name="Settings" component={SettingsScreen} />
+            <Stack.Screen name="AccountDetail" component={AccountDetailScreen} />
           </>
         )}
       </Stack.Navigator>
