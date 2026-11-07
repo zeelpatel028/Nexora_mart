@@ -11,6 +11,7 @@ from ..services.store_service import StoreService
 
 router = APIRouter(prefix="/units", tags=["Units"])
 
+@router.get("", response_model=List[UnitResponse], include_in_schema=False)
 @router.get("/", response_model=List[UnitResponse])
 def get_units(
     db: Session = Depends(get_db),

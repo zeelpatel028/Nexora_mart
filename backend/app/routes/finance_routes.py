@@ -17,6 +17,7 @@ from ..services.store_service import StoreService
 router = APIRouter(tags=["Finance"])
 
 @router.get("/expenses", response_model=List[ExpenseResponse])
+@router.get("/expenses/", response_model=List[ExpenseResponse], include_in_schema=False)
 def list_expenses(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user)
@@ -25,6 +26,7 @@ def list_expenses(
     return db.query(Expense).filter(Expense.store_id == store.id).order_by(Expense.id.desc()).all()
 
 @router.post("/expenses", response_model=ExpenseResponse, status_code=status.HTTP_201_CREATED)
+@router.post("/expenses/", response_model=ExpenseResponse, status_code=status.HTTP_201_CREATED, include_in_schema=False)
 def create_expense(
     request: ExpenseCreate,
     db: Session = Depends(get_db),
@@ -67,6 +69,7 @@ def delete_expense(
     return {"message": "Expense deleted successfully."}
 
 @router.get("/payments", response_model=List[PaymentResponse])
+@router.get("/payments/", response_model=List[PaymentResponse], include_in_schema=False)
 def list_payments(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user)

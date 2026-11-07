@@ -18,6 +18,22 @@ import { useAuth } from '../../hooks/useAuth';
 import { useTheme } from '../../hooks/useTheme';
 import { storeService, reportService } from '../../services';
 import { Store, DashboardSummary, AnalyticsOverview } from '../../models/types';
+import {
+  ShoppingCartIcon,
+  BellIcon,
+  IndianRupeeIcon,
+  ShoppingBagIcon,
+  PackageIcon,
+  UsersIcon,
+  UserRoundIcon,
+  BoxesIcon,
+  TruckIcon,
+  ChartColumnIcon,
+  SettingsIcon,
+  LogOutIcon,
+  RefreshIcon,
+  UserIcon,
+} from '../../components/branding/Icons';
 
 type DashNavProp = NativeStackNavigationProp<RootStackParamList>;
 
@@ -152,7 +168,7 @@ export const DashboardScreen: React.FC = () => {
   const maxOrders = 200;
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { backgroundColor: colors.background }]}>
       <StatusBar barStyle="light-content" backgroundColor="#FF6A1A" />
 
       {/* 1. TOP ORANGE HEADER */}
@@ -174,7 +190,7 @@ export const DashboardScreen: React.FC = () => {
           {/* Center/Left: Brand Logo */}
           <View style={styles.brandTitleContainer}>
             <View style={styles.cartIconBadge}>
-              <Text style={styles.cartIconText}>🛒</Text>
+              <ShoppingCartIcon size={16} color="#FFFFFF" />
             </View>
             <Text style={styles.headerBrandTitle}>NEXORA MART</Text>
           </View>
@@ -186,7 +202,7 @@ export const DashboardScreen: React.FC = () => {
               onPress={() => setNotificationsVisible(true)}
               activeOpacity={0.7}
             >
-              <Text style={styles.bellIcon}>🔔</Text>
+              <BellIcon size={20} color="#FFFFFF" />
               <View style={styles.badgeCircle}>
                 <Text style={styles.badgeText}>3</Text>
               </View>
@@ -239,12 +255,13 @@ export const DashboardScreen: React.FC = () => {
           <View style={[styles.kpiCard, styles.kpiBorderOrange]}>
             <View style={styles.kpiTopRow}>
               <View style={[styles.statIconBox, { backgroundColor: '#FF6A1A' }]}>
-                <Text style={styles.rupeeIcon}>₹</Text>
+                <IndianRupeeIcon size={18} color="#FFFFFF" strokeWidth={2.5} />
               </View>
               <View style={styles.miniBars}>
-                <View style={[styles.miniBar, { height: 6, backgroundColor: '#FFA266' }]} />
-                <View style={[styles.miniBar, { height: 11, backgroundColor: '#FFA266' }]} />
-                <View style={[styles.miniBar, { height: 16, backgroundColor: '#FF6A1A' }]} />
+                <View style={[styles.miniBar, { height: 6, backgroundColor: '#FED7AA' }]} />
+                <View style={[styles.miniBar, { height: 10, backgroundColor: '#FED7AA' }]} />
+                <View style={[styles.miniBar, { height: 15, backgroundColor: '#FFA266' }]} />
+                <View style={[styles.miniBar, { height: 20, backgroundColor: '#FF6A1A' }]} />
               </View>
             </View>
             <Text style={styles.kpiLabel}>{stats[0]?.title || "Today's Sales"}</Text>
@@ -258,12 +275,13 @@ export const DashboardScreen: React.FC = () => {
           <View style={[styles.kpiCard, styles.kpiBorderRed]}>
             <View style={styles.kpiTopRow}>
               <View style={[styles.statIconBox, { backgroundColor: '#EF4444' }]}>
-                <Text style={styles.statEmoji}>🛒</Text>
+                <ShoppingBagIcon size={18} color="#FFFFFF" />
               </View>
               <View style={styles.miniBars}>
-                <View style={[styles.miniBar, { height: 6, backgroundColor: '#FCA5A5' }]} />
-                <View style={[styles.miniBar, { height: 11, backgroundColor: '#FCA5A5' }]} />
-                <View style={[styles.miniBar, { height: 16, backgroundColor: '#EF4444' }]} />
+                <View style={[styles.miniBar, { height: 6, backgroundColor: '#FECACA' }]} />
+                <View style={[styles.miniBar, { height: 10, backgroundColor: '#FECACA' }]} />
+                <View style={[styles.miniBar, { height: 15, backgroundColor: '#FCA5A5' }]} />
+                <View style={[styles.miniBar, { height: 20, backgroundColor: '#EF4444' }]} />
               </View>
             </View>
             <Text style={styles.kpiLabel}>{stats[1]?.title || 'Total Orders'}</Text>
@@ -277,12 +295,13 @@ export const DashboardScreen: React.FC = () => {
           <View style={[styles.kpiCard, styles.kpiBorderBlue]}>
             <View style={styles.kpiTopRow}>
               <View style={[styles.statIconBox, { backgroundColor: '#3B82F6' }]}>
-                <Text style={styles.statEmoji}>📦</Text>
+                <PackageIcon size={18} color="#FFFFFF" />
               </View>
               <View style={styles.miniBars}>
-                <View style={[styles.miniBar, { height: 6, backgroundColor: '#93C5FD' }]} />
-                <View style={[styles.miniBar, { height: 11, backgroundColor: '#93C5FD' }]} />
-                <View style={[styles.miniBar, { height: 16, backgroundColor: '#3B82F6' }]} />
+                <View style={[styles.miniBar, { height: 6, backgroundColor: '#BFDBFE' }]} />
+                <View style={[styles.miniBar, { height: 10, backgroundColor: '#BFDBFE' }]} />
+                <View style={[styles.miniBar, { height: 15, backgroundColor: '#93C5FD' }]} />
+                <View style={[styles.miniBar, { height: 20, backgroundColor: '#3B82F6' }]} />
               </View>
             </View>
             <Text style={styles.kpiLabel}>{stats[2]?.title || 'Total Products'}</Text>
@@ -294,12 +313,13 @@ export const DashboardScreen: React.FC = () => {
           <View style={[styles.kpiCard, styles.kpiBorderGreen]}>
             <View style={styles.kpiTopRow}>
               <View style={[styles.statIconBox, { backgroundColor: '#10B981' }]}>
-                <Text style={styles.statEmoji}>👥</Text>
+                <UsersIcon size={18} color="#FFFFFF" />
               </View>
               <View style={styles.miniBars}>
-                <View style={[styles.miniBar, { height: 6, backgroundColor: '#86EFAC' }]} />
-                <View style={[styles.miniBar, { height: 11, backgroundColor: '#86EFAC' }]} />
-                <View style={[styles.miniBar, { height: 16, backgroundColor: '#10B981' }]} />
+                <View style={[styles.miniBar, { height: 6, backgroundColor: '#BBF7D0' }]} />
+                <View style={[styles.miniBar, { height: 10, backgroundColor: '#BBF7D0' }]} />
+                <View style={[styles.miniBar, { height: 15, backgroundColor: '#86EFAC' }]} />
+                <View style={[styles.miniBar, { height: 20, backgroundColor: '#10B981' }]} />
               </View>
             </View>
             <Text style={styles.kpiLabel}>{stats[3]?.title || 'Employees'}</Text>
@@ -410,14 +430,14 @@ export const DashboardScreen: React.FC = () => {
 
           <View style={styles.quickGrid}>
             {[
-              { id: 'sales', label: 'Sales', icon: '🛒', action: () => navigation.navigate('PosBilling') },
-              { id: 'products', label: 'Products', icon: '📦', action: () => navigation.navigate('ProductList') },
-              { id: 'inventory', label: 'Inventory', icon: '▦', action: () => navigation.navigate('Inventory') },
-              { id: 'employees', label: 'Employees', icon: '👥', action: () => navigation.navigate('CustomerList') },
-              { id: 'customers', label: 'Customers', icon: '👤', action: () => navigation.navigate('CustomerList') },
-              { id: 'suppliers', label: 'Suppliers', icon: '🚚', action: () => navigation.navigate('SupplierList') },
-              { id: 'reports', label: 'Reports', icon: '📈', action: () => navigation.navigate('Reports') },
-              { id: 'settings', label: 'Settings', icon: '⚙️', action: () => navigation.navigate('Settings') },
+              { id: 'sales', label: 'Sales', renderIcon: () => <ShoppingCartIcon size={22} color={brandColors.primary} />, action: () => navigation.navigate('PosBilling') },
+              { id: 'products', label: 'Products', renderIcon: () => <PackageIcon size={22} color={brandColors.primary} />, action: () => navigation.navigate('ProductList') },
+              { id: 'inventory', label: 'Inventory', renderIcon: () => <BoxesIcon size={22} color={brandColors.primary} />, action: () => navigation.navigate('Inventory') },
+              { id: 'employees', label: 'Employees', renderIcon: () => <UserRoundIcon size={22} color={brandColors.primary} />, action: () => navigation.navigate('CustomerList') },
+              { id: 'customers', label: 'Customers', renderIcon: () => <UsersIcon size={22} color={brandColors.primary} />, action: () => navigation.navigate('CustomerList') },
+              { id: 'suppliers', label: 'Suppliers', renderIcon: () => <TruckIcon size={22} color={brandColors.primary} />, action: () => navigation.navigate('SupplierList') },
+              { id: 'reports', label: 'Reports', renderIcon: () => <ChartColumnIcon size={22} color={brandColors.primary} />, action: () => navigation.navigate('Reports') },
+              { id: 'settings', label: 'Settings', renderIcon: () => <SettingsIcon size={22} color={brandColors.primary} />, action: () => navigation.navigate('Settings') },
             ].map((tile) => (
               <TouchableOpacity
                 key={tile.id}
@@ -426,7 +446,7 @@ export const DashboardScreen: React.FC = () => {
                 activeOpacity={0.7}
               >
                 <View style={styles.quickIconBox}>
-                  <Text style={styles.quickEmoji}>{tile.icon}</Text>
+                  {tile.renderIcon()}
                 </View>
                 <Text style={styles.quickLabel}>{tile.label}</Text>
               </TouchableOpacity>
@@ -447,9 +467,15 @@ export const DashboardScreen: React.FC = () => {
             {recentActivities.map((act) => (
               <View key={act.id} style={styles.activityRow}>
                 <View style={styles.actIconWrap}>
-                  <Text style={{ fontSize: 16 }}>
-                    {act.icon === 'cart' ? '🛒' : act.icon === 'box' ? '📦' : act.icon === 'user' ? '👤' : '🔄'}
-                  </Text>
+                  {act.icon === 'cart' ? (
+                    <ShoppingCartIcon size={16} color={brandColors.primary} />
+                  ) : act.icon === 'box' ? (
+                    <PackageIcon size={16} color="#3B82F6" />
+                  ) : act.icon === 'user' ? (
+                    <UserIcon size={16} color="#10B981" />
+                  ) : (
+                    <RefreshIcon size={16} color="#F59E0B" />
+                  )}
                 </View>
                 <View style={{ flex: 1 }}>
                   <Text style={styles.actTitle}>{act.title}</Text>
@@ -572,7 +598,7 @@ export const DashboardScreen: React.FC = () => {
                   navigation.navigate('PosBilling');
                 }}
               >
-                <Text style={styles.drawerItemIcon}>⚡</Text>
+                <ShoppingCartIcon size={20} color={brandColors.primary} />
                 <Text style={styles.drawerItemText}>POS Billing Terminal</Text>
               </TouchableOpacity>
 
@@ -583,7 +609,7 @@ export const DashboardScreen: React.FC = () => {
                   navigation.navigate('ProductList');
                 }}
               >
-                <Text style={styles.drawerItemIcon}>📦</Text>
+                <PackageIcon size={20} color={brandColors.primary} />
                 <Text style={styles.drawerItemText}>Product Catalog</Text>
               </TouchableOpacity>
 
@@ -594,7 +620,7 @@ export const DashboardScreen: React.FC = () => {
                   navigation.navigate('Inventory');
                 }}
               >
-                <Text style={styles.drawerItemIcon}>▦</Text>
+                <BoxesIcon size={20} color={brandColors.primary} />
                 <Text style={styles.drawerItemText}>Inventory & Stock</Text>
               </TouchableOpacity>
 
@@ -605,7 +631,7 @@ export const DashboardScreen: React.FC = () => {
                   navigation.navigate('Reports');
                 }}
               >
-                <Text style={styles.drawerItemIcon}>📈</Text>
+                <ChartColumnIcon size={20} color={brandColors.primary} />
                 <Text style={styles.drawerItemText}>Business Reports</Text>
               </TouchableOpacity>
 
@@ -616,7 +642,7 @@ export const DashboardScreen: React.FC = () => {
                   navigation.navigate('Settings');
                 }}
               >
-                <Text style={styles.drawerItemIcon}>⚙️</Text>
+                <SettingsIcon size={20} color={brandColors.primary} />
                 <Text style={styles.drawerItemText}>Settings & Server Host</Text>
               </TouchableOpacity>
             </View>
@@ -628,6 +654,7 @@ export const DashboardScreen: React.FC = () => {
                 await logout();
               }}
             >
+              <LogOutIcon size={18} color="#DC2626" />
               <Text style={styles.logoutBtnText}>Sign Out</Text>
             </TouchableOpacity>
           </View>

@@ -83,9 +83,11 @@ export async function request(endpoint, options = {}) {
       try {
         console.warn(`[NMART API] Primary (${currentApiBaseUrl}) unreachable. Automatically trying alternate (${alternateBase})...`);
         response = await fetch(fallbackUrl, config);
-        // Alternate succeeded: switch active base URL for future requests
-        currentApiBaseUrl = alternateBase;
-        saveApiUrl(alternateBase);
+        // Alternate succeeded: switch active base URL for future requests (in production only)
+        if (!import.meta.env.DEV) {
+          currentApiBaseUrl = alternateBase;
+          saveApiUrl(alternateBase);
+        }
       } catch (fallbackErr) {
         const error = new Error(
           `Cannot connect to backend server. Tried both Localhost (${LOCAL_API_URL}) and Render Cloud (${RENDER_API_URL}). Please verify your backend server is online.`

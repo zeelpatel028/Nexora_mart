@@ -51,10 +51,39 @@ export const authService = {
     return user;
   },
 
-  async forgotPassword(email: string): Promise<{ success: boolean; message: string }> {
+  async forgotPassword(email: string): Promise<{ success: boolean; message: string; otp?: string }> {
     return apiClient.post(Endpoints.AUTH.FORGOT_PASSWORD, {
       email: email.trim().toLowerCase(),
     });
+  },
+
+  async verifyOtp(email: string, otp: string): Promise<{ success: boolean; message: string }> {
+    return apiClient.post(Endpoints.AUTH.VERIFY_OTP, {
+      email: email.trim().toLowerCase(),
+      otp: otp.trim(),
+    });
+  },
+
+  async resetPassword(email: string, otp: string, newPassword: string): Promise<{ success: boolean; message: string }> {
+    return apiClient.post(Endpoints.AUTH.RESET_PASSWORD, {
+      email: email.trim().toLowerCase(),
+      otp: otp.trim(),
+      newPassword,
+    });
+  },
+
+  async updateProfile(payload: {
+    firstName?: string;
+    surname?: string;
+    phone?: string;
+    currentPassword?: string;
+    newPassword?: string;
+  }): Promise<User> {
+    const res = await apiClient.put<User>(Endpoints.AUTH.UPDATE_PROFILE, payload);
+    if (res) {
+      await storage.setUser(res);
+    }
+    return res;
   },
 
   async logout(): Promise<void> {

@@ -21,6 +21,7 @@ import Card from '../../components/common/Card';
 import Badge from '../../components/common/Badge';
 import EmptyState from '../../components/common/EmptyState';
 import Loader from '../../components/common/Loader';
+import { PackageIcon } from '../../components/branding/Icons';
 import { formatCurrency, formatQuantity } from '../../utils/formatters';
 
 type ProductListNavProp = NativeStackNavigationProp<RootStackParamList>;
@@ -78,9 +79,7 @@ export const ProductListScreen: React.FC = () => {
             <Image source={{ uri: item.image_url }} style={styles.productImage} />
           ) : (
             <View style={[styles.imagePlaceholder, { backgroundColor: brandColors.primaryLight }]}>
-              <Text style={styles.imagePlaceholderText}>
-                {item.category_name ? item.category_name.substring(0, 1) : '📦'}
-              </Text>
+              <PackageIcon size={20} color={brandColors.primary} />
             </View>
           )}
 
@@ -197,7 +196,7 @@ export const ProductListScreen: React.FC = () => {
                       { color: active ? '#FFFFFF' : colors.textPrimary, fontWeight: active ? '700' : '500' },
                     ]}
                   >
-                    {cat.icon || '🏬'} {cat.name}
+                    {cat.name}
                   </Text>
                 </TouchableOpacity>
               );
@@ -211,7 +210,7 @@ export const ProductListScreen: React.FC = () => {
         <Loader message="Loading store products..." />
       ) : products.length === 0 ? (
         <EmptyState
-          icon="📦"
+          icon={<PackageIcon size={32} color={brandColors.primary} />}
           title="No Products Found"
           description={search ? `No products match "${search}"` : 'Your store catalog is currently empty. Add your first retail product!'}
           actionTitle="Add New Product"

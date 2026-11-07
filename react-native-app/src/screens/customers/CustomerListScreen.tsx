@@ -20,6 +20,7 @@ import Button from '../../components/common/Button';
 import Input from '../../components/common/Input';
 import EmptyState from '../../components/common/EmptyState';
 import Loader from '../../components/common/Loader';
+import { UsersIcon } from '../../components/branding/Icons';
 import { formatCurrency } from '../../utils/formatters';
 
 export const CustomerListScreen: React.FC = () => {
@@ -170,7 +171,7 @@ export const CustomerListScreen: React.FC = () => {
         <Loader message="Loading customers..." />
       ) : customers.length === 0 ? (
         <EmptyState
-          icon="👥"
+          icon={<UsersIcon size={32} color={brandColors.primary} />}
           title="No Customers Registered"
           description="Build your store customer relationships with loyalty credit tracking."
           actionTitle="Add First Customer"

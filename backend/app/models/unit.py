@@ -1,12 +1,6 @@
-from sqlalchemy import Column, Integer, String, Boolean, ForeignKey
-from ..database.connection import Base
+"""
+Unit model re-export from product models.
+"""
+from .product import Unit
 
-class Unit(Base):
-    __tablename__ = "units"
-
-    id = Column(Integer, primary_key=True, index=True)
-    store_id = Column(Integer, ForeignKey("stores.id", ondelete="CASCADE"), nullable=True, index=True)
-    name = Column(String(50), nullable=False)
-    symbol = Column(String(20), nullable=False)
-    is_base_unit = Column(Boolean, default=True)
-
+__all__ = ["Unit"]

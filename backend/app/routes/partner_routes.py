@@ -1,10 +1,12 @@
+import datetime
 from typing import List, Optional
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 from ..database.connection import get_db
 from ..middleware.auth_middleware import get_current_user
 from ..models.user import User
-from ..models.partner import Customer, Supplier
+from ..models.partner import Customer, Supplier, DebitCustomer
+from ..models.finance import Payment
 from ..schemas.partner_schema import (
     CustomerCreate,
     CustomerUpdate,
@@ -20,6 +22,7 @@ router = APIRouter(tags=["Partners"])
 # --- Customer Endpoints ---
 
 @router.get("/customers", response_model=List[CustomerResponse])
+@router.get("/customers/", response_model=List[CustomerResponse], include_in_schema=False)
 def list_customers(
     search: Optional[str] = None,
     db: Session = Depends(get_db),
@@ -33,6 +36,7 @@ def list_customers(
     return q.order_by(Customer.name).all()
 
 @router.post("/customers", response_model=CustomerResponse, status_code=status.HTTP_201_CREATED)
+@router.post("/customers/", response_model=CustomerResponse, status_code=status.HTTP_201_CREATED, include_in_schema=False)
 def create_customer(
     request: CustomerCreate,
     db: Session = Depends(get_db),
@@ -100,6 +104,7 @@ def delete_customer(
 # --- Supplier Endpoints ---
 
 @router.get("/suppliers", response_model=List[SupplierResponse])
+@router.get("/suppliers/", response_model=List[SupplierResponse], include_in_schema=False)
 def list_suppliers(
     search: Optional[str] = None,
     db: Session = Depends(get_db),
@@ -113,6 +118,7 @@ def list_suppliers(
     return q.order_by(Supplier.name).all()
 
 @router.post("/suppliers", response_model=SupplierResponse, status_code=status.HTTP_201_CREATED)
+@router.post("/suppliers/", response_model=SupplierResponse, status_code=status.HTTP_201_CREATED, include_in_schema=False)
 def create_supplier(
     request: SupplierCreate,
     db: Session = Depends(get_db),
@@ -175,4 +181,84 @@ def delete_supplier(
     supp.is_active = False
     db.commit()
     return {"message": "Supplier deactivated successfully."}
+
+
+# --- Debit Customer Endpoints ---
+
+@router.get("/debit-customers")
+@router.get("/debit-customers/", include_in_schema=False)
+def list_debit_customers(
+    search: Optional[str] = None,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    store = StoreService.get_user_store(db, current_user)
+    query = db.query(DebitCustomer, Customer).join(Customer, DebitCustomer.customer_id == Customer.id).filter(
+        DebitCustomer.store_id == store.id
+    )
+    if search:
+        p = f"%{search.strip()}%"
+        query = query.filter((Customer.name.ilike(p)) | (Customer.phone.ilike(p)))
+
+    results = []
+    for deb, cust in query.all():
+        results.append({
+            "id": deb.id,
+            "store_id": deb.store_id,
+            "customer_id": deb.customer_id,
+            "customer_name": cust.name,
+            "customer_phone": cust.phone,
+            "customer_email": cust.email,
+            "customer_address": cust.address,
+            "total_credit_limit": deb.total_credit_limit,
+            "outstanding_balance": deb.outstanding_balance,
+            "last_payment_date": deb.last_payment_date,
+            "due_date": deb.due_date,
+            "status": deb.status,
+            "notes": deb.notes
+        })
+    return results
+
+@router.post("/debit-customers/{id}/payment")
+def record_debit_payment(
+    id: int,
+    amount: float,
+    payment_method: str = "CASH",
+    notes: Optional[str] = None,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    store = StoreService.get_user_store(db, current_user)
+    deb = db.query(DebitCustomer).filter(DebitCustomer.id == id, DebitCustomer.store_id == store.id).first()
+    if not deb:
+        raise HTTPException(status_code=404, detail="Debit customer record not found.")
+
+    if amount <= 0:
+        raise HTTPException(status_code=400, detail="Payment amount must be greater than zero.")
+
+    deb.outstanding_balance = max(0.0, deb.outstanding_balance - amount)
+    deb.last_payment_date = datetime.datetime.now(datetime.timezone.utc)
+    if deb.outstanding_balance == 0:
+        deb.status = "CLEARED"
+
+    cust = db.query(Customer).filter(Customer.id == deb.customer_id).first()
+    if cust:
+        cust.balance = max(0.0, cust.balance - amount)
+
+    pay = Payment(
+        store_id=store.id,
+        reference_type="DEBIT_CUSTOMER",
+        reference_id=deb.id,
+        amount=amount,
+        payment_method=payment_method.upper(),
+        notes=notes or f"Debit repayment for {cust.name if cust else 'customer'}"
+    )
+    db.add(pay)
+    db.commit()
+    return {
+        "success": True,
+        "message": f"Recorded payment of ₹ {amount:.2f}",
+        "remaining_balance": deb.outstanding_balance
+    }
+
 

@@ -12,6 +12,13 @@ export const partnerService = {
   getCustomerDetail: async (id) => {
     return await api.get(API_ENDPOINTS.CUSTOMERS.DETAILS(id));
   },
+  getDebitCustomers: async (search = '') => {
+    const query = search ? `?search=${encodeURIComponent(search)}` : '';
+    return await api.get(`${API_ENDPOINTS.DEBIT_CUSTOMERS.LIST}${query}`);
+  },
+  recordDebitPayment: async (customerId, paymentData) => {
+    return await api.post(API_ENDPOINTS.DEBIT_CUSTOMERS.RECORD_PAYMENT(customerId), paymentData);
+  },
   getSuppliers: async (search = '') => {
     const query = search ? `?search=${encodeURIComponent(search)}` : '';
     return await api.get(`${API_ENDPOINTS.SUPPLIERS.LIST}${query}`);

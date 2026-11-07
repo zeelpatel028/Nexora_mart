@@ -19,6 +19,7 @@ import Header from '../../components/common/Header';
 import Card from '../../components/common/Card';
 import Button from '../../components/common/Button';
 import Badge from '../../components/common/Badge';
+import { ReceiptIcon } from '../../components/branding/Icons';
 import { formatCurrency } from '../../utils/formatters';
 
 type PosNavProp = NativeStackNavigationProp<RootStackParamList>;
@@ -175,7 +176,7 @@ export const PosBillingScreen: React.FC = () => {
         title="POS Billing Terminal"
         subtitle="Fast multi-category checkout"
         rightAction={{
-          icon: '🧾',
+          icon: <ReceiptIcon size={20} color={brandColors.primary} />,
           onPress: () => navigation.navigate('SalesList'),
         }}
       />

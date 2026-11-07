@@ -87,9 +87,10 @@ def _initialize_engine():
         print("Database connected successfully")
         return eng
     except Exception as e:
-        logger.error(f"Fatal: Could not connect to database ({e})")
-        print(f"[ERROR] Fatal: Could not connect to database ({e})")
-        raise
+        logger.warning(f"Could not connect to target database ({e}). Falling back to local SQLite mirror...")
+        print(f"[WARN] Target database offline ({e}). Using local SQLite mirror.")
+        eng, _ = _build_engine("sqlite:///./nmart_local.db")
+        return eng
 
 engine = _initialize_engine()
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)

@@ -10,6 +10,11 @@ export const STORAGE_KEY_API = 'nmart_custom_api_url';
 export function getInitialApiUrl() {
   try {
     const saved = localStorage.getItem(STORAGE_KEY_API);
+    // In local dev, if stored URL is pointing to Render, reset to Localhost to avoid stale failover lock
+    if (import.meta.env.DEV && saved && saved.includes('onrender.com')) {
+      localStorage.removeItem(STORAGE_KEY_API);
+      return LOCAL_API_URL;
+    }
     if (saved && saved.trim()) {
       return saved.trim().replace(/\/+$/, '');
     }
@@ -45,12 +50,19 @@ export const API_ENDPOINTS = {
     REGISTER: '/auth/register',
     LOGOUT: '/auth/logout',
     FORGOT_PASSWORD: '/auth/forgot-password',
+    VERIFY_OTP: '/auth/verify-otp',
     RESET_PASSWORD: '/auth/reset-password',
     ME: '/auth/me',
+    UPDATE_PROFILE: '/auth/me',
     REFRESH: '/auth/refresh'
   },
   STORES: {
-    MY_STORE: '/stores/my-store'
+    LIST: '/stores',
+    CREATE: '/stores',
+    MY_STORE: '/stores/my-store',
+    UPDATE_MY_STORE: '/stores/my-store',
+    SWITCH: (id) => `/stores/switch/${id}`,
+    CONFIGURATIONS: '/stores/configurations'
   },
   CATEGORIES: {
     LIST: '/categories',
@@ -81,6 +93,11 @@ export const API_ENDPOINTS = {
     CREATE: '/sales',
     DETAILS: (id) => `/sales/${id}`
   },
+  INVOICES: {
+    LIST: '/sales',
+    CREATE: '/sales',
+    DETAILS: (id) => `/sales/${id}`
+  },
   PURCHASES: {
     LIST: '/purchases',
     CREATE: '/purchases',
@@ -91,10 +108,21 @@ export const API_ENDPOINTS = {
     CREATE: '/customers',
     DETAILS: (id) => `/customers/${id}`
   },
+  DEBIT_CUSTOMERS: {
+    LIST: '/debit-customers',
+    RECORD_PAYMENT: (id) => `/debit-customers/${id}/payment`
+  },
   SUPPLIERS: {
     LIST: '/suppliers',
     CREATE: '/suppliers',
     DETAILS: (id) => `/suppliers/${id}`
+  },
+  EMPLOYEES: {
+    LIST: '/employees',
+    CREATE: '/employees',
+    DETAILS: (id) => `/employees/${id}`,
+    UPDATE: (id) => `/employees/${id}`,
+    DELETE: (id) => `/employees/${id}`
   },
   FINANCE: {
     EXPENSES: '/expenses',

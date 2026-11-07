@@ -10,12 +10,14 @@ export interface User {
   id: number;
   email: string;
   first_name?: string;
+  firstName?: string;
   surname?: string;
   name?: string;
   phone?: string;
   store_type?: string;
   storeType?: string;
   is_active?: boolean;
+  isActive?: boolean;
   created_at?: string;
 }
 

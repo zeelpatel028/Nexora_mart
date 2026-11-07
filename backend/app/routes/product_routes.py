@@ -15,6 +15,7 @@ from ..services.store_service import StoreService
 
 router = APIRouter(prefix="/products", tags=["Products"])
 
+@router.get("", response_model=List[ProductResponse], include_in_schema=False)
 @router.get("/", response_model=List[ProductResponse])
 def list_products(
     category_id: Optional[int] = None,
@@ -64,6 +65,7 @@ def list_products(
         )
     return response_items
 
+@router.post("", response_model=ProductDetailResponse, status_code=status.HTTP_201_CREATED, include_in_schema=False)
 @router.post("/", response_model=ProductDetailResponse, status_code=status.HTTP_201_CREATED)
 def create_product(
     request: ProductCreate,

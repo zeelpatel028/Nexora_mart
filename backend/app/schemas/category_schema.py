@@ -50,8 +50,8 @@ class CategoryUpdate(BaseModel):
 
 class CategoryResponse(CategoryBase):
     id: int
-    is_system: bool
-    is_active: bool
+    is_system: bool = True
+    is_active: bool = True
 
     class Config:
         from_attributes = True

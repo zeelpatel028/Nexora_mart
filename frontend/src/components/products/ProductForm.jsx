@@ -277,7 +277,7 @@ export const ProductForm = ({
       <div className="row g-3 mb-4">
         <div className="col-6 col-md-3">
           <label className="form-label fw-semibold text-secondary small mb-1">
-            Selling Price ($) <span className="text-danger">*</span>
+            Selling Price (₹) <span className="text-danger">*</span>
           </label>
           <input
             type="number"
@@ -293,7 +293,7 @@ export const ProductForm = ({
 
         <div className="col-6 col-md-3">
           <label className="form-label fw-semibold text-secondary small mb-1">
-            Purchase Cost ($)
+            Purchase Cost (₹)
           </label>
           <input
             type="number"
@@ -308,7 +308,7 @@ export const ProductForm = ({
 
         <div className="col-6 col-md-3">
           <label className="form-label fw-semibold text-secondary small mb-1">
-            MRP ($)
+            MRP (₹)
           </label>
           <input
             type="number"
@@ -502,7 +502,7 @@ export const ProductForm = ({
                       <th style={{ fontSize: '12px' }}>SKU</th>
                       <th style={{ fontSize: '12px' }}>Size / Spec</th>
                       <th style={{ fontSize: '12px' }}>Color / Finish</th>
-                      <th style={{ fontSize: '12px' }}>Price ($)</th>
+                      <th style={{ fontSize: '12px' }}>Price (₹)</th>
                       <th style={{ fontSize: '12px' }}>Stock</th>
                       <th></th>
                     </tr>

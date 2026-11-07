@@ -2,9 +2,10 @@ import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { useTheme } from '../../hooks/useTheme';
 import Button from './Button';
+import { PackageIcon } from '../branding/Icons';
 
 interface EmptyStateProps {
-  icon?: string;
+  icon?: string | React.ReactNode;
   title: string;
   description?: string;
   actionTitle?: string;
@@ -12,17 +13,35 @@ interface EmptyStateProps {
 }
 
 export const EmptyState: React.FC<EmptyStateProps> = ({
-  icon = '📦',
+  icon,
   title,
   description,
   actionTitle,
   onAction,
 }) => {
-  const { colors } = useTheme();
+  const { colors, brandColors } = useTheme();
 
   return (
     <View style={styles.container}>
-      <Text style={styles.icon}>{icon}</Text>
+      <View
+        style={[
+          styles.iconBox,
+          {
+            backgroundColor: brandColors.primaryLight,
+          },
+        ]}
+      >
+        {icon ? (
+          typeof icon === 'string' ? (
+            <Text style={{ fontSize: 28 }}>{icon}</Text>
+          ) : (
+            icon
+          )
+        ) : (
+          <PackageIcon size={32} color={brandColors.primary} />
+        )}
+      </View>
+
       <Text style={[styles.title, { color: colors.textPrimary }]}>{title}</Text>
       {description && (
         <Text style={[styles.description, { color: colors.textSecondary }]}>
@@ -48,12 +67,16 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  icon: {
-    fontSize: 48,
-    marginBottom: 12,
+  iconBox: {
+    width: 64,
+    height: 64,
+    borderRadius: 32,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 16,
   },
   title: {
-    fontSize: 16,
+    fontSize: 17,
     fontWeight: '700',
     textAlign: 'center',
     marginBottom: 6,
@@ -61,13 +84,12 @@ const styles = StyleSheet.create({
   description: {
     fontSize: 13,
     textAlign: 'center',
-    lineHeight: 18,
     marginBottom: 16,
+    lineHeight: 18,
   },
   actionBtn: {
-    minWidth: 140,
+    marginTop: 4,
   },
 });
 
 export default EmptyState;
-

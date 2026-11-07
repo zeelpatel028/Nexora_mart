@@ -10,11 +10,13 @@ import {
   Platform,
   ActivityIndicator,
   Alert,
+  StatusBar,
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../../navigation/types';
 import { useAuth } from '../../hooks/useAuth';
+import { useTheme } from '../../hooks/useTheme';
 import { WaveBackground } from '../../components/branding/WaveBackground';
 import { BrandLogo } from '../../components/branding/BrandLogo';
 import {
@@ -33,20 +35,22 @@ type LoginNavProp = NativeStackNavigationProp<RootStackParamList, 'Login'>;
 export const LoginScreen: React.FC = () => {
   const navigation = useNavigation<LoginNavProp>();
   const { login } = useAuth();
+  const { isDark, colors, brandColors } = useTheme();
 
-  const [email, setEmail] = useState('');
+  const [identifier, setIdentifier] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [rememberMe, setRememberMe] = useState(true);
   const [loading, setLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
-  const [emailFocused, setEmailFocused] = useState(false);
+  const [identifierFocused, setIdentifierFocused] = useState(false);
   const [passwordFocused, setPasswordFocused] = useState(false);
 
   const handleLogin = async () => {
     setErrorMsg('');
-    if (!email.trim()) {
-      setErrorMsg('Please enter your email address');
+    const trimmed = identifier.trim();
+    if (!trimmed) {
+      setErrorMsg('Please enter your email or mobile number');
       return;
     }
     if (!password) {
@@ -56,7 +60,7 @@ export const LoginScreen: React.FC = () => {
 
     setLoading(true);
     try {
-      await login({ email: email.trim(), password });
+      await login({ email: trimmed, password });
       navigation.reset({
         index: 0,
         routes: [{ name: 'MainTabs' }],
@@ -70,7 +74,7 @@ export const LoginScreen: React.FC = () => {
   };
 
   const fillDemoCredentials = () => {
-    setEmail('demo@nmart.com');
+    setIdentifier('demo@nmart.com');
     setPassword('password123');
     setErrorMsg('');
   };
@@ -90,18 +94,18 @@ export const LoginScreen: React.FC = () => {
   };
 
   const handleForgotPassword = () => {
-    Alert.alert(
-      'Forgot Password',
-      email.trim()
-        ? `A password reset link will be sent to ${email.trim()}.`
-        : 'Please enter your email address to receive reset instructions.',
-      [{ text: 'OK' }]
-    );
+    navigation.navigate('ForgotPassword');
   };
 
   return (
-    <View style={styles.container}>
-      {/* 1. Organic Multi-Layer Wave Background (1:1 with Frontend) */}
+    <View style={[styles.container, { backgroundColor: colors.background }]}>
+      <StatusBar
+        barStyle={isDark ? 'light-content' : 'dark-content'}
+        backgroundColor="transparent"
+        translucent
+      />
+
+      {/* 1. Organic Multi-Layer Wave Background (Dynamic Light / Dark) */}
       <WaveBackground />
 
       <KeyboardAvoidingView
@@ -114,32 +118,64 @@ export const LoginScreen: React.FC = () => {
           showsVerticalScrollIndicator={false}
         >
           {/* ==========================================
-              TOP HALF: Centered Logo + NEXORA MART
+              TOP SECTION: Centered Logo + NEXORA MART
              ========================================== */}
           <View style={styles.topSection}>
-            <BrandLogo size={88} textSize={25} />
+            <BrandLogo size={88} textSize={26} />
           </View>
 
           {/* ==========================================
-              BOTTOM HALF: Dark Slate Card (#181E2B)
+              BOTTOM CARD: Rounded Frosted Card
              ========================================== */}
-          <View style={styles.card}>
+          <View
+            style={[
+              styles.card,
+              {
+                backgroundColor: isDark ? colors.surface : '#FFFFFF',
+                borderColor: isDark ? colors.border : '#E8ECEF',
+                shadowColor: isDark ? '#000000' : brandColors.primary,
+              },
+            ]}
+          >
             {/* Header: Title & Subtitle */}
             <View style={styles.cardHeader}>
-              <Text style={styles.welcomeTitle}>Welcome Back</Text>
-              <Text style={styles.welcomeSubtitle}>
+              <Text
+                style={[
+                  styles.welcomeTitle,
+                  { color: isDark ? '#FFFFFF' : '#0B0B2B' },
+                ]}
+              >
+                Welcome Back
+              </Text>
+              <Text
+                style={[
+                  styles.welcomeSubtitle,
+                  { color: isDark ? '#8E9CAE' : '#5F6375' },
+                ]}
+              >
                 Sign in to continue to Nmart
               </Text>
             </View>
 
             {/* Quick Demo Pill */}
             <TouchableOpacity
-              style={styles.demoPill}
+              style={[
+                styles.demoPill,
+                {
+                  backgroundColor: isDark
+                    ? 'rgba(255, 106, 26, 0.12)'
+                    : 'rgba(255, 106, 26, 0.08)',
+                  borderColor: isDark
+                    ? 'rgba(255, 106, 26, 0.35)'
+                    : 'rgba(255, 106, 26, 0.25)',
+                },
+              ]}
               onPress={fillDemoCredentials}
               activeOpacity={0.8}
             >
               <Text style={styles.demoPillText}>
-                ⚡ Tap for Demo: <Text style={styles.demoPillBold}>Alex Morgan</Text> (demo@nmart.com)
+                ⚡ Tap for Demo:{' '}
+                <Text style={styles.demoPillBold}>Alex Morgan</Text> (demo@nmart.com)
               </Text>
             </TouchableOpacity>
 
@@ -150,38 +186,49 @@ export const LoginScreen: React.FC = () => {
               </View>
             ) : null}
 
-            {/* 1. Email Address Input */}
+            {/* 1. Email / Mobile Number Input */}
             <View
               style={[
                 styles.inputWrapper,
-                emailFocused && styles.inputWrapperFocused,
+                {
+                  backgroundColor: isDark ? colors.inputBg : '#FFFFFF',
+                  borderColor: identifierFocused
+                    ? brandColors.primary
+                    : isDark
+                    ? colors.inputBorder
+                    : '#E8ECEF',
+                  borderWidth: identifierFocused ? 1.5 : 1,
+                },
               ]}
             >
               <View style={styles.inputIconLeft}>
-                <MailIcon size={19} color="#FF6A1A" />
+                <MailIcon size={19} color={brandColors.primary} />
               </View>
               <TextInput
-                style={styles.textInput}
-                placeholder="Email address"
-                placeholderTextColor="#768499"
-                value={email}
+                style={[
+                  styles.textInput,
+                  { color: isDark ? '#FFFFFF' : '#0B0B2B' },
+                ]}
+                placeholder="Email or Mobile Number"
+                placeholderTextColor={isDark ? '#768499' : '#94A3B8'}
+                value={identifier}
                 onChangeText={(text) => {
-                  setEmail(text);
+                  setIdentifier(text);
                   if (errorMsg) setErrorMsg('');
                 }}
-                onFocus={() => setEmailFocused(true)}
-                onBlur={() => setEmailFocused(false)}
+                onFocus={() => setIdentifierFocused(true)}
+                onBlur={() => setIdentifierFocused(false)}
                 keyboardType="email-address"
                 autoCapitalize="none"
                 autoCorrect={false}
               />
-              {email ? (
+              {identifier ? (
                 <TouchableOpacity
-                  onPress={() => setEmail('')}
+                  onPress={() => setIdentifier('')}
                   style={styles.clearBtn}
                   hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
                 >
-                  <CloseIcon size={16} color="#768499" />
+                  <CloseIcon size={16} color={isDark ? '#768499' : '#94A3B8'} />
                 </TouchableOpacity>
               ) : null}
             </View>
@@ -190,16 +237,27 @@ export const LoginScreen: React.FC = () => {
             <View
               style={[
                 styles.inputWrapper,
-                passwordFocused && styles.inputWrapperFocused,
+                {
+                  backgroundColor: isDark ? colors.inputBg : '#FFFFFF',
+                  borderColor: passwordFocused
+                    ? brandColors.primary
+                    : isDark
+                    ? colors.inputBorder
+                    : '#E8ECEF',
+                  borderWidth: passwordFocused ? 1.5 : 1,
+                },
               ]}
             >
               <View style={styles.inputIconLeft}>
-                <LockIcon size={19} color="#FF6A1A" />
+                <LockIcon size={19} color={brandColors.primary} />
               </View>
               <TextInput
-                style={styles.textInput}
+                style={[
+                  styles.textInput,
+                  { color: isDark ? '#FFFFFF' : '#0B0B2B' },
+                ]}
                 placeholder="Password"
-                placeholderTextColor="#768499"
+                placeholderTextColor={isDark ? '#768499' : '#94A3B8'}
                 value={password}
                 onChangeText={(text) => {
                   setPassword(text);
@@ -216,9 +274,9 @@ export const LoginScreen: React.FC = () => {
                 hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
               >
                 {showPassword ? (
-                  <EyeOffIcon size={19} color="#FF6A1A" />
+                  <EyeOffIcon size={19} color={brandColors.primary} />
                 ) : (
-                  <EyeIcon size={19} color="#768499" />
+                  <EyeIcon size={19} color={isDark ? '#768499' : '#94A3B8'} />
                 )}
               </TouchableOpacity>
             </View>
@@ -233,25 +291,54 @@ export const LoginScreen: React.FC = () => {
                 <View
                   style={[
                     styles.checkboxBox,
-                    rememberMe && styles.checkboxBoxChecked,
+                    {
+                      borderColor: rememberMe
+                        ? brandColors.primary
+                        : isDark
+                        ? '#283348'
+                        : '#CBD5E1',
+                      backgroundColor: rememberMe
+                        ? brandColors.primary
+                        : isDark
+                        ? '#1B2232'
+                        : '#FFFFFF',
+                    },
                   ]}
                 >
                   {rememberMe && <CheckIcon size={11} color="#FFFFFF" />}
                 </View>
-                <Text style={styles.checkboxLabel}>Keep me signed in</Text>
+                <Text
+                  style={[
+                    styles.checkboxLabel,
+                    { color: isDark ? '#8E9CAE' : '#5F6375' },
+                  ]}
+                >
+                  Keep me signed in
+                </Text>
               </TouchableOpacity>
 
               <TouchableOpacity
                 onPress={handleForgotPassword}
                 activeOpacity={0.7}
               >
-                <Text style={styles.forgotLink}>Forgot Password?</Text>
+                <Text
+                  style={[
+                    styles.forgotLink,
+                    { color: brandColors.primary },
+                  ]}
+                >
+                  Forgot Password?
+                </Text>
               </TouchableOpacity>
             </View>
 
-            {/* 4. Large Gradient Login Button with Arrow */}
+            {/* 4. Large Orange Login Button with Arrow */}
             <TouchableOpacity
-              style={[styles.loginBtn, loading && styles.loginBtnDisabled]}
+              style={[
+                styles.loginBtn,
+                { backgroundColor: brandColors.primary },
+                loading && styles.loginBtnDisabled,
+              ]}
               onPress={handleLogin}
               disabled={loading}
               activeOpacity={0.88}
@@ -268,29 +355,73 @@ export const LoginScreen: React.FC = () => {
 
             {/* 5. Divider: Or continue with */}
             <View style={styles.dividerRow}>
-              <View style={styles.dividerLine} />
-              <Text style={styles.dividerText}>Or continue with</Text>
-              <View style={styles.dividerLine} />
+              <View
+                style={[
+                  styles.dividerLine,
+                  { backgroundColor: isDark ? '#252D3E' : '#E5DFD7' },
+                ]}
+              />
+              <Text
+                style={[
+                  styles.dividerText,
+                  { color: isDark ? '#768499' : '#94A3B8' },
+                ]}
+              >
+                Or continue with
+              </Text>
+              <View
+                style={[
+                  styles.dividerLine,
+                  { backgroundColor: isDark ? '#252D3E' : '#E5DFD7' },
+                ]}
+              />
             </View>
 
             {/* 6. Continue with Google Button */}
             <TouchableOpacity
-              style={styles.googleBtn}
+              style={[
+                styles.googleBtn,
+                {
+                  backgroundColor: isDark ? colors.socialBg : '#FFFFFF',
+                  borderColor: isDark ? colors.socialBorder : '#E8ECEF',
+                },
+              ]}
               onPress={handleGoogleSignIn}
               activeOpacity={0.8}
             >
               <GoogleIcon size={19} />
-              <Text style={styles.googleBtnText}>Continue with Google</Text>
+              <Text
+                style={[
+                  styles.googleBtnText,
+                  { color: isDark ? '#FFFFFF' : '#0B0B2B' },
+                ]}
+              >
+                Continue with Google
+              </Text>
             </TouchableOpacity>
 
             {/* 7. Footer: Don't have an account? Sign Up */}
             <View style={styles.footerRow}>
-              <Text style={styles.footerLabel}>Don't have an account? </Text>
+              <Text
+                style={[
+                  styles.footerLabel,
+                  { color: isDark ? '#8E9CAE' : '#5F6375' },
+                ]}
+              >
+                Don't have an account?{' '}
+              </Text>
               <TouchableOpacity
                 onPress={() => navigation.navigate('Register')}
                 activeOpacity={0.7}
               >
-                <Text style={styles.footerAction}>Sign Up</Text>
+                <Text
+                  style={[
+                    styles.footerAction,
+                    { color: brandColors.primary },
+                  ]}
+                >
+                  Sign Up
+                </Text>
               </TouchableOpacity>
             </View>
           </View>
@@ -303,7 +434,6 @@ export const LoginScreen: React.FC = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#111520',
   },
   flexOne: {
     flex: 1,
@@ -312,7 +442,7 @@ const styles = StyleSheet.create({
     flexGrow: 1,
     justifyContent: 'space-between',
     paddingHorizontal: 16,
-    paddingTop: 16,
+    paddingTop: 36,
     paddingBottom: 24,
   },
   topSection: {
@@ -324,16 +454,13 @@ const styles = StyleSheet.create({
   },
   card: {
     width: '100%',
-    backgroundColor: '#181E2B',
     borderRadius: 24,
     borderWidth: 1,
-    borderColor: '#283348',
-    padding: 18,
-    shadowColor: '#000000',
+    padding: 20,
     shadowOffset: { width: 0, height: 10 },
-    shadowOpacity: 0.45,
+    shadowOpacity: 0.25,
     shadowRadius: 20,
-    elevation: 10,
+    elevation: 8,
   },
   cardHeader: {
     marginBottom: 10,
@@ -341,60 +468,50 @@ const styles = StyleSheet.create({
   welcomeTitle: {
     fontSize: 22,
     fontWeight: '800',
-    color: '#FFFFFF',
     letterSpacing: -0.3,
     marginBottom: 2,
   },
   welcomeSubtitle: {
     fontSize: 12,
     fontWeight: '500',
-    color: '#8E9CAE',
   },
   demoPill: {
-    backgroundColor: 'rgba(255, 106, 26, 0.12)',
+    borderRadius: 8,
     borderWidth: 1,
-    borderColor: 'rgba(255, 106, 26, 0.35)',
-    borderRadius: 10,
-    paddingVertical: 5,
+    paddingVertical: 6,
     paddingHorizontal: 10,
     marginBottom: 10,
+    alignItems: 'center',
   },
   demoPillText: {
     color: '#FF6A1A',
     fontSize: 11,
-    textAlign: 'center',
+    fontWeight: '600',
   },
   demoPillBold: {
-    fontWeight: '700',
+    fontWeight: '800',
   },
   errorBanner: {
-    backgroundColor: 'rgba(239, 68, 68, 0.12)',
+    backgroundColor: 'rgba(220, 38, 38, 0.16)',
+    borderColor: 'rgba(220, 38, 38, 0.32)',
     borderWidth: 1,
-    borderColor: 'rgba(239, 68, 68, 0.4)',
-    borderRadius: 10,
+    borderRadius: 8,
     paddingVertical: 6,
     paddingHorizontal: 10,
-    marginBottom: 10,
+    marginBottom: 8,
   },
   errorBannerText: {
-    color: '#EF4444',
-    fontSize: 12,
-    fontWeight: '500',
+    color: '#F87171',
+    fontSize: 11,
+    fontWeight: '600',
   },
   inputWrapper: {
     height: 46,
-    borderRadius: 13,
-    borderWidth: 1,
-    borderColor: '#283348',
-    backgroundColor: '#1B2232',
+    borderRadius: 12,
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 12,
+    paddingHorizontal: 14,
     marginBottom: 10,
-  },
-  inputWrapperFocused: {
-    borderColor: '#FF6A1A',
-    borderWidth: 1.5,
   },
   inputIconLeft: {
     marginRight: 10,
@@ -404,64 +521,57 @@ const styles = StyleSheet.create({
   textInput: {
     flex: 1,
     height: '100%',
-    color: '#FFFFFF',
     fontSize: 14,
     fontWeight: '500',
     padding: 0,
   },
   clearBtn: {
     padding: 4,
+    marginLeft: 6,
   },
   eyeBtn: {
     padding: 4,
+    marginLeft: 6,
   },
   optionsRow: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    marginVertical: 4,
+    marginTop: 2,
+    marginBottom: 6,
   },
   checkboxRow: {
     flexDirection: 'row',
     alignItems: 'center',
   },
   checkboxBox: {
-    width: 19,
-    height: 19,
+    width: 17,
+    height: 17,
     borderRadius: 5,
     borderWidth: 1.5,
-    borderColor: '#283348',
-    backgroundColor: '#1B2232',
     alignItems: 'center',
     justifyContent: 'center',
     marginRight: 8,
   },
-  checkboxBoxChecked: {
-    backgroundColor: '#FF6A1A',
-    borderColor: '#FF6A1A',
-  },
   checkboxLabel: {
-    color: '#8E9CAE',
-    fontSize: 13,
-    fontWeight: '400',
+    fontSize: 12,
+    fontWeight: '500',
   },
   forgotLink: {
-    color: '#FF6A1A',
-    fontSize: 13,
+    fontSize: 12,
     fontWeight: '600',
   },
   loginBtn: {
-    width: '100%',
     height: 46,
     borderRadius: 9999,
-    backgroundColor: '#FF6A1A',
     alignItems: 'center',
     justifyContent: 'center',
-    marginVertical: 12,
+    marginTop: 10,
+    marginBottom: 12,
     shadowColor: '#FF6A1A',
     shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.42,
-    shadowRadius: 14,
+    shadowOpacity: 0.38,
+    shadowRadius: 16,
     elevation: 6,
   },
   loginBtnDisabled: {
@@ -477,40 +587,33 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
     fontSize: 16,
     fontWeight: '700',
-    letterSpacing: 0.3,
   },
   dividerRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginVertical: 6,
+    marginBottom: 10,
   },
   dividerLine: {
     flex: 1,
     height: 1,
-    backgroundColor: '#283348',
   },
   dividerText: {
-    color: '#768499',
     fontSize: 11,
+    fontWeight: '500',
     paddingHorizontal: 10,
-    fontWeight: '400',
   },
   googleBtn: {
-    width: '100%',
     height: 44,
-    borderRadius: 13,
+    borderRadius: 12,
     borderWidth: 1,
-    borderColor: '#283348',
-    backgroundColor: '#1B2232',
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     gap: 10,
-    marginBottom: 10,
+    marginBottom: 12,
   },
   googleBtnText: {
-    color: '#FFFFFF',
-    fontSize: 14,
+    fontSize: 13,
     fontWeight: '600',
   },
   footerRow: {
@@ -520,12 +623,10 @@ const styles = StyleSheet.create({
     marginTop: 2,
   },
   footerLabel: {
-    color: '#8E9CAE',
     fontSize: 13,
     fontWeight: '400',
   },
   footerAction: {
-    color: '#FF6A1A',
     fontSize: 13,
     fontWeight: '700',
   },

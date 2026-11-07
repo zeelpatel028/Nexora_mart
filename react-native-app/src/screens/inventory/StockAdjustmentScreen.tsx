@@ -161,10 +161,10 @@ export const StockAdjustmentScreen: React.FC = () => {
                 ]}
               >
                 {diff === 0
-                  ? '✓ Count matches system record exactly.'
+                  ? 'Count matches system record exactly.'
                   : diff > 0
-                  ? `▲ Surplus of +${diff} items detected.`
-                  : `▼ Shortage of ${diff} items detected.`}
+                  ? `Surplus of +${diff} items detected.`
+                  : `Shortage of ${diff} items detected.`}
               </Text>
             </View>
           )}

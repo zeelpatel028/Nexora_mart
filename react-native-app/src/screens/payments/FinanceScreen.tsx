@@ -20,6 +20,7 @@ import Button from '../../components/common/Button';
 import Input from '../../components/common/Input';
 import EmptyState from '../../components/common/EmptyState';
 import Loader from '../../components/common/Loader';
+import { CreditCardIcon, ReceiptIcon } from '../../components/branding/Icons';
 import { formatCurrency, formatDate } from '../../utils/formatters';
 
 export const FinanceScreen: React.FC = () => {
@@ -170,7 +171,7 @@ export const FinanceScreen: React.FC = () => {
               activeTab === 'expenses' && { fontWeight: '700' },
             ]}
           >
-            💸 Store Expenses ({expenses.length})
+            Store Expenses ({expenses.length})
           </Text>
         </TouchableOpacity>
 
@@ -188,7 +189,7 @@ export const FinanceScreen: React.FC = () => {
               activeTab === 'payments' && { fontWeight: '700' },
             ]}
           >
-            💳 Transaction Audit ({payments.length})
+            Transaction Audit ({payments.length})
           </Text>
         </TouchableOpacity>
       </View>
@@ -198,7 +199,7 @@ export const FinanceScreen: React.FC = () => {
       ) : activeTab === 'expenses' ? (
         expenses.length === 0 ? (
           <EmptyState
-            icon="💸"
+            icon={<ReceiptIcon size={32} color={brandColors.primary} />}
             title="No Expenses Logged"
             description="Track store rent, electricity, courier, or packaging costs."
             actionTitle="Record First Expense"

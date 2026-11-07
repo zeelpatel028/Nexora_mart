@@ -120,7 +120,7 @@ class ReportService:
             func.count(func.distinct(Product.id)),
             func.coalesce(func.sum(SaleItem.quantity), 0.0),
             func.coalesce(func.sum(SaleItem.total_price), 0.0)
-        ).join(Product, Product.category_id == Category.id)\
+        ).join(Product, Product.shop_category_id == Category.id)\
          .outerjoin(SaleItem, SaleItem.product_id == Product.id)\
          .filter(Product.store_id == store.id)\
          .group_by(Category.id, Category.name).all()

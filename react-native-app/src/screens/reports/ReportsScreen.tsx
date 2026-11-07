@@ -22,6 +22,7 @@ import Header from '../../components/common/Header';
 import Card from '../../components/common/Card';
 import Badge from '../../components/common/Badge';
 import Loader from '../../components/common/Loader';
+import { GridIcon } from '../../components/branding/Icons';
 import { formatCurrency } from '../../utils/formatters';
 
 type ReportsNavProp = NativeStackNavigationProp<RootStackParamList>;
@@ -167,8 +168,8 @@ export const ReportsScreen: React.FC = () => {
 
             {categories.map((c) => (
               <View key={c.category_id} style={[styles.catRow, { borderBottomColor: colors.borderLight }]}>
-                <View style={styles.catIconBox}>
-                  <Text style={{ fontSize: 20 }}>{c.icon || '🏬'}</Text>
+                <View style={[styles.catIconBox, { backgroundColor: brandColors.primaryLight }]}>
+                  <GridIcon size={20} color={brandColors.primary} />
                 </View>
 
                 <View style={{ flex: 1, marginLeft: 10 }}>

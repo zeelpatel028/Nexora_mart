@@ -230,21 +230,20 @@ def seed_categories_and_fields(db: Session):
                 target_cat = db.query(Category).filter(Category.code == "grocery").first() or db.query(Category).first()
 
             if target_cat:
-                existing_store = db.query(Store).filter(Store.owner_id == user.id).first()
+                existing_store = db.query(Store).filter(Store.user_id == user.id).first()
                 if not existing_store:
                     store_name = f"{user.first_name}'s {target_cat.name}"
                     new_store = Store(
                         name=store_name,
-                        category_id=target_cat.id,
-                        owner_id=user.id,
-                        phone=user.phone,
-                        email=user.email,
-                        currency="USD",
+                        shop_category_id=target_cat.id,
+                        user_id=user.id,
+                        code=f"STORE-{user.id:03d}",
+                        currency="INR",
+                        currency_symbol="₹",
                         is_active=True
                     )
                     db.add(new_store)
                     db.flush()
-                    user.store_id = new_store.id
                 elif not user.store_id:
                     user.store_id = existing_store.id
 

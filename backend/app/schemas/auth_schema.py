@@ -16,6 +16,22 @@ class UserRegisterRequest(BaseModel):
 class ForgotPasswordRequest(BaseModel):
     email: EmailStr
 
+class VerifyOtpRequest(BaseModel):
+    email: EmailStr
+    otp: str = Field(..., min_length=4, max_length=10)
+
+class ResetPasswordRequest(BaseModel):
+    email: EmailStr
+    otp: str = Field(..., min_length=4, max_length=10)
+    newPassword: str = Field(..., min_length=6)
+
+class UpdateProfileRequest(BaseModel):
+    firstName: Optional[str] = Field(None, max_length=100)
+    surname: Optional[str] = Field(None, max_length=100)
+    phone: Optional[str] = Field(None, max_length=30)
+    currentPassword: Optional[str] = None
+    newPassword: Optional[str] = Field(None, min_length=6)
+
 class UserResponse(BaseModel):
     id: int
     email: str

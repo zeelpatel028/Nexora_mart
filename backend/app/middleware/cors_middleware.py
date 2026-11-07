@@ -38,8 +38,8 @@ def setup_cors(app: FastAPI) -> None:
     app.add_middleware(
         CORSMiddleware,
         allow_origins=origins_list,
-        # Regex permits all *.vercel.app deployments (production and preview branches) and *.onrender.com
-        allow_origin_regex=r"^https://([a-zA-Z0-9_-]+\.)*(vercel\.app|onrender\.com)$",
+        # Regex permits all localhost/127.0.0.1 ports, *.vercel.app deployments, and *.onrender.com
+        allow_origin_regex=r"^(https?://(localhost|127\.0\.0\.1|0\.0\.0\.0)(:\d+)?|https://([a-zA-Z0-9_-]+\.)*(vercel\.app|onrender\.com))$",
         allow_credentials=True,
         allow_methods=["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS", "HEAD"],
         allow_headers=[

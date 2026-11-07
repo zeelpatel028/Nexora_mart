@@ -5,11 +5,12 @@ import {
   StyleSheet,
   ScrollView,
   Alert,
+  TouchableOpacity,
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { useAuth } from '../../hooks/useAuth';
 import { useTheme } from '../../hooks/useTheme';
-import { storeService } from '../../services';
+import { storeService, authService } from '../../services';
 import { Store } from '../../models/types';
 import Header from '../../components/common/Header';
 import Card from '../../components/common/Card';
@@ -22,12 +23,21 @@ export const ProfileScreen: React.FC = () => {
   const { user, logout, refreshProfile } = useAuth();
   const { colors, brandColors } = useTheme();
 
+  // Store profile fields
   const [store, setStore] = useState<Store | null>(null);
   const [storeName, setStoreName] = useState('');
   const [storePhone, setStorePhone] = useState('');
   const [storeAddress, setStoreAddress] = useState('');
   const [storeCity, setStoreCity] = useState('');
-  const [saving, setSaving] = useState(false);
+  const [savingStore, setSavingStore] = useState(false);
+
+  // User personal account fields
+  const [firstName, setFirstName] = useState(user?.first_name || user?.firstName || '');
+  const [surname, setSurname] = useState(user?.surname || '');
+  const [userPhone, setUserPhone] = useState(user?.phone || '');
+  const [currentPassword, setCurrentPassword] = useState('');
+  const [newPassword, setNewPassword] = useState('');
+  const [savingUser, setSavingUser] = useState(false);
 
   useEffect(() => {
     async function loadStore() {
@@ -45,8 +55,16 @@ export const ProfileScreen: React.FC = () => {
     loadStore();
   }, []);
 
+  useEffect(() => {
+    if (user) {
+      setFirstName(user.first_name || (user as any).firstName || '');
+      setSurname(user.surname || '');
+      setUserPhone(user.phone || '');
+    }
+  }, [user]);
+
   const handleUpdateStore = async () => {
-    setSaving(true);
+    setSavingStore(true);
     try {
       const updated = await storeService.updateMyStore({
         name: storeName.trim() || undefined,
@@ -60,7 +78,28 @@ export const ProfileScreen: React.FC = () => {
     } catch (err: any) {
       Alert.alert('Error', err.message || 'Failed to update store.');
     } finally {
-      setSaving(false);
+      setSavingStore(false);
+    }
+  };
+
+  const handleUpdateUserProfile = async () => {
+    setSavingUser(true);
+    try {
+      await authService.updateProfile({
+        firstName: firstName.trim() || undefined,
+        surname: surname.trim() || undefined,
+        phone: userPhone.trim() || undefined,
+        currentPassword: currentPassword || undefined,
+        newPassword: newPassword || undefined,
+      });
+      await refreshProfile();
+      setCurrentPassword('');
+      setNewPassword('');
+      Alert.alert('Account Updated', 'Your merchant personal profile details have been saved.');
+    } catch (err: any) {
+      Alert.alert('Error', err.message || 'Failed to update profile.');
+    } finally {
+      setSavingUser(false);
     }
   };
 
@@ -103,13 +142,66 @@ export const ProfileScreen: React.FC = () => {
           <Text style={[styles.userEmail, { color: colors.textSecondary }]}>{user?.email}</Text>
 
           <View style={styles.badgeRow}>
-            <Badge label={user?.store_type || user?.storeType || 'Supermarket'} variant="primary" />
+            <Badge label={user?.store_type || (user as any)?.storeType || 'Supermarket'} variant="primary" />
             <Badge label="Store Merchant" variant="success" />
           </View>
         </Card>
 
+        {/* Personal Account Information */}
+        <Card style={{ marginBottom: 14 }}>
+          <Text style={[styles.sectionTitle, { color: colors.textPrimary }]}>Personal Information</Text>
+
+          <Input
+            label="First Name"
+            value={firstName}
+            onChangeText={setFirstName}
+            placeholder="First Name"
+          />
+
+          <Input
+            label="Surname"
+            value={surname}
+            onChangeText={setSurname}
+            placeholder="Surname"
+          />
+
+          <Input
+            label="Contact Phone"
+            value={userPhone}
+            onChangeText={setUserPhone}
+            placeholder="+1-555-0100"
+            keyboardType="phone-pad"
+          />
+
+          <View style={{ marginTop: 8, paddingTop: 10, borderTopWidth: 1, borderTopColor: colors.border }}>
+            <Text style={[styles.subHeading, { color: colors.textPrimary }]}>Security / Password (Optional)</Text>
+            <Input
+              label="Current Password"
+              value={currentPassword}
+              onChangeText={setCurrentPassword}
+              placeholder="Required to set new password"
+              secureTextEntry
+            />
+            <Input
+              label="New Password"
+              value={newPassword}
+              onChangeText={setNewPassword}
+              placeholder="Minimum 6 characters"
+              secureTextEntry
+            />
+          </View>
+
+          <Button
+            title="Save Account Details"
+            onPress={handleUpdateUserProfile}
+            loading={savingUser}
+            size="sm"
+            style={{ marginTop: 6 }}
+          />
+        </Card>
+
         {/* Store Business Profile Form */}
-        <Card>
+        <Card style={{ marginBottom: 14 }}>
           <Text style={[styles.sectionTitle, { color: colors.textPrimary }]}>Store Profile</Text>
 
           <Input
@@ -144,7 +236,7 @@ export const ProfileScreen: React.FC = () => {
           <Button
             title="Update Store Info"
             onPress={handleUpdateStore}
-            loading={saving}
+            loading={savingStore}
             size="sm"
             style={{ marginTop: 6 }}
           />
@@ -155,7 +247,7 @@ export const ProfileScreen: React.FC = () => {
           title="Sign Out from Device"
           variant="danger"
           onPress={handleLogout}
-          style={{ marginTop: 8, marginBottom: 24 }}
+          style={{ marginTop: 4, marginBottom: 28 }}
         />
       </ScrollView>
     </View>
@@ -170,7 +262,7 @@ const styles = StyleSheet.create({
   userCard: {
     alignItems: 'center',
     padding: 24,
-    marginBottom: 12,
+    marginBottom: 14,
   },
   avatarCircle: {
     width: 64,
@@ -203,7 +295,11 @@ const styles = StyleSheet.create({
     fontWeight: '800',
     marginBottom: 12,
   },
+  subHeading: {
+    fontSize: 13.5,
+    fontWeight: '700',
+    marginBottom: 8,
+  },
 });
 
 export default ProfileScreen;
-

@@ -5,13 +5,15 @@ import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../../navigation/types';
 import { useAuth } from '../../hooks/useAuth';
 import { useTheme } from '../../hooks/useTheme';
+import { WaveBackground } from '../../components/branding/WaveBackground';
+import { BrandLogo } from '../../components/branding/BrandLogo';
 
 type SplashNavProp = NativeStackNavigationProp<RootStackParamList, 'Splash'>;
 
 export const SplashScreen: React.FC = () => {
   const navigation = useNavigation<SplashNavProp>();
   const { isAuthenticated, isLoading } = useAuth();
-  const { brandColors } = useTheme();
+  const { isDark, colors, brandColors } = useTheme();
 
   useEffect(() => {
     if (!isLoading) {
@@ -34,21 +36,28 @@ export const SplashScreen: React.FC = () => {
   }, [isAuthenticated, isLoading, navigation]);
 
   return (
-    <View style={[styles.container, { backgroundColor: brandColors.primary }]}>
-      <StatusBar barStyle="light-content" backgroundColor={brandColors.primary} />
-      
-      <View style={styles.centerBox}>
-        <View style={styles.iconCircle}>
-          <Text style={styles.icon}>🛍️</Text>
-        </View>
+    <View style={[styles.container, { backgroundColor: colors.background }]}>
+      <StatusBar
+        barStyle={isDark ? 'light-content' : 'dark-content'}
+        backgroundColor="transparent"
+        translucent
+      />
+      <WaveBackground />
 
-        <Text style={styles.brandTitle}>NEXORA MART</Text>
-        <Text style={styles.brandTagline}>Cloud Retail Commerce & Merchant Platform</Text>
+      <View style={styles.centerBox}>
+        <BrandLogo
+          size={110}
+          textSize={30}
+          showTagline={true}
+          tagline="Smart Shopping, Delivered Fresh"
+        />
       </View>
 
       <View style={styles.footer}>
-        <ActivityIndicator color="#FFFFFF" size="small" />
-        <Text style={styles.versionText}>Version 1.0.0 • Multi-Category ERP</Text>
+        <ActivityIndicator color={brandColors.primary} size="small" />
+        <Text style={[styles.versionText, { color: isDark ? '#8E9CAE' : '#6B6F80' }]}>
+          Version 1.0.0 • Cloud Retail Platform
+        </Text>
       </View>
     </View>
   );
@@ -59,7 +68,7 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingVertical: 48,
+    paddingVertical: 56,
   },
   centerBox: {
     flex: 1,
@@ -67,46 +76,15 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingHorizontal: 24,
   },
-  iconCircle: {
-    width: 96,
-    height: 96,
-    borderRadius: 48,
-    backgroundColor: '#FFFFFF',
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: 20,
-    elevation: 8,
-    shadowColor: '#000000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.2,
-    shadowRadius: 10,
-  },
-  icon: {
-    fontSize: 48,
-  },
-  brandTitle: {
-    fontSize: 28,
-    fontWeight: '900',
-    color: '#FFFFFF',
-    letterSpacing: 1,
-  },
-  brandTagline: {
-    fontSize: 13,
-    color: 'rgba(255, 255, 255, 0.9)',
-    marginTop: 8,
-    textAlign: 'center',
-    fontWeight: '500',
-  },
   footer: {
     alignItems: 'center',
-    gap: 8,
+    gap: 12,
   },
   versionText: {
     fontSize: 12,
-    color: 'rgba(255, 255, 255, 0.75)',
     fontWeight: '500',
+    letterSpacing: 0.4,
   },
 });
 
 export default SplashScreen;
-

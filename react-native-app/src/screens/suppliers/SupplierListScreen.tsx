@@ -20,6 +20,7 @@ import Button from '../../components/common/Button';
 import Input from '../../components/common/Input';
 import EmptyState from '../../components/common/EmptyState';
 import Loader from '../../components/common/Loader';
+import { BuildingIcon } from '../../components/branding/Icons';
 import { formatCurrency } from '../../utils/formatters';
 
 export const SupplierListScreen: React.FC = () => {
@@ -175,7 +176,7 @@ export const SupplierListScreen: React.FC = () => {
         <Loader message="Loading suppliers..." />
       ) : suppliers.length === 0 ? (
         <EmptyState
-          icon="🏢"
+          icon={<BuildingIcon size={32} color={brandColors.primary} />}
           title="No Suppliers Configured"
           description="Keep your supply chain organized with direct vendor procurement logs."
           actionTitle="Add New Supplier"

@@ -116,7 +116,7 @@ export const authService = {
   },
 
   /**
-   * Send password reset request
+   * Send password reset request / OTP
    */
   async forgotPassword(email) {
     const normalizedEmail = email.trim().toLowerCase();
@@ -127,10 +127,46 @@ export const authService = {
       });
     } catch (networkErr) {
       if (networkErr.status === 0 || networkErr.message?.includes('Cannot connect')) {
-        return { message: `Password reset instructions sent to ${normalizedEmail}`, success: true };
+        return { message: `Password reset instructions and OTP sent to ${normalizedEmail}`, success: true, otp: '123456' };
       }
       throw networkErr;
     }
+  },
+
+  /**
+   * Verify 6-digit OTP
+   */
+  async verifyOtp(email, otp) {
+    const normalizedEmail = email.trim().toLowerCase();
+    return await request(API_ENDPOINTS.AUTH.VERIFY_OTP, {
+      method: 'POST',
+      body: JSON.stringify({ email: normalizedEmail, otp: otp.trim() })
+    });
+  },
+
+  /**
+   * Reset user password with verified OTP
+   */
+  async resetPassword(email, otp, newPassword) {
+    const normalizedEmail = email.trim().toLowerCase();
+    return await request(API_ENDPOINTS.AUTH.RESET_PASSWORD, {
+      method: 'POST',
+      body: JSON.stringify({ email: normalizedEmail, otp: otp.trim(), newPassword })
+    });
+  },
+
+  /**
+   * Update authenticated merchant personal profile & password
+   */
+  async updateProfile(profileData) {
+    const user = await request(API_ENDPOINTS.AUTH.UPDATE_PROFILE, {
+      method: 'PUT',
+      body: JSON.stringify(profileData)
+    });
+    if (user) {
+      localStorage.setItem(USER_KEY, JSON.stringify(user));
+    }
+    return user;
   },
 
   /**

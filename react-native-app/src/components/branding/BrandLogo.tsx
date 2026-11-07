@@ -1,5 +1,6 @@
 import React from 'react';
 import { View, Text, Image, StyleSheet } from 'react-native';
+import { useTheme } from '../../hooks/useTheme';
 
 interface BrandLogoProps {
   size?: number;
@@ -11,13 +12,15 @@ interface BrandLogoProps {
 }
 
 export const BrandLogo: React.FC<BrandLogoProps> = ({
-  size = 84,
-  textSize = 24,
+  size = 88,
+  textSize = 25,
   showTitle = true,
   showTagline = true,
   tagline = 'Smart Shopping, Delivered Fresh',
   style,
 }) => {
+  const { isDark, colors, brandColors } = useTheme();
+
   return (
     <View style={[styles.container, style]}>
       {/* Ambient Orange Glow behind Logo */}
@@ -25,9 +28,12 @@ export const BrandLogo: React.FC<BrandLogoProps> = ({
         style={[
           styles.glow,
           {
-            width: size * 1.4,
-            height: size * 1.4,
-            borderRadius: (size * 1.4) / 2,
+            width: size * 1.45,
+            height: size * 1.45,
+            borderRadius: (size * 1.45) / 2,
+            backgroundColor: isDark
+              ? 'rgba(255, 106, 26, 0.22)'
+              : 'rgba(255, 122, 26, 0.16)',
           },
         ]}
       />
@@ -44,14 +50,41 @@ export const BrandLogo: React.FC<BrandLogoProps> = ({
       {/* NEXORA MART Wordmark */}
       {showTitle && (
         <View style={styles.titleRow}>
-          <Text style={[styles.brandFirst, { fontSize: textSize }]}>NEXORA </Text>
-          <Text style={[styles.brandSecond, { fontSize: textSize }]}>MART</Text>
+          <Text
+            style={[
+              styles.brandFirst,
+              {
+                fontSize: textSize,
+                color: isDark ? '#FFFFFF' : '#0B0B2B',
+              },
+            ]}
+          >
+            NEXORA{' '}
+          </Text>
+          <Text
+            style={[
+              styles.brandSecond,
+              {
+                fontSize: textSize,
+                color: brandColors.primary,
+              },
+            ]}
+          >
+            MART
+          </Text>
         </View>
       )}
 
       {/* Tagline */}
       {showTagline && tagline ? (
-        <Text style={styles.tagline}>{tagline}</Text>
+        <Text
+          style={[
+            styles.tagline,
+            { color: isDark ? '#8E9CAE' : '#6B6F80' },
+          ]}
+        >
+          {tagline}
+        </Text>
       ) : null}
     </View>
   );
@@ -65,14 +98,13 @@ const styles = StyleSheet.create({
   },
   glow: {
     position: 'absolute',
-    backgroundColor: 'rgba(255, 106, 26, 0.22)',
-    top: 0,
+    top: -10,
     zIndex: -1,
   },
   imageWrapper: {
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: 6,
+    marginBottom: 8,
     shadowColor: '#FF6A1A',
     shadowOffset: { width: 0, height: 6 },
     shadowOpacity: 0.35,
@@ -86,23 +118,19 @@ const styles = StyleSheet.create({
     marginTop: 2,
   },
   brandFirst: {
-    color: '#FFFFFF',
     fontWeight: '700',
     letterSpacing: 1.2,
   },
   brandSecond: {
-    color: '#FF6A1A',
     fontWeight: '800',
     letterSpacing: 1.2,
   },
   tagline: {
-    color: '#8E9CAE',
     fontSize: 12,
     fontWeight: '400',
-    marginTop: 3,
+    marginTop: 4,
     letterSpacing: 0.3,
   },
 });
 
 export default BrandLogo;
-

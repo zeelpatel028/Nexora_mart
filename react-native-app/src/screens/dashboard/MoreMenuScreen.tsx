@@ -7,6 +7,19 @@ import { useTheme } from '../../hooks/useTheme';
 import { useAuth } from '../../hooks/useAuth';
 import Header from '../../components/common/Header';
 import Card from '../../components/common/Card';
+import {
+  GridIcon,
+  TruckIcon,
+  ReceiptIcon,
+  UsersIcon,
+  BuildingIcon,
+  CreditCardIcon,
+  ChartColumnIcon,
+  CircleUserIcon,
+  SettingsIcon,
+  LogOutIcon,
+  ChevronRightIcon,
+} from '../../components/branding/Icons';
 
 type MoreNavProp = NativeStackNavigationProp<RootStackParamList>;
 
@@ -14,7 +27,7 @@ interface MenuItem {
   id: string;
   title: string;
   subtitle: string;
-  icon: string;
+  iconRenderer: (color: string) => React.ReactNode;
   screen?: keyof RootStackParamList;
   isDanger?: boolean;
 }
@@ -32,21 +45,21 @@ export const MoreMenuScreen: React.FC = () => {
           id: 'categories',
           title: 'Category Setup & Architecture',
           subtitle: 'Multi-category retail ERP configuration',
-          icon: '🏬',
+          iconRenderer: (c) => <GridIcon size={20} color={c} />,
           screen: 'CategoryManager',
         },
         {
           id: 'purchases',
           title: 'Purchases & Inward Orders',
           subtitle: 'Supplier purchase orders and stock receiving',
-          icon: '🚚',
+          iconRenderer: (c) => <TruckIcon size={20} color={c} />,
           screen: 'PurchaseList',
         },
         {
           id: 'sales',
           title: 'Sales Orders & Invoices',
           subtitle: 'Audit past customer transactions and receipts',
-          icon: '🧾',
+          iconRenderer: (c) => <ReceiptIcon size={20} color={c} />,
           screen: 'SalesList',
         },
       ],
@@ -58,14 +71,14 @@ export const MoreMenuScreen: React.FC = () => {
           id: 'customers',
           title: 'Customer Directory',
           subtitle: 'Customer loyalty, addresses & credit balances',
-          icon: '👥',
+          iconRenderer: (c) => <UsersIcon size={20} color={c} />,
           screen: 'CustomerList',
         },
         {
           id: 'suppliers',
           title: 'Supplier Directory',
           subtitle: 'Vendor contact information & payable accounts',
-          icon: '🏢',
+          iconRenderer: (c) => <BuildingIcon size={20} color={c} />,
           screen: 'SupplierList',
         },
       ],
@@ -77,14 +90,14 @@ export const MoreMenuScreen: React.FC = () => {
           id: 'finance',
           title: 'Expenses & Payments',
           subtitle: 'Record store operating expenses & audit cash flow',
-          icon: '💸',
+          iconRenderer: (c) => <CreditCardIcon size={20} color={c} />,
           screen: 'Finance',
         },
         {
           id: 'reports',
           title: 'Reports & Valuation',
           subtitle: 'Sales analytics, category performance & margins',
-          icon: '📈',
+          iconRenderer: (c) => <ChartColumnIcon size={20} color={c} />,
           screen: 'Reports',
         },
       ],
@@ -96,21 +109,21 @@ export const MoreMenuScreen: React.FC = () => {
           id: 'profile',
           title: 'Merchant Profile',
           subtitle: 'Store owner credentials & business address',
-          icon: '👤',
+          iconRenderer: (c) => <CircleUserIcon size={20} color={c} />,
           screen: 'Profile',
         },
         {
           id: 'settings',
           title: 'Settings & Connectivity',
           subtitle: 'Theme customization & FastAPI server endpoint',
-          icon: '⚙️',
+          iconRenderer: (c) => <SettingsIcon size={20} color={c} />,
           screen: 'Settings',
         },
         {
           id: 'logout',
           title: 'Sign Out',
           subtitle: `Currently logged in as ${user?.email || 'Merchant'}`,
-          icon: '🚪',
+          iconRenderer: (c) => <LogOutIcon size={20} color={c} />,
           isDanger: true,
         },
       ],
@@ -148,6 +161,8 @@ export const MoreMenuScreen: React.FC = () => {
             <Card style={styles.cardBox}>
               {section.items.map((item, iIdx) => {
                 const isLast = iIdx === section.items.length - 1;
+                const iconColor = item.isDanger ? brandColors.error : brandColors.primary;
+
                 return (
                   <TouchableOpacity
                     key={item.id}
@@ -168,7 +183,7 @@ export const MoreMenuScreen: React.FC = () => {
                         },
                       ]}
                     >
-                      <Text style={{ fontSize: 20 }}>{item.icon}</Text>
+                      {item.iconRenderer(iconColor)}
                     </View>
 
                     <View style={{ flex: 1, marginHorizontal: 12 }}>
@@ -185,7 +200,7 @@ export const MoreMenuScreen: React.FC = () => {
                       </Text>
                     </View>
 
-                    <Text style={{ color: colors.textMuted, fontSize: 16 }}>›</Text>
+                    <ChevronRightIcon size={18} color={colors.textMuted} />
                   </TouchableOpacity>
                 );
               })}
@@ -226,7 +241,7 @@ const styles = StyleSheet.create({
   iconCircle: {
     width: 40,
     height: 40,
-    borderRadius: 20,
+    borderRadius: 12,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -241,4 +256,3 @@ const styles = StyleSheet.create({
 });
 
 export default MoreMenuScreen;
-

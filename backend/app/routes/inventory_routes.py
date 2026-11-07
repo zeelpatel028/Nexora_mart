@@ -16,6 +16,7 @@ from ..services.store_service import StoreService
 
 router = APIRouter(prefix="/inventory", tags=["Inventory"])
 
+@router.get("", response_model=List[InventoryResponse], include_in_schema=False)
 @router.get("/", response_model=List[InventoryResponse])
 def get_inventory(
     search: Optional[str] = None,

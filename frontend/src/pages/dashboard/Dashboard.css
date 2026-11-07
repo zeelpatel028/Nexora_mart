@@ -672,6 +672,59 @@
   }
 }
 
+/* MOBILE BOTTOM TAB BAR (MATCHING REACT NATIVE AppNavigator MainTabNavigator) */
+.mobile-bottom-nav {
+  display: none;
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 62px;
+  background: #FFFFFF;
+  border-top: 1px solid var(--nm-border);
+  z-index: 1040;
+  box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.05);
+  padding: 6px 0 8px 0;
+}
+
+.mobile-nav-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  background: none;
+  border: none;
+  color: #64748B;
+  font-size: 11px;
+  font-weight: 700;
+  flex: 1;
+  padding: 4px 0;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.mobile-nav-btn.active {
+  color: var(--nm-primary);
+}
+
+.mobile-nav-icon {
+  font-size: 20px;
+  line-height: 1;
+  margin-bottom: 2px;
+}
+
+@media (max-width: 767.98px) {
+  .mobile-bottom-nav {
+    display: flex;
+    align-items: center;
+    justify-content: space-around;
+  }
+
+  .admin-main-viewport {
+    padding-bottom: 80px !important;
+  }
+}
+
 @keyframes fadeIn {
   from {
     opacity: 0;

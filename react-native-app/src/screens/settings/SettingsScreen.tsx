@@ -20,10 +20,11 @@ import Card from '../../components/common/Card';
 import Button from '../../components/common/Button';
 import Input from '../../components/common/Input';
 import Badge from '../../components/common/Badge';
+import { SunIcon, MoonIcon, SettingsIcon, CheckIcon } from '../../components/branding/Icons';
 
 export const SettingsScreen: React.FC = () => {
   const navigation = useNavigation();
-  const { isDark, toggleTheme, colors, brandColors } = useTheme();
+  const { mode, isDark, setMode, toggleTheme, colors, brandColors } = useTheme();
   const { logout } = useAuth();
 
   const [apiUrl, setApiUrl] = useState(apiClient.getBaseUrl());
@@ -93,12 +94,67 @@ export const SettingsScreen: React.FC = () => {
       <ScrollView contentContainerStyle={styles.scrollContent}>
         {/* Appearance Card */}
         <Card>
-          <Text style={[styles.sectionTitle, { color: colors.textPrimary }]}>Appearance</Text>
+          <Text style={[styles.sectionTitle, { color: colors.textPrimary }]}>
+            Appearance & System Theme
+          </Text>
+          <Text style={[styles.sectionSub, { color: colors.textSecondary }]}>
+            Automatically adapt to your device theme or lock to your preference.
+          </Text>
+
+          {/* Theme Mode Selector Pills */}
+          <View style={styles.themePillsRow}>
+            {[
+              { id: 'system', label: 'System Auto', icon: <SettingsIcon size={16} color={mode === 'system' ? '#FFFFFF' : colors.textSecondary} /> },
+              { id: 'light', label: 'Light Mode', icon: <SunIcon size={16} color={mode === 'light' ? '#FFFFFF' : '#FF9800'} /> },
+              { id: 'dark', label: 'Dark Mode', icon: <MoonIcon size={16} color={mode === 'dark' ? '#FFFFFF' : '#8E9CAE'} /> },
+            ].map((t) => {
+              const active = mode === t.id;
+              return (
+                <TouchableOpacity
+                  key={t.id}
+                  style={[
+                    styles.themePill,
+                    {
+                      backgroundColor: active
+                        ? brandColors.primary
+                        : isDark
+                        ? colors.surfaceSubtle
+                        : '#F1F5F9',
+                      borderColor: active
+                        ? brandColors.primary
+                        : colors.border,
+                    },
+                  ]}
+                  onPress={() => setMode(t.id as any)}
+                  activeOpacity={0.8}
+                >
+                  {t.icon}
+                  <Text
+                    style={[
+                      styles.themePillText,
+                      { color: active ? '#FFFFFF' : colors.textPrimary },
+                    ]}
+                  >
+                    {t.label}
+                  </Text>
+                </TouchableOpacity>
+              );
+            })}
+          </View>
+
           <View style={styles.settingRow}>
             <View style={{ flex: 1 }}>
-              <Text style={[styles.settingLabel, { color: colors.textPrimary }]}>Dark Mode</Text>
+              <Text style={[styles.settingLabel, { color: colors.textPrimary }]}>
+                Current Mode:{' '}
+                <Text style={{ color: brandColors.primary, fontWeight: '700' }}>
+                  {isDark ? 'Dark Theme' : 'Light Theme'}
+                </Text>
+                {mode === 'system' && (
+                  <Text style={{ color: colors.textMuted, fontSize: 12 }}> (Device Follow)</Text>
+                )}
+              </Text>
               <Text style={[styles.settingSub, { color: colors.textSecondary }]}>
-                Switch between high-contrast dark and clean light themes.
+                Toggle quick dark/light override.
               </Text>
             </View>
 
@@ -250,6 +306,27 @@ const styles = StyleSheet.create({
     fontSize: 12,
     lineHeight: 16,
     marginBottom: 12,
+  },
+  themePillsRow: {
+    flexDirection: 'row',
+    gap: 8,
+    marginBottom: 16,
+    marginTop: 4,
+  },
+  themePill: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    paddingVertical: 10,
+    paddingHorizontal: 8,
+    borderRadius: 12,
+    borderWidth: 1,
+  },
+  themePillText: {
+    fontSize: 12,
+    fontWeight: '700',
   },
   settingRow: {
     flexDirection: 'row',

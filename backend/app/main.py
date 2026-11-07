@@ -11,7 +11,7 @@ if str(_CURRENT_DIR) not in sys.path:
 
 from fastapi import FastAPI, Request, status
 from fastapi.responses import JSONResponse
-from fastapi.exceptions import RequestValidationError
+from fastapi.exceptions import RequestValidationError, ResponseValidationError
 from starlette.exceptions import HTTPException as StarletteHTTPException
 import logging
 
@@ -37,7 +37,8 @@ try:
         partner_router,
         finance_router,
         report_router,
-        unit_router
+        unit_router,
+        employee_router
     )
 except (ImportError, ValueError):
     from app.core.config import settings
@@ -59,7 +60,8 @@ except (ImportError, ValueError):
         partner_router,
         finance_router,
         report_router,
-        unit_router
+        unit_router,
+        employee_router
     )
 
 def seed_initial_data():
@@ -133,9 +135,38 @@ def create_application() -> FastAPI:
             },
         )
 
+    @app.exception_handler(ResponseValidationError)
+    async def response_validation_exception_handler(request: Request, exc: ResponseValidationError):
+        logger.error(f"Response validation error on {request.method} {request.url.path}: {exc.errors()}", exc_info=True)
+        origin = request.headers.get("origin")
+        cors_hdrs = {
+            "Access-Control-Allow-Origin": origin if origin else "*",
+            "Access-Control-Allow-Credentials": "true",
+            "Access-Control-Allow-Methods": "*",
+            "Access-Control-Allow-Headers": "*",
+        }
+        return JSONResponse(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            content={
+                "success": False,
+                "status_code": 500,
+                "detail": "Server response validation error",
+                "errors": [str(e) for e in exc.errors()],
+                "path": request.url.path,
+            },
+            headers=cors_hdrs
+        )
+
     @app.exception_handler(Exception)
     async def general_exception_handler(request: Request, exc: Exception):
         logger.error(f"Unhandled server error on {request.method} {request.url.path}: {exc}", exc_info=True)
+        origin = request.headers.get("origin")
+        cors_hdrs = {
+            "Access-Control-Allow-Origin": origin if origin else "*",
+            "Access-Control-Allow-Credentials": "true",
+            "Access-Control-Allow-Methods": "*",
+            "Access-Control-Allow-Headers": "*",
+        }
         return JSONResponse(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             content={
@@ -144,6 +175,7 @@ def create_application() -> FastAPI:
                 "detail": "Internal server error occurred",
                 "path": request.url.path,
             },
+            headers=cors_hdrs
         )
 
     # Mount API routers under /api
@@ -158,6 +190,7 @@ def create_application() -> FastAPI:
     app.include_router(finance_router, prefix=settings.API_V1_PREFIX)
     app.include_router(report_router, prefix=settings.API_V1_PREFIX)
     app.include_router(unit_router, prefix=settings.API_V1_PREFIX)
+    app.include_router(employee_router, prefix=settings.API_V1_PREFIX)
 
     @app.get("/", tags=["Root"], operation_id="root_get")
     def root():

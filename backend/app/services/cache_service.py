@@ -54,6 +54,40 @@ class CacheService:
         val = redis_client.get(key)
         return val == "revoked"
 
+    # --- OTP Verification Caching (with in-memory backup) ---
+    _in_memory_otps: Dict[str, str] = {}
+
+    @staticmethod
+    def set_otp(email: str, otp: str, ttl: int = 600) -> bool:
+        clean_email = email.lower().strip()
+        CacheService._in_memory_otps[clean_email] = otp
+        key = f"otp:{clean_email}"
+        try:
+            return bool(redis_client.set(key, otp, expire=ttl))
+        except Exception:
+            return True
+
+    @staticmethod
+    def get_otp(email: str) -> Optional[str]:
+        clean_email = email.lower().strip()
+        key = f"otp:{clean_email}"
+        val = None
+        try:
+            val = redis_client.get(key)
+        except Exception:
+            pass
+        return val or CacheService._in_memory_otps.get(clean_email)
+
+    @staticmethod
+    def clear_otp(email: str) -> bool:
+        clean_email = email.lower().strip()
+        CacheService._in_memory_otps.pop(clean_email, None)
+        key = f"otp:{clean_email}"
+        try:
+            return bool(redis_client.delete(key))
+        except Exception:
+            return True
+
     # --- Health & Diagnostic ---
 
     @staticmethod

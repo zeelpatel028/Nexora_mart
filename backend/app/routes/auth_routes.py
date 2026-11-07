@@ -7,6 +7,9 @@ from ..schemas.auth_schema import (
     UserLoginRequest,
     UserRegisterRequest,
     ForgotPasswordRequest,
+    VerifyOtpRequest,
+    ResetPasswordRequest,
+    UpdateProfileRequest,
     TokenResponse,
     UserResponse
 )
@@ -29,9 +32,19 @@ def register(request_data: UserRegisterRequest, db: Session = Depends(get_db)):
     return AuthController.register(db, request_data)
 
 @router.post("/forgot-password")
-def forgot_password(request_data: ForgotPasswordRequest):
-    """Initiate password reset flow for registered merchant email"""
-    return AuthController.forgot_password(request_data)
+def forgot_password(request_data: ForgotPasswordRequest, db: Session = Depends(get_db)):
+    """Initiate password reset flow and issue 6-digit verification OTP"""
+    return AuthController.forgot_password(db, request_data)
+
+@router.post("/verify-otp")
+def verify_otp(request_data: VerifyOtpRequest):
+    """Verify 6-digit OTP code sent to user email"""
+    return AuthController.verify_otp(request_data)
+
+@router.post("/reset-password")
+def reset_password(request_data: ResetPasswordRequest, db: Session = Depends(get_db)):
+    """Verify OTP and update user account password"""
+    return AuthController.reset_password(db, request_data)
 
 @router.get("/me", response_model=UserResponse)
 def get_me(current_user: User = Depends(get_current_user)):
@@ -45,6 +58,15 @@ def get_me(current_user: User = Depends(get_current_user)):
     user_resp = AuthController.format_user_response(current_user)
     CacheService.set_user_profile(current_user.id, user_resp.model_dump())
     return user_resp
+
+@router.put("/me", response_model=UserResponse)
+def update_profile(
+    request_data: UpdateProfileRequest,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    """Update personal profile, contact information, or account password"""
+    return AuthController.update_profile(db, current_user, request_data)
 
 @router.post("/logout")
 def logout(credentials: Optional[HTTPAuthorizationCredentials] = Depends(security_scheme)):

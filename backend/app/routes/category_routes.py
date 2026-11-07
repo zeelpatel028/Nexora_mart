@@ -17,11 +17,13 @@ from ..services.category_service import CategoryService
 
 router = APIRouter(prefix="/categories", tags=["Categories"])
 
+@router.get("", response_model=List[CategoryResponse], include_in_schema=False)
 @router.get("/", response_model=List[CategoryResponse])
 def get_categories(active_only: bool = True, db: Session = Depends(get_db)):
     """List all available store categories"""
     return CategoryService.get_all_categories(db, active_only=active_only)
 
+@router.post("", response_model=CategoryDetailResponse, status_code=status.HTTP_201_CREATED, include_in_schema=False)
 @router.post("/", response_model=CategoryDetailResponse, status_code=status.HTTP_201_CREATED)
 def create_category(
     request: CategoryCreate,

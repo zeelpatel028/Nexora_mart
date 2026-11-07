@@ -9,11 +9,12 @@ import {
   ViewStyle,
 } from 'react-native';
 import { useTheme } from '../../hooks/useTheme';
+import { EyeIcon, EyeOffIcon } from '../branding/Icons';
 
 interface InputProps extends TextInputProps {
   label?: string;
   error?: string;
-  icon?: string;
+  icon?: string | React.ReactNode;
   isPassword?: boolean;
   containerStyle?: ViewStyle;
 }
@@ -52,7 +53,15 @@ export const Input: React.FC<InputProps> = ({
           },
         ]}
       >
-        {icon && <Text style={styles.icon}>{icon}</Text>}
+        {icon && (
+          <View style={styles.iconWrap}>
+            {typeof icon === 'string' ? (
+              <Text style={styles.icon}>{icon}</Text>
+            ) : (
+              icon
+            )}
+          </View>
+        )}
 
         <TextInput
           style={[
@@ -74,9 +83,11 @@ export const Input: React.FC<InputProps> = ({
             onPress={() => setShowPassword(!showPassword)}
             activeOpacity={0.7}
           >
-            <Text style={{ color: colors.textSecondary, fontSize: 13, fontWeight: '600' }}>
-              {showPassword ? 'Hide' : 'Show'}
-            </Text>
+            {showPassword ? (
+              <EyeOffIcon size={18} color={brandColors.primary} />
+            ) : (
+              <EyeIcon size={18} color={colors.textSecondary} />
+            )}
           </TouchableOpacity>
         )}
       </View>
@@ -106,9 +117,13 @@ const styles = StyleSheet.create({
     paddingHorizontal: 14,
     height: 48,
   },
+  iconWrap: {
+    marginRight: 10,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   icon: {
     fontSize: 16,
-    marginRight: 10,
   },
   input: {
     flex: 1,

@@ -18,6 +18,7 @@ import Card from '../../components/common/Card';
 import Badge from '../../components/common/Badge';
 import EmptyState from '../../components/common/EmptyState';
 import Loader from '../../components/common/Loader';
+import { TruckIcon } from '../../components/branding/Icons';
 import { formatCurrency, formatDateTime } from '../../utils/formatters';
 
 type PurchaseNavProp = NativeStackNavigationProp<RootStackParamList>;
@@ -109,7 +110,7 @@ export const PurchaseListScreen: React.FC = () => {
         <Loader message="Loading purchase records..." />
       ) : purchases.length === 0 ? (
         <EmptyState
-          icon="🚚"
+          icon={<TruckIcon size={32} color={brandColors.primary} />}
           title="No Purchase Orders"
           description="Record deliveries from suppliers to automatically restock your inventory."
           actionTitle="Create Purchase Order"

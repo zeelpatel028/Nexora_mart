@@ -9,6 +9,7 @@ from .partner_routes import router as partner_router
 from .finance_routes import router as finance_router
 from .report_routes import router as report_router
 from .unit_routes import router as unit_router
+from .employee_routes import router as employee_router
 
 __all__ = [
     "auth_router",
@@ -22,4 +23,5 @@ __all__ = [
     "finance_router",
     "report_router",
     "unit_router",
+    "employee_router",
 ]

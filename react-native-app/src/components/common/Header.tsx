@@ -1,6 +1,7 @@
 import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, StatusBar } from 'react-native';
 import { useTheme } from '../../hooks/useTheme';
+import { ChevronLeftIcon } from '../branding/Icons';
 
 interface HeaderProps {
   title: string;
@@ -8,7 +9,7 @@ interface HeaderProps {
   showBack?: boolean;
   onBack?: () => void;
   rightAction?: {
-    icon: string;
+    icon: string | React.ReactNode;
     onPress: () => void;
   };
 }
@@ -35,7 +36,7 @@ export const Header: React.FC<HeaderProps> = ({
             onPress={onBack}
             activeOpacity={0.7}
           >
-            <Text style={[styles.backText, { color: colors.textPrimary }]}>‹</Text>
+            <ChevronLeftIcon size={20} color={colors.textPrimary} />
           </TouchableOpacity>
         )}
 
@@ -56,9 +57,13 @@ export const Header: React.FC<HeaderProps> = ({
             onPress={rightAction.onPress}
             activeOpacity={0.7}
           >
-            <Text style={[styles.rightActionIcon, { color: brandColors.primary }]}>
-              {rightAction.icon}
-            </Text>
+            {typeof rightAction.icon === 'string' ? (
+              <Text style={[styles.rightActionIcon, { color: brandColors.primary }]}>
+                {rightAction.icon}
+              </Text>
+            ) : (
+              rightAction.icon
+            )}
           </TouchableOpacity>
         ) : (
           showBack && <View style={styles.iconButtonPlaceholder} />

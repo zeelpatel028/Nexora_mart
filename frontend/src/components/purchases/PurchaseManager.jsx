@@ -170,7 +170,7 @@ export const PurchaseManager = () => {
                   </td>
                   <td className="fw-semibold text-dark">{p.supplier_name}</td>
                   <td>{p.items_count} products</td>
-                  <td className="fw-bold">${Number(p.total_amount).toFixed(2)}</td>
+                  <td className="fw-bold">₹ {Number(p.total_amount).toLocaleString()}</td>
                   <td>
                     <span
                       className={`badge ${
@@ -259,7 +259,7 @@ export const PurchaseManager = () => {
                           <tr>
                             <th style={{ fontSize: '12px' }}>Product *</th>
                             <th style={{ fontSize: '12px', width: '90px' }}>Quantity *</th>
-                            <th style={{ fontSize: '12px', width: '100px' }}>Cost ($) *</th>
+                            <th style={{ fontSize: '12px', width: '100px' }}>Cost (₹) *</th>
                             <th style={{ fontSize: '12px' }}>Batch #</th>
                             <th style={{ fontSize: '12px' }}>Expiry Date</th>
                             <th style={{ width: '40px' }}></th>
@@ -342,7 +342,7 @@ export const PurchaseManager = () => {
 
                   <div className="d-flex justify-content-between align-items-center p-3 bg-light rounded-3">
                     <span className="fw-semibold text-secondary">Total Inward Valuation:</span>
-                    <span className="h4 fw-bold text-primary mb-0">${totalCost.toFixed(2)}</span>
+                    <span className="h4 fw-bold mb-0" style={{ color: '#FF6A1A' }}>₹ {totalCost.toLocaleString()}</span>
                   </div>
                 </div>
                 <div className="modal-footer">

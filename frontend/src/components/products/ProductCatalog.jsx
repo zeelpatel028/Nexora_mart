@@ -227,9 +227,9 @@ export const ProductCatalog = ({ onSelectProductForSale }) => {
                       </div>
                     </td>
                     <td>
-                      <div className="fw-bold text-dark">${Number(p.selling_price).toFixed(2)}</div>
+                      <div className="fw-bold text-dark">₹ {Number(p.selling_price).toLocaleString()}</div>
                       <div className="small text-muted">
-                        Cost: ${Number(p.purchase_price || 0).toFixed(2)} / {p.unit}
+                        Cost: ₹ {Number(p.purchase_price || 0).toLocaleString()} / {p.unit}
                       </div>
                     </td>
                     <td>

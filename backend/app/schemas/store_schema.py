@@ -1,4 +1,4 @@
-from typing import Optional
+from typing import Optional, Dict, Any
 from pydantic import BaseModel, Field
 from .category_schema import CategoryResponse
 
@@ -9,7 +9,7 @@ class StoreBase(BaseModel):
     address: Optional[str] = None
     city: Optional[str] = None
     tax_number: Optional[str] = None
-    currency: str = "USD"
+    currency: str = "INR"
 
 class StoreCreate(StoreBase):
     category_id: int
@@ -29,8 +29,10 @@ class StoreResponse(StoreBase):
     category_id: int
     owner_id: int
     is_active: bool
+    code: Optional[str] = None
+    currency_symbol: Optional[str] = "₹"
     category: Optional[CategoryResponse] = None
+    configuration: Optional[Dict[str, Any]] = None
 
     class Config:
         from_attributes = True
-

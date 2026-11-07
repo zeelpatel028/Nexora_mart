@@ -3,13 +3,22 @@
  * Native Stack & Bottom Tab Navigation (NO WebView)
  */
 import React from 'react';
-import { View, Text, StyleSheet } from 'react-native';
+import { View, StyleSheet } from 'react-native';
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { RootStackParamList, MainTabParamList } from './types';
 import { useAuth } from '../hooks/useAuth';
 import { useTheme } from '../hooks/useTheme';
+
+// Modern SVG Lucide Icons
+import {
+  HomeIcon,
+  ShoppingCartIcon,
+  PackageIcon,
+  BoxesIcon,
+  GridIcon,
+} from '../components/branding/Icons';
 
 // Auth Screens
 import SplashScreen from '../screens/auth/SplashScreen';
@@ -71,10 +80,12 @@ const MainTabNavigator: React.FC = () => {
         component={DashboardScreen}
         options={{
           tabBarLabel: 'Home',
-          tabBarIcon: ({ color, focused }) => (
-            <Text style={{ fontSize: 20, color: focused ? brandColors.primary : colors.textMuted }}>
-              🏠
-            </Text>
+          tabBarIcon: ({ focused }) => (
+            <HomeIcon
+              size={22}
+              color={focused ? brandColors.primary : colors.textMuted}
+              strokeWidth={focused ? 2.5 : 2}
+            />
           ),
         }}
       />
@@ -83,10 +94,12 @@ const MainTabNavigator: React.FC = () => {
         component={PosBillingScreen}
         options={{
           tabBarLabel: 'Sales',
-          tabBarIcon: ({ color, focused }) => (
-            <Text style={{ fontSize: 20, color: focused ? brandColors.primary : colors.textMuted }}>
-              🛒
-            </Text>
+          tabBarIcon: ({ focused }) => (
+            <ShoppingCartIcon
+              size={22}
+              color={focused ? brandColors.primary : colors.textMuted}
+              strokeWidth={focused ? 2.5 : 2}
+            />
           ),
         }}
       />
@@ -95,10 +108,12 @@ const MainTabNavigator: React.FC = () => {
         component={ProductListScreen}
         options={{
           tabBarLabel: 'Products',
-          tabBarIcon: ({ color, focused }) => (
-            <Text style={{ fontSize: 20, color: focused ? brandColors.primary : colors.textMuted }}>
-              📦
-            </Text>
+          tabBarIcon: ({ focused }) => (
+            <PackageIcon
+              size={22}
+              color={focused ? brandColors.primary : colors.textMuted}
+              strokeWidth={focused ? 2.5 : 2}
+            />
           ),
         }}
       />
@@ -107,10 +122,12 @@ const MainTabNavigator: React.FC = () => {
         component={InventoryScreen}
         options={{
           tabBarLabel: 'Inventory',
-          tabBarIcon: ({ color, focused }) => (
-            <Text style={{ fontSize: 20, color: focused ? brandColors.primary : colors.textMuted }}>
-              ▦
-            </Text>
+          tabBarIcon: ({ focused }) => (
+            <BoxesIcon
+              size={22}
+              color={focused ? brandColors.primary : colors.textMuted}
+              strokeWidth={focused ? 2.5 : 2}
+            />
           ),
         }}
       />
@@ -119,10 +136,12 @@ const MainTabNavigator: React.FC = () => {
         component={MoreMenuScreen}
         options={{
           tabBarLabel: 'More',
-          tabBarIcon: ({ color, focused }) => (
-            <Text style={{ fontSize: 20, color: focused ? brandColors.primary : colors.textMuted }}>
-              ⋯
-            </Text>
+          tabBarIcon: ({ focused }) => (
+            <GridIcon
+              size={22}
+              color={focused ? brandColors.primary : colors.textMuted}
+              strokeWidth={focused ? 2.5 : 2}
+            />
           ),
         }}
       />
@@ -132,19 +151,19 @@ const MainTabNavigator: React.FC = () => {
 
 export const AppNavigator: React.FC = () => {
   const { isAuthenticated, isLoading } = useAuth();
-  const { colors } = useTheme();
+  const { isDark, colors, brandColors } = useTheme();
 
   return (
     <NavigationContainer
       theme={{
-        dark: false,
+        dark: isDark,
         colors: {
-          primary: '#FF6A1A',
+          primary: brandColors.primary,
           background: colors.background,
           card: colors.surface,
           text: colors.textPrimary,
           border: colors.border,
-          notification: '#FF6A1A',
+          notification: brandColors.primary,
         },
       }}
     >
@@ -190,4 +209,3 @@ export const AppNavigator: React.FC = () => {
 };
 
 export default AppNavigator;
-

@@ -32,6 +32,7 @@ backend/*.db
 _backup*/
 .backup*/
 backup*/
+database_backup/
 *.log
 npm-debug.log*
 yarn-debug.log*

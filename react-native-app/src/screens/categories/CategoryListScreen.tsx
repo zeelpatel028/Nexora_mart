@@ -18,6 +18,7 @@ import Card from '../../components/common/Card';
 import Badge from '../../components/common/Badge';
 import Button from '../../components/common/Button';
 import Loader from '../../components/common/Loader';
+import { GridIcon, CloseIcon, PlusIcon } from '../../components/branding/Icons';
 
 export const CategoryListScreen: React.FC = () => {
   const navigation = useNavigation();
@@ -32,7 +33,7 @@ export const CategoryListScreen: React.FC = () => {
   // New Category Creation modal/inline state
   const [showAddForm, setShowAddForm] = useState(false);
   const [newCatName, setNewCatName] = useState('');
-  const [newCatIcon, setNewCatIcon] = useState('🏬');
+  const [newCatIcon, setNewCatIcon] = useState('grid');
   const [newCatDesc, setNewCatDesc] = useState('');
   const [creating, setCreating] = useState(false);
 
@@ -129,8 +130,8 @@ export const CategoryListScreen: React.FC = () => {
         onPress={() => handleSwitchStoreCategory(item)}
       >
         <View style={styles.cardHeader}>
-          <View style={styles.iconBox}>
-            <Text style={{ fontSize: 28 }}>{item.icon || '🏬'}</Text>
+          <View style={[styles.iconBox, { backgroundColor: brandColors.primaryLight }]}>
+            <GridIcon size={24} color={brandColors.primary} />
           </View>
 
           <View style={{ flex: 1, marginHorizontal: 12 }}>
@@ -152,7 +153,7 @@ export const CategoryListScreen: React.FC = () => {
           </Text>
 
           {isCurrentActive ? (
-            <Badge label="✓ Current Store Category" variant="success" />
+            <Badge label="Current Category" variant="success" />
           ) : (
             <TouchableOpacity
               onPress={() => handleSwitchStoreCategory(item)}
@@ -177,7 +178,11 @@ export const CategoryListScreen: React.FC = () => {
         showBack
         onBack={() => navigation.goBack()}
         rightAction={{
-          icon: showAddForm ? '✕' : '➕',
+          icon: showAddForm ? (
+            <CloseIcon size={18} color={brandColors.primary} />
+          ) : (
+            <PlusIcon size={18} color={brandColors.primary} />
+          ),
           onPress: () => setShowAddForm(!showAddForm),
         }}
       />

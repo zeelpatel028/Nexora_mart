@@ -14,6 +14,7 @@ from ..services.store_service import StoreService
 
 router = APIRouter(prefix="/sales", tags=["Sales & Billing"])
 
+@router.get("", response_model=List[SaleResponse], include_in_schema=False)
 @router.get("/", response_model=List[SaleResponse])
 def list_sales(
     customer_id: Optional[int] = None,
@@ -35,6 +36,7 @@ def list_sales(
     )
     return sales
 
+@router.post("", response_model=SaleDetailResponse, status_code=status.HTTP_201_CREATED, include_in_schema=False)
 @router.post("/", response_model=SaleDetailResponse, status_code=status.HTTP_201_CREATED)
 def create_sale(
     request: SaleCreate,

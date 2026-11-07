@@ -18,6 +18,7 @@ import Card from '../../components/common/Card';
 import Badge from '../../components/common/Badge';
 import EmptyState from '../../components/common/EmptyState';
 import Loader from '../../components/common/Loader';
+import { ReceiptIcon, ShoppingCartIcon } from '../../components/branding/Icons';
 import { formatCurrency, formatDateTime } from '../../utils/formatters';
 
 type SalesNavProp = NativeStackNavigationProp<RootStackParamList>;
@@ -110,7 +111,7 @@ export const SalesListScreen: React.FC = () => {
         showBack
         onBack={() => navigation.goBack()}
         rightAction={{
-          icon: '⚡',
+          icon: <ShoppingCartIcon size={20} color={brandColors.primary} />,
           onPress: () => navigation.navigate('PosBilling'),
         }}
       />
@@ -119,7 +120,7 @@ export const SalesListScreen: React.FC = () => {
         <Loader message="Loading sales invoices..." />
       ) : sales.length === 0 ? (
         <EmptyState
-          icon="🧾"
+          icon={<ReceiptIcon size={32} color={brandColors.primary} />}
           title="No Sales Invoices Yet"
           description="Invoices created via the POS billing terminal will appear here."
           actionTitle="Open POS Terminal"

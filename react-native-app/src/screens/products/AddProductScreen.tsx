@@ -182,7 +182,7 @@ export const AddProductScreen: React.FC = () => {
                       { color: isSelected ? '#FFFFFF' : colors.textPrimary, fontWeight: isSelected ? '700' : '500' },
                     ]}
                   >
-                    {cat.icon || '🏬'} {cat.name}
+                    {cat.name}
                   </Text>
                 </TouchableOpacity>
               );

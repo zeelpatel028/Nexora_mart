@@ -14,6 +14,7 @@ from ..services.store_service import StoreService
 
 router = APIRouter(prefix="/purchases", tags=["Purchases"])
 
+@router.get("", response_model=List[PurchaseResponse], include_in_schema=False)
 @router.get("/", response_model=List[PurchaseResponse])
 def list_purchases(
     supplier_id: Optional[int] = None,
@@ -33,6 +34,7 @@ def list_purchases(
     )
     return purchases
 
+@router.post("", response_model=PurchaseDetailResponse, status_code=status.HTTP_201_CREATED, include_in_schema=False)
 @router.post("/", response_model=PurchaseDetailResponse, status_code=status.HTTP_201_CREATED)
 def create_purchase(
     request: PurchaseCreate,

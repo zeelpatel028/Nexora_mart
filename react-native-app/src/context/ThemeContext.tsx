@@ -1,15 +1,16 @@
 /**
- * Theme Context for Light / Dark Mode
+ * Theme Context for System-Based Light / Dark Mode
+ * Automatically follows device appearance with manual override support.
  */
-import React, { createContext, useContext, useState, useEffect } from 'react';
-import { useColorScheme } from 'react-native';
+import React, { createContext, useContext, useState, useEffect, useMemo, useCallback } from 'react';
+import { useColorScheme, Appearance, ColorSchemeName } from 'react-native';
 import { Colors } from '../constants/colors';
 import storage from '../utils/storage';
 import { Config } from '../constants/config';
 
-type ThemeMode = 'light' | 'dark' | 'system';
+export type ThemeMode = 'system' | 'light' | 'dark';
 
-interface ThemeContextType {
+export interface ThemeContextType {
   mode: ThemeMode;
   isDark: boolean;
   colors: typeof Colors.light;
@@ -22,8 +23,13 @@ export const ThemeContext = createContext<ThemeContextType>({} as ThemeContextTy
 
 export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const systemScheme = useColorScheme();
-  const [mode, setModeState] = useState<ThemeMode>('light');
+  const [deviceScheme, setDeviceScheme] = useState<ColorSchemeName>(
+    systemScheme || Appearance.getColorScheme() || 'light'
+  );
+  // Default to 'system' so the app automatically follows device light/dark mode
+  const [mode, setModeState] = useState<ThemeMode>('system');
 
+  // Load saved theme preference from storage
   useEffect(() => {
     storage.getItem(Config.STORAGE_KEYS.THEME_MODE).then((saved) => {
       if (saved === 'dark' || saved === 'light' || saved === 'system') {
@@ -32,35 +38,58 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     });
   }, []);
 
-  const isDark = mode === 'dark' || (mode === 'system' && systemScheme === 'dark');
-  const activeColors = isDark ? Colors.dark : Colors.light;
+  // Subscribe to system appearance changes
+  useEffect(() => {
+    const subscription = Appearance.addChangeListener(({ colorScheme }) => {
+      setDeviceScheme(colorScheme);
+    });
+    return () => {
+      subscription.remove();
+    };
+  }, []);
 
-  const setMode = async (newMode: ThemeMode) => {
+  // Update deviceScheme whenever useColorScheme hook updates
+  useEffect(() => {
+    if (systemScheme) {
+      setDeviceScheme(systemScheme);
+    }
+  }, [systemScheme]);
+
+  // Determine active theme (follows system if mode is 'system')
+  const isDark = useMemo(() => {
+    if (mode === 'dark') return true;
+    if (mode === 'light') return false;
+    return deviceScheme === 'dark';
+  }, [mode, deviceScheme]);
+
+  const activeColors = useMemo(() => {
+    return isDark ? Colors.dark : Colors.light;
+  }, [isDark]);
+
+  const setMode = useCallback(async (newMode: ThemeMode) => {
     setModeState(newMode);
     await storage.setItem(Config.STORAGE_KEYS.THEME_MODE, newMode);
-  };
+  }, []);
 
-  const toggleTheme = async () => {
-    const nextMode = isDark ? 'light' : 'dark';
+  const toggleTheme = useCallback(async () => {
+    const nextMode: ThemeMode = isDark ? 'light' : 'dark';
     await setMode(nextMode);
-  };
+  }, [isDark, setMode]);
 
-  return (
-    <ThemeContext.Provider
-      value={{
-        mode,
-        isDark,
-        colors: activeColors,
-        brandColors: Colors,
-        setMode,
-        toggleTheme,
-      }}
-    >
-      {children}
-    </ThemeContext.Provider>
+  const value = useMemo(
+    () => ({
+      mode,
+      isDark,
+      colors: activeColors,
+      brandColors: Colors,
+      setMode,
+      toggleTheme,
+    }),
+    [mode, isDark, activeColors, setMode, toggleTheme]
   );
+
+  return <ThemeContext.Provider value={value}>{children}</ThemeContext.Provider>;
 };
 
 export const useTheme = () => useContext(ThemeContext);
 export default ThemeContext;
-
