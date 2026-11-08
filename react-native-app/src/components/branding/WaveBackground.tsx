@@ -1,109 +1,96 @@
 import React from 'react';
-import { View, StyleSheet, Dimensions } from 'react-native';
+import { View, StyleSheet } from 'react-native';
 import { useTheme } from '../../hooks/useTheme';
 
-const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
-
 export const WaveBackground: React.FC = () => {
-  const { isDark, colors } = useTheme();
+  const { isDark } = useTheme();
+  const primaryOrange = '#FF6A1A';
 
   return (
     <View style={StyleSheet.absoluteFill} pointerEvents="none">
-      {/* Base Background (Cream #FFF9F3 in Light, #111520 in Dark) */}
+      {/* Base Background (#FFFFFF in Light, #121316 in Dark) */}
       <View
         style={[
           StyleSheet.absoluteFill,
-          { backgroundColor: isDark ? '#111520' : '#FFF9F3' },
+          { backgroundColor: isDark ? '#121316' : '#FFFFFF' },
         ]}
       />
 
-      {/* Top-Right Glowing Amber/Orange Aura */}
+      {/* Top-Left Prominent Orange Curved Wave */}
       <View
         style={[
-          styles.waveBlob,
+          styles.topLeftWave,
           {
-            top: -80,
-            right: -80,
-            width: SCREEN_WIDTH * 0.9,
-            height: SCREEN_WIDTH * 0.9,
-            borderRadius: (SCREEN_WIDTH * 0.9) / 2,
-            backgroundColor: isDark
-              ? 'rgba(255, 122, 26, 0.18)'
-              : 'rgba(255, 180, 102, 0.45)',
+            backgroundColor: primaryOrange,
+            opacity: isDark ? 0.95 : 0.9,
           },
         ]}
       />
-      <View
-        style={[
-          styles.waveBlob,
-          {
-            top: -40,
-            right: -40,
-            width: SCREEN_WIDTH * 0.58,
-            height: SCREEN_WIDTH * 0.58,
-            borderRadius: (SCREEN_WIDTH * 0.58) / 2,
-            backgroundColor: isDark
-              ? 'rgba(255, 90, 24, 0.16)'
-              : 'rgba(255, 150, 60, 0.35)',
-          },
-        ]}
-      />
+      {isDark && (
+        <View
+          style={[
+            styles.topLeftWaveGlow,
+            { backgroundColor: 'rgba(255, 106, 26, 0.25)' },
+          ]}
+        />
+      )}
 
-      {/* Mid-Left Subtle Warm Glow */}
+      {/* Bottom-Right Prominent Orange Curved Wave */}
       <View
         style={[
-          styles.waveBlob,
+          styles.bottomRightWave,
           {
-            top: SCREEN_HEIGHT * 0.3,
-            left: -100,
-            width: SCREEN_WIDTH * 0.7,
-            height: SCREEN_WIDTH * 0.7,
-            borderRadius: (SCREEN_WIDTH * 0.7) / 2,
-            backgroundColor: isDark
-              ? 'rgba(217, 85, 16, 0.11)'
-              : 'rgba(255, 210, 160, 0.40)',
+            backgroundColor: primaryOrange,
+            opacity: isDark ? 0.9 : 0.85,
           },
         ]}
       />
-
-      {/* Bottom-Right Prominent Glowing Orange Wave (Matches Website Corner) */}
-      <View
-        style={[
-          styles.waveBlob,
-          {
-            bottom: -90,
-            right: -60,
-            width: SCREEN_WIDTH * 0.88,
-            height: SCREEN_WIDTH * 0.88,
-            borderRadius: (SCREEN_WIDTH * 0.88) / 2,
-            backgroundColor: isDark
-              ? 'rgba(255, 106, 26, 0.26)'
-              : 'rgba(255, 179, 71, 0.50)',
-          },
-        ]}
-      />
-      <View
-        style={[
-          styles.waveBlob,
-          {
-            bottom: -110,
-            right: -40,
-            width: SCREEN_WIDTH * 0.6,
-            height: SCREEN_WIDTH * 0.6,
-            borderRadius: (SCREEN_WIDTH * 0.6) / 2,
-            backgroundColor: isDark
-              ? 'rgba(255, 161, 38, 0.32)'
-              : 'rgba(255, 140, 50, 0.30)',
-          },
-        ]}
-      />
+      {isDark && (
+        <View
+          style={[
+            styles.bottomRightWaveGlow,
+            { backgroundColor: 'rgba(255, 106, 26, 0.22)' },
+          ]}
+        />
+      )}
     </View>
   );
 };
 
 const styles = StyleSheet.create({
-  waveBlob: {
+  topLeftWave: {
     position: 'absolute',
+    top: -160,
+    left: -130,
+    width: 380,
+    height: 380,
+    borderRadius: 190,
+    transform: [{ scaleX: 1.15 }],
+  },
+  topLeftWaveGlow: {
+    position: 'absolute',
+    top: -150,
+    left: -120,
+    width: 400,
+    height: 400,
+    borderRadius: 200,
+  },
+  bottomRightWave: {
+    position: 'absolute',
+    bottom: -180,
+    right: -140,
+    width: 360,
+    height: 360,
+    borderRadius: 180,
+    transform: [{ scaleY: 0.95 }],
+  },
+  bottomRightWaveGlow: {
+    position: 'absolute',
+    bottom: -190,
+    right: -150,
+    width: 380,
+    height: 380,
+    borderRadius: 190,
   },
 });
 

@@ -278,13 +278,24 @@ export const AddProductScreen: React.FC = () => {
           <View style={styles.row}>
             <View style={{ flex: 1, marginRight: 8 }}>
               <Input
+                label="SKU"
+                placeholder="Product SKU"
+                value={sku}
+                onChangeText={setSku}
+              />
+            </View>
+            <View style={{ flex: 1, marginLeft: 8 }}>
+              <Input
                 label="Barcode / EAN"
                 placeholder="Scan or enter barcode"
                 value={barcode}
                 onChangeText={setBarcode}
               />
             </View>
-            <View style={{ flex: 1, marginLeft: 8 }}>
+          </View>
+
+          <View style={styles.row}>
+            <View style={{ flex: 1, marginRight: 8 }}>
               <Input
                 label="Min Stock Alert"
                 placeholder="5"
@@ -293,13 +304,21 @@ export const AddProductScreen: React.FC = () => {
                 onChangeText={setMinStockLevel}
               />
             </View>
+            <View style={{ flex: 1, marginLeft: 8 }}>
+              <Input
+                label="Image URL"
+                placeholder="https://example.com/item.png"
+                value={imageUrl}
+                onChangeText={setImageUrl}
+              />
+            </View>
           </View>
 
           <Input
-            label="Image URL"
-            placeholder="https://example.com/item.png"
-            value={imageUrl}
-            onChangeText={setImageUrl}
+            label="Description"
+            placeholder="Product description (optional)"
+            value={description}
+            onChangeText={setDescription}
           />
         </Card>
 

@@ -1,3 +1,8 @@
+/**
+ * Nexora Mart - Brand-New Create Account Screen
+ * Pixel-Perfect Implementation from Provided Reference Specification (media_1794072024251_9047cfc3.jpg)
+ * Supports full Light Mode & Dark Mode with exact layout, proportions, and orange branding.
+ */
 import React, { useState } from 'react';
 import {
   View,
@@ -12,7 +17,6 @@ import {
   Alert,
   StatusBar,
   Image,
-  Modal,
   useWindowDimensions,
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
@@ -20,13 +24,10 @@ import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../../navigation/types';
 import { useAuth } from '../../hooks/useAuth';
 import { useTheme } from '../../hooks/useTheme';
-import { WaveBackground } from '../../components/branding/WaveBackground';
-import { BrandLogo } from '../../components/branding/BrandLogo';
 import {
   UserIcon,
   MailIcon,
   PhoneIcon,
-  StoreIcon,
   LockIcon,
   EyeIcon,
   EyeOffIcon,
@@ -34,7 +35,6 @@ import {
   ArrowLeftIcon,
   GoogleIcon,
   CheckIcon,
-  ChevronDownIcon,
   SunIcon,
   MoonIcon,
 } from '../../components/branding/Icons';
@@ -42,49 +42,48 @@ import { isValidEmail, isValidPhone } from '../../utils/validators';
 
 type RegisterNavProp = NativeStackNavigationProp<RootStackParamList, 'Register'>;
 
-export const STORE_TYPES = [
-  'Grocery Store',
-  'Clothing Store',
-  'Medical / Pharmacy Store',
-  'Mobile & Electronics Store',
-  'Plastic Store',
-  'Handloom store',
-  'Furniture Store',
-  'Agro Store',
-];
-
 export const RegisterScreen: React.FC = () => {
   const navigation = useNavigation<RegisterNavProp>();
   const { register } = useAuth();
-  const { isDark, colors, brandColors, toggleTheme } = useTheme();
+  const { isDark, toggleTheme } = useTheme();
   const { width } = useWindowDimensions();
 
-  const [firstName, setFirstName] = useState('');
-  const [surname, setSurname] = useState('');
+  // Form State matching reference UI fields
+  const [fullName, setFullName] = useState('');
   const [email, setEmail] = useState('');
   const [phone, setPhone] = useState('');
-  const [shopType, setShopType] = useState(STORE_TYPES[0]);
   const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
 
-  const [showShopPicker, setShowShopPicker] = useState(false);
+  // Password visibility toggles
   const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+
+  // Checkbox State
   const [agreeTerms, setAgreeTerms] = useState(true);
+
+  // Loading & Error States
   const [loading, setLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
 
-  const [focusedField, setFocusedField] = useState<string | null>(null);
+  // Focus States for glowing orange border highlight
+  const [fullNameFocused, setFullNameFocused] = useState(false);
+  const [emailFocused, setEmailFocused] = useState(false);
+  const [phoneFocused, setPhoneFocused] = useState(false);
+  const [passwordFocused, setPasswordFocused] = useState(false);
+  const [confirmPasswordFocused, setConfirmPasswordFocused] = useState(false);
 
-  // Shop illustration responsive dimensions (aspect ratio ~1.96:1)
-  const illustrationWidth = Math.min(width * 0.72, 300);
+  // Storefront illustration responsive sizing (matches natural ~1.96:1 aspect ratio)
+  const illustrationWidth = Math.min(width * 0.74, 290);
   const illustrationHeight = illustrationWidth / 1.96;
 
+  // Primary brand orange color
+  const primaryOrange = '#FF6A1A';
+
   const validate = () => {
-    if (!firstName.trim()) {
-      setErrorMsg('Please enter your first name');
-      return false;
-    }
-    if (!surname.trim()) {
-      setErrorMsg('Please enter your surname');
+    const trimmedName = fullName.trim();
+    if (!trimmedName) {
+      setErrorMsg('Please enter your full name');
       return false;
     }
     if (!email.trim()) {
@@ -96,15 +95,11 @@ export const RegisterScreen: React.FC = () => {
       return false;
     }
     if (!phone.trim()) {
-      setErrorMsg('Please enter your phone number');
+      setErrorMsg('Please enter your mobile number');
       return false;
     }
     if (!isValidPhone(phone)) {
-      setErrorMsg('Please enter a valid phone number');
-      return false;
-    }
-    if (!shopType) {
-      setErrorMsg('Please select your shop type');
+      setErrorMsg('Please enter a valid mobile number');
       return false;
     }
     if (!password) {
@@ -113,6 +108,10 @@ export const RegisterScreen: React.FC = () => {
     }
     if (password.length < 6) {
       setErrorMsg('Password must be at least 6 characters');
+      return false;
+    }
+    if (password !== confirmPassword) {
+      setErrorMsg('Passwords do not match');
       return false;
     }
     if (!agreeTerms) {
@@ -128,12 +127,17 @@ export const RegisterScreen: React.FC = () => {
 
     setLoading(true);
     try {
+      // Split full name into first name and surname
+      const nameParts = fullName.trim().split(/\s+/);
+      const firstName = nameParts[0];
+      const surname = nameParts.length > 1 ? nameParts.slice(1).join(' ') : 'Store Owner';
+
       await register({
-        firstName: firstName.trim(),
-        surname: surname.trim(),
+        firstName,
+        surname,
         email: email.trim().toLowerCase(),
         phone: phone.trim(),
-        storeType: shopType,
+        storeType: 'General Store',
         password,
       });
 
@@ -153,59 +157,135 @@ export const RegisterScreen: React.FC = () => {
   const handleGoogleSignUp = () => {
     Alert.alert(
       'Google Sign-Up',
-      'Connecting to Google authentication service...',
-      [{ text: 'OK' }]
+      'Sign up using your Google account or proceed with standard registration.',
+      [
+        {
+          text: 'Fill Demo Account',
+          onPress: () => {
+            setFullName('Demo Store Owner');
+            setEmail('demo.store@nmart.com');
+            setPhone('9876543210');
+            setPassword('password123');
+            setConfirmPassword('password123');
+            setErrorMsg('');
+          },
+        },
+        { text: 'Cancel', style: 'cancel' },
+      ]
+    );
+  };
+
+  const showTermsModal = () => {
+    Alert.alert(
+      'Terms & Conditions',
+      'By using Nexora Mart, you agree to adhere to all terms of service, merchant compliance rules, and safe store operation guidelines.',
+      [{ text: 'Understood' }]
+    );
+  };
+
+  const showPrivacyModal = () => {
+    Alert.alert(
+      'Privacy Policy',
+      'Nexora Mart respects your privacy. Your data, store transactions, and customer details are encrypted and securely stored.',
+      [{ text: 'Understood' }]
     );
   };
 
   return (
-    <View style={[styles.container, { backgroundColor: colors.background }]}>
+    <View style={[styles.root, { backgroundColor: isDark ? '#121316' : '#FFFFFF' }]}>
       <StatusBar
         barStyle={isDark ? 'light-content' : 'dark-content'}
         backgroundColor="transparent"
         translucent
       />
 
-      {/* Organic Top-Left & Bottom-Right Corner Waves */}
-      <WaveBackground />
+      {/* ========================================================
+          1. DECORATIVE TOP-LEFT & BOTTOM-RIGHT ORANGE CURVED WAVES
+          Exact visual match to the reference screenshot
+          ======================================================== */}
+      {/* Top-Left Curve */}
+      <View
+        pointerEvents="none"
+        style={[
+          styles.topLeftWave,
+          {
+            backgroundColor: primaryOrange,
+            opacity: isDark ? 0.95 : 0.9,
+          },
+        ]}
+      />
+      {isDark && (
+        <View
+          pointerEvents="none"
+          style={[
+            styles.topLeftWaveGlow,
+            { backgroundColor: 'rgba(255, 106, 26, 0.25)' },
+          ]}
+        />
+      )}
+
+      {/* Bottom-Right Curve */}
+      <View
+        pointerEvents="none"
+        style={[
+          styles.bottomRightWave,
+          {
+            backgroundColor: primaryOrange,
+            opacity: isDark ? 0.9 : 0.85,
+          },
+        ]}
+      />
+      {isDark && (
+        <View
+          pointerEvents="none"
+          style={[
+            styles.bottomRightWaveGlow,
+            { backgroundColor: 'rgba(255, 106, 26, 0.22)' },
+          ]}
+        />
+      )}
 
       <KeyboardAvoidingView
-        style={styles.flexOne}
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+        style={styles.keyboardView}
       >
         <ScrollView
           contentContainerStyle={styles.scrollContent}
-          keyboardShouldPersistTaps="handled"
           showsVerticalScrollIndicator={false}
+          keyboardShouldPersistTaps="handled"
         >
-          {/* Top Bar with Back Button & Theme Toggle Button */}
+          {/* ========================================================
+              2. TOP BAR: BACK BUTTON (LEFT) & THEME TOGGLE BUTTON (RIGHT)
+              Positioned below system status bar
+              ======================================================== */}
           <View style={styles.topBar}>
+            {/* Back Button on Top Left */}
             <TouchableOpacity
               style={[
                 styles.navCircularBtn,
                 {
-                  backgroundColor: colors.toggleBg,
-                  borderColor: colors.toggleBorder,
-                  shadowColor: '#000000',
+                  backgroundColor: isDark ? '#1F222A' : '#FFFFFF',
+                  borderColor: isDark ? '#2D323E' : '#F3F4F6',
                 },
               ]}
               onPress={() => navigation.goBack()}
               activeOpacity={0.75}
-              accessibilityLabel="Go Back"
+              accessibilityLabel="Go Back to Login"
             >
               <ArrowLeftIcon
                 size={18}
                 color={isDark ? '#FFFFFF' : '#111827'}
+                strokeWidth={2.4}
               />
             </TouchableOpacity>
 
+            {/* Theme Toggle Button on Top Right */}
             <TouchableOpacity
               style={[
                 styles.navCircularBtn,
                 {
-                  backgroundColor: colors.toggleBg,
-                  borderColor: colors.toggleBorder,
-                  shadowColor: '#000000',
+                  backgroundColor: isDark ? '#1F222A' : '#FFFFFF',
+                  borderColor: isDark ? '#2D323E' : '#F3F4F6',
                 },
               ]}
               onPress={toggleTheme}
@@ -213,20 +293,51 @@ export const RegisterScreen: React.FC = () => {
               accessibilityLabel="Toggle Theme Mode"
             >
               {isDark ? (
-                <MoonIcon size={18} color="#FFFFFF" />
+                <MoonIcon size={18} color="#FFFFFF" strokeWidth={2} />
               ) : (
-                <SunIcon size={19} color={brandColors.primary} />
+                <SunIcon size={19} color={primaryOrange} strokeWidth={2} />
               )}
             </TouchableOpacity>
           </View>
 
-          {/* Brand Logo & Wordmark Header */}
-          <View style={styles.logoSection}>
-            <BrandLogo size={46} textSize={25} />
+          {/* ========================================================
+              3. BRAND LOGO & WORDMARK HEADER
+              3 Horizontal Orange Speed Lines + Orange 'M' Badge
+              ======================================================== */}
+          <View style={styles.brandHeader}>
+            <View style={styles.logoRow}>
+              {/* 3 Horizontal Speed Lines */}
+              <View style={styles.speedLinesCol}>
+                <View style={[styles.speedLine, { width: 14, backgroundColor: primaryOrange }]} />
+                <View style={[styles.speedLine, { width: 22, backgroundColor: primaryOrange }]} />
+                <View style={[styles.speedLine, { width: 14, backgroundColor: primaryOrange }]} />
+              </View>
+
+              {/* Orange Rounded Badge with Stylized "M" */}
+              <View style={[styles.logoBadge, { backgroundColor: primaryOrange }]}>
+                <Text style={styles.logoMText}>M</Text>
+              </View>
+            </View>
+
+            {/* Wordmark: Nexora Mart */}
+            <View style={styles.wordmarkRow}>
+              <Text style={[styles.wordNexora, { color: isDark ? '#FFFFFF' : '#111827' }]}>
+                Nexora{' '}
+              </Text>
+              <Text style={[styles.wordMart, { color: primaryOrange }]}>Mart</Text>
+            </View>
+
+            {/* Tagline */}
+            <Text style={[styles.tagline, { color: isDark ? '#9CA3AF' : '#6B7280' }]}>
+              All-in-One Store Management
+            </Text>
           </View>
 
-          {/* 3D Storefront Illustration */}
-          <View style={styles.illustrationSection}>
+          {/* ========================================================
+              4. 3D STOREFRONT ILLUSTRATION
+              High-resolution 3D shop matching light/dark mode
+              ======================================================== */}
+          <View style={styles.storefrontContainer}>
             <Image
               source={
                 isDark
@@ -241,316 +352,320 @@ export const RegisterScreen: React.FC = () => {
             />
           </View>
 
-          {/* Form Content Area */}
-          <View style={styles.formContainer}>
-            {/* Title & Subtitle */}
-            <View style={styles.headerBlock}>
-              <Text
-                style={[
-                  styles.title,
-                  { color: isDark ? '#FFFFFF' : '#111827' },
-                ]}
-              >
-                Create Account
-              </Text>
-              <Text
-                style={[
-                  styles.subtitle,
-                  { color: isDark ? '#9CA3AF' : '#6B7280' },
-                ]}
-              >
-                Join Nexora Mart and manage your store easily
-              </Text>
-            </View>
+          {/* ========================================================
+              5. "CREATE ACCOUNT" TITLE SECTION
+              ======================================================== */}
+          <View style={styles.titleSection}>
+            <Text style={[styles.mainTitle, { color: isDark ? '#FFFFFF' : '#111827' }]}>
+              Create Account
+            </Text>
+            <Text style={[styles.subtitle, { color: isDark ? '#9CA3AF' : '#6B7280' }]}>
+              Join Nexora Mart and manage your store easily
+            </Text>
+          </View>
 
-            {/* Error Banner */}
-            {errorMsg ? (
-              <View style={styles.errorBanner}>
-                <Text style={styles.errorBannerText}>{errorMsg}</Text>
-              </View>
-            ) : null}
-
-            {/* 1. First Name & Surname Row */}
-            <View style={styles.nameRow}>
-              {/* First Name */}
-              <View
-                style={[
-                  styles.inputWrapper,
-                  styles.nameInput,
-                  {
-                    backgroundColor: colors.inputBg,
-                    borderColor:
-                      focusedField === 'firstName'
-                        ? brandColors.primary
-                        : colors.inputBorder,
-                    borderWidth: focusedField === 'firstName' ? 1.5 : 1,
-                  },
-                ]}
-              >
-                <View style={styles.inputIconLeft}>
-                  <UserIcon
-                    size={18}
-                    color={focusedField === 'firstName' ? brandColors.primary : '#9CA3AF'}
-                  />
-                </View>
-                <TextInput
-                  style={[
-                    styles.textInput,
-                    { color: isDark ? '#FFFFFF' : '#111827' },
-                  ]}
-                  placeholder="First Name"
-                  placeholderTextColor={colors.textPlaceholder}
-                  value={firstName}
-                  onChangeText={(text) => {
-                    setFirstName(text);
-                    if (errorMsg) setErrorMsg('');
-                  }}
-                  onFocus={() => setFocusedField('firstName')}
-                  onBlur={() => setFocusedField(null)}
-                  autoCapitalize="words"
-                />
-              </View>
-
-              {/* Surname */}
-              <View
-                style={[
-                  styles.inputWrapper,
-                  styles.nameInput,
-                  {
-                    backgroundColor: colors.inputBg,
-                    borderColor:
-                      focusedField === 'surname'
-                        ? brandColors.primary
-                        : colors.inputBorder,
-                    borderWidth: focusedField === 'surname' ? 1.5 : 1,
-                  },
-                ]}
-              >
-                <TextInput
-                  style={[
-                    styles.textInput,
-                    { color: isDark ? '#FFFFFF' : '#111827' },
-                  ]}
-                  placeholder="Surname"
-                  placeholderTextColor={colors.textPlaceholder}
-                  value={surname}
-                  onChangeText={(text) => {
-                    setSurname(text);
-                    if (errorMsg) setErrorMsg('');
-                  }}
-                  onFocus={() => setFocusedField('surname')}
-                  onBlur={() => setFocusedField(null)}
-                  autoCapitalize="words"
-                />
-              </View>
-            </View>
-
-            {/* 2. Email Address Input */}
+          {/* Error Message Alert Banner */}
+          {errorMsg ? (
             <View
               style={[
-                styles.inputWrapper,
+                styles.errorBanner,
+                { backgroundColor: isDark ? 'rgba(239, 68, 68, 0.15)' : '#FEE2E2' },
+              ]}
+            >
+              <Text style={[styles.errorText, { color: isDark ? '#FCA5A5' : '#DC2626' }]}>
+                {errorMsg}
+              </Text>
+            </View>
+          ) : null}
+
+          {/* ========================================================
+              6. INPUT FORM FIELDS (5 INPUTS IN SPECIFICATION)
+              ======================================================== */}
+          <View style={styles.formContainer}>
+            {/* Field 1: Full Name */}
+            <View
+              style={[
+                styles.inputCard,
                 {
-                  backgroundColor: colors.inputBg,
-                  borderColor:
-                    focusedField === 'email'
-                      ? brandColors.primary
-                      : colors.inputBorder,
-                  borderWidth: focusedField === 'email' ? 1.5 : 1,
+                  backgroundColor: isDark ? '#1C1F26' : '#FFFFFF',
+                  borderColor: fullNameFocused
+                    ? primaryOrange
+                    : isDark
+                    ? '#2D323E'
+                    : '#E5E7EB',
+                  borderWidth: fullNameFocused ? 1.5 : 1,
                 },
               ]}
             >
-              <View style={styles.inputIconLeft}>
-                <MailIcon
+              <View style={styles.inputIconWrapper}>
+                <UserIcon
                   size={19}
-                  color={focusedField === 'email' ? brandColors.primary : '#9CA3AF'}
+                  color={fullNameFocused ? primaryOrange : isDark ? '#8A909D' : '#9CA3AF'}
+                  strokeWidth={2}
                 />
               </View>
               <TextInput
-                style={[
-                  styles.textInput,
-                  { color: isDark ? '#FFFFFF' : '#111827' },
-                ]}
-                placeholder="Email Address"
-                placeholderTextColor={colors.textPlaceholder}
-                value={email}
-                onChangeText={(text) => {
-                  setEmail(text);
+                style={[styles.textInput, { color: isDark ? '#FFFFFF' : '#111827' }]}
+                placeholder="Full Name"
+                placeholderTextColor={isDark ? '#6B7280' : '#9CA3AF'}
+                value={fullName}
+                onChangeText={(val) => {
+                  setFullName(val);
                   if (errorMsg) setErrorMsg('');
                 }}
-                onFocus={() => setFocusedField('email')}
-                onBlur={() => setFocusedField(null)}
+                onFocus={() => setFullNameFocused(true)}
+                onBlur={() => setFullNameFocused(false)}
+                autoCapitalize="words"
+                autoCorrect={false}
+              />
+            </View>
+
+            {/* Field 2: Email Address */}
+            <View
+              style={[
+                styles.inputCard,
+                {
+                  backgroundColor: isDark ? '#1C1F26' : '#FFFFFF',
+                  borderColor: emailFocused
+                    ? primaryOrange
+                    : isDark
+                    ? '#2D323E'
+                    : '#E5E7EB',
+                  borderWidth: emailFocused ? 1.5 : 1,
+                },
+              ]}
+            >
+              <View style={styles.inputIconWrapper}>
+                <MailIcon
+                  size={19}
+                  color={emailFocused ? primaryOrange : isDark ? '#8A909D' : '#9CA3AF'}
+                  strokeWidth={2}
+                />
+              </View>
+              <TextInput
+                style={[styles.textInput, { color: isDark ? '#FFFFFF' : '#111827' }]}
+                placeholder="Email Address"
+                placeholderTextColor={isDark ? '#6B7280' : '#9CA3AF'}
+                value={email}
+                onChangeText={(val) => {
+                  setEmail(val);
+                  if (errorMsg) setErrorMsg('');
+                }}
+                onFocus={() => setEmailFocused(true)}
+                onBlur={() => setEmailFocused(false)}
                 keyboardType="email-address"
                 autoCapitalize="none"
                 autoCorrect={false}
               />
             </View>
 
-            {/* 3. Mobile Number Input */}
+            {/* Field 3: Mobile Number */}
             <View
               style={[
-                styles.inputWrapper,
+                styles.inputCard,
                 {
-                  backgroundColor: colors.inputBg,
-                  borderColor:
-                    focusedField === 'phone'
-                      ? brandColors.primary
-                      : colors.inputBorder,
-                  borderWidth: focusedField === 'phone' ? 1.5 : 1,
+                  backgroundColor: isDark ? '#1C1F26' : '#FFFFFF',
+                  borderColor: phoneFocused
+                    ? primaryOrange
+                    : isDark
+                    ? '#2D323E'
+                    : '#E5E7EB',
+                  borderWidth: phoneFocused ? 1.5 : 1,
                 },
               ]}
             >
-              <View style={styles.inputIconLeft}>
+              <View style={styles.inputIconWrapper}>
                 <PhoneIcon
                   size={19}
-                  color={focusedField === 'phone' ? brandColors.primary : '#9CA3AF'}
+                  color={phoneFocused ? primaryOrange : isDark ? '#8A909D' : '#9CA3AF'}
+                  strokeWidth={2}
                 />
               </View>
               <TextInput
-                style={[
-                  styles.textInput,
-                  { color: isDark ? '#FFFFFF' : '#111827' },
-                ]}
-                placeholder="Phone Number"
-                placeholderTextColor={colors.textPlaceholder}
+                style={[styles.textInput, { color: isDark ? '#FFFFFF' : '#111827' }]}
+                placeholder="Mobile Number"
+                placeholderTextColor={isDark ? '#6B7280' : '#9CA3AF'}
                 value={phone}
-                onChangeText={(text) => {
-                  setPhone(text);
+                onChangeText={(val) => {
+                  setPhone(val);
                   if (errorMsg) setErrorMsg('');
                 }}
-                onFocus={() => setFocusedField('phone')}
-                onBlur={() => setFocusedField(null)}
+                onFocus={() => setPhoneFocused(true)}
+                onBlur={() => setPhoneFocused(false)}
                 keyboardType="phone-pad"
               />
             </View>
 
-            {/* 4. Select Shop Type Dropdown */}
-            <TouchableOpacity
-              style={[
-                styles.inputWrapper,
-                {
-                  backgroundColor: colors.inputBg,
-                  borderColor: showShopPicker
-                    ? brandColors.primary
-                    : colors.inputBorder,
-                  borderWidth: showShopPicker ? 1.5 : 1,
-                },
-              ]}
-              onPress={() => setShowShopPicker(true)}
-              activeOpacity={0.8}
-            >
-              <View style={styles.inputIconLeft}>
-                <StoreIcon size={19} color={brandColors.primary} />
-              </View>
-              <View style={styles.selectTextWrap}>
-                <Text
-                  style={[
-                    styles.selectValueText,
-                    { color: isDark ? '#FFFFFF' : '#111827' },
-                  ]}
-                >
-                  {shopType}
-                </Text>
-              </View>
-              <ChevronDownIcon size={18} color={colors.textPlaceholder} />
-            </TouchableOpacity>
-
-            {/* 5. Password Input */}
+            {/* Field 4: Password */}
             <View
               style={[
-                styles.inputWrapper,
+                styles.inputCard,
                 {
-                  backgroundColor: colors.inputBg,
-                  borderColor:
-                    focusedField === 'password'
-                      ? brandColors.primary
-                      : colors.inputBorder,
-                  borderWidth: focusedField === 'password' ? 1.5 : 1,
+                  backgroundColor: isDark ? '#1C1F26' : '#FFFFFF',
+                  borderColor: passwordFocused
+                    ? primaryOrange
+                    : isDark
+                    ? '#2D323E'
+                    : '#E5E7EB',
+                  borderWidth: passwordFocused ? 1.5 : 1,
                 },
               ]}
             >
-              <View style={styles.inputIconLeft}>
+              <View style={styles.inputIconWrapper}>
                 <LockIcon
                   size={19}
-                  color={focusedField === 'password' ? brandColors.primary : '#9CA3AF'}
+                  color={passwordFocused ? primaryOrange : isDark ? '#8A909D' : '#9CA3AF'}
+                  strokeWidth={2}
                 />
               </View>
               <TextInput
-                style={[
-                  styles.textInput,
-                  { color: isDark ? '#FFFFFF' : '#111827' },
-                ]}
+                style={[styles.textInput, { color: isDark ? '#FFFFFF' : '#111827' }]}
                 placeholder="Password"
-                placeholderTextColor={colors.textPlaceholder}
+                placeholderTextColor={isDark ? '#6B7280' : '#9CA3AF'}
                 value={password}
-                onChangeText={(text) => {
-                  setPassword(text);
+                onChangeText={(val) => {
+                  setPassword(val);
                   if (errorMsg) setErrorMsg('');
                 }}
-                onFocus={() => setFocusedField('password')}
-                onBlur={() => setFocusedField(null)}
+                onFocus={() => setPasswordFocused(true)}
+                onBlur={() => setPasswordFocused(false)}
                 secureTextEntry={!showPassword}
                 autoCapitalize="none"
               />
               <TouchableOpacity
                 onPress={() => setShowPassword(!showPassword)}
                 style={styles.eyeBtn}
-                hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
+                activeOpacity={0.7}
               >
                 {showPassword ? (
-                  <EyeOffIcon size={19} color={brandColors.primary} />
+                  <EyeOffIcon
+                    size={20}
+                    color={isDark ? '#8A909D' : '#9CA3AF'}
+                    strokeWidth={1.8}
+                  />
                 ) : (
-                  <EyeIcon size={19} color={colors.textPlaceholder} />
+                  <EyeIcon
+                    size={20}
+                    color={isDark ? '#8A909D' : '#9CA3AF'}
+                    strokeWidth={1.8}
+                  />
                 )}
               </TouchableOpacity>
             </View>
 
-            {/* 6. Terms & Conditions Checkbox */}
-            <TouchableOpacity
-              style={styles.termsRow}
-              onPress={() => setAgreeTerms(!agreeTerms)}
-              activeOpacity={0.75}
+            {/* Field 5: Confirm Password */}
+            <View
+              style={[
+                styles.inputCard,
+                {
+                  backgroundColor: isDark ? '#1C1F26' : '#FFFFFF',
+                  borderColor: confirmPasswordFocused
+                    ? primaryOrange
+                    : isDark
+                    ? '#2D323E'
+                    : '#E5E7EB',
+                  borderWidth: confirmPasswordFocused ? 1.5 : 1,
+                },
+              ]}
             >
-              <View
-                style={[
-                  styles.checkboxBox,
-                  {
-                    borderColor: agreeTerms
-                      ? brandColors.primary
-                      : isDark
-                      ? '#374151'
-                      : '#D1D5DB',
-                    backgroundColor: agreeTerms
-                      ? brandColors.primary
-                      : 'transparent',
-                  },
-                ]}
-              >
-                {agreeTerms && <CheckIcon size={11} color="#FFFFFF" />}
+              <View style={styles.inputIconWrapper}>
+                <LockIcon
+                  size={19}
+                  color={confirmPasswordFocused ? primaryOrange : isDark ? '#8A909D' : '#9CA3AF'}
+                  strokeWidth={2}
+                />
               </View>
+              <TextInput
+                style={[styles.textInput, { color: isDark ? '#FFFFFF' : '#111827' }]}
+                placeholder="Confirm Password"
+                placeholderTextColor={isDark ? '#6B7280' : '#9CA3AF'}
+                value={confirmPassword}
+                onChangeText={(val) => {
+                  setConfirmPassword(val);
+                  if (errorMsg) setErrorMsg('');
+                }}
+                onFocus={() => setConfirmPasswordFocused(true)}
+                onBlur={() => setConfirmPasswordFocused(false)}
+                secureTextEntry={!showConfirmPassword}
+                autoCapitalize="none"
+              />
+              <TouchableOpacity
+                onPress={() => setShowConfirmPassword(!showConfirmPassword)}
+                style={styles.eyeBtn}
+                hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
+                activeOpacity={0.7}
+              >
+                {showConfirmPassword ? (
+                  <EyeOffIcon
+                    size={20}
+                    color={isDark ? '#8A909D' : '#9CA3AF'}
+                    strokeWidth={1.8}
+                  />
+                ) : (
+                  <EyeIcon
+                    size={20}
+                    color={isDark ? '#8A909D' : '#9CA3AF'}
+                    strokeWidth={1.8}
+                  />
+                )}
+              </TouchableOpacity>
+            </View>
+
+            {/* ========================================================
+                7. TERMS & CONDITIONS CHECKBOX ROW
+                Exact visual match with colored hyperlinks
+                ======================================================== */}
+            <View style={styles.termsRow}>
+              <TouchableOpacity
+                style={styles.checkboxTouchable}
+                onPress={() => setAgreeTerms(!agreeTerms)}
+                activeOpacity={0.8}
+              >
+                <View
+                  style={[
+                    styles.checkbox,
+                    agreeTerms
+                      ? { backgroundColor: primaryOrange, borderColor: primaryOrange }
+                      : {
+                          backgroundColor: 'transparent',
+                          borderColor: isDark ? '#4B5563' : '#D1D5DB',
+                        },
+                  ]}
+                >
+                  {agreeTerms && <CheckIcon size={12} color="#FFFFFF" strokeWidth={2.5} />}
+                </View>
+              </TouchableOpacity>
+
               <Text
                 style={[
-                  styles.termsText,
-                  { color: isDark ? '#9CA3AF' : '#6B7280' },
+                  styles.termsLabel,
+                  { color: isDark ? '#D1D5DB' : '#374151' },
                 ]}
               >
                 I agree to the{' '}
-                <Text style={{ color: brandColors.primary, fontWeight: '600' }}>
+                <Text
+                  style={[styles.termsLink, { color: primaryOrange }]}
+                  onPress={showTermsModal}
+                >
                   Terms & Conditions
                 </Text>{' '}
                 and{' '}
-                <Text style={{ color: brandColors.primary, fontWeight: '600' }}>
-                  Privacy Policy.
+                <Text
+                  style={[styles.termsLink, { color: primaryOrange }]}
+                  onPress={showPrivacyModal}
+                >
+                  Privacy Policy
                 </Text>
+                .
               </Text>
-            </TouchableOpacity>
+            </View>
 
-            {/* 7. Create Account Button with Arrow */}
+            {/* ========================================================
+                8. CREATE ACCOUNT BUTTON (ORANGE WITH RIGHT ARROW)
+                ======================================================== */}
             <TouchableOpacity
-              style={[
-                styles.submitBtn,
-                { backgroundColor: brandColors.primary },
-                loading && styles.submitBtnDisabled,
-              ]}
+              style={[styles.createAccountBtn, { backgroundColor: primaryOrange }]}
               onPress={handleRegister}
               disabled={loading}
               activeOpacity={0.88}
@@ -558,25 +673,27 @@ export const RegisterScreen: React.FC = () => {
               {loading ? (
                 <ActivityIndicator color="#FFFFFF" size="small" />
               ) : (
-                <View style={styles.submitBtnContent}>
-                  <Text style={styles.submitBtnText}>Create Account</Text>
-                  <ArrowRightIcon size={18} color="#FFFFFF" />
+                <View style={styles.createBtnContent}>
+                  <Text style={styles.createBtnText}>Create Account</Text>
+                  <ArrowRightIcon size={18} color="#FFFFFF" strokeWidth={2.4} />
                 </View>
               )}
             </TouchableOpacity>
 
-            {/* 8. Divider: or sign up with */}
+            {/* ========================================================
+                9. DIVIDER: "or sign up with"
+                ======================================================== */}
             <View style={styles.dividerRow}>
               <View
                 style={[
                   styles.dividerLine,
-                  { backgroundColor: colors.divider },
+                  { backgroundColor: isDark ? '#262A34' : '#E5E7EB' },
                 ]}
               />
               <Text
                 style={[
                   styles.dividerText,
-                  { color: isDark ? '#9CA3AF' : '#6B7280' },
+                  { color: isDark ? '#6B7280' : '#9CA3AF' },
                 ]}
               >
                 or sign up with
@@ -584,39 +701,45 @@ export const RegisterScreen: React.FC = () => {
               <View
                 style={[
                   styles.dividerLine,
-                  { backgroundColor: colors.divider },
+                  { backgroundColor: isDark ? '#262A34' : '#E5E7EB' },
                 ]}
               />
             </View>
 
-            {/* 9. Continue with Google Button */}
+            {/* ========================================================
+                10. GOOGLE SIGN-UP BUTTON
+                ======================================================== */}
             <TouchableOpacity
               style={[
                 styles.googleBtn,
                 {
-                  backgroundColor: colors.socialBg,
-                  borderColor: colors.socialBorder,
+                  backgroundColor: isDark ? '#1C1F26' : '#FFFFFF',
+                  borderColor: isDark ? '#2D323E' : '#E5E7EB',
                 },
               ]}
               onPress={handleGoogleSignUp}
               activeOpacity={0.8}
             >
-              <GoogleIcon size={20} />
+              <View style={styles.googleIconWrapper}>
+                <GoogleIcon size={20} />
+              </View>
               <Text
                 style={[
                   styles.googleBtnText,
-                  { color: colors.socialText },
+                  { color: isDark ? '#FFFFFF' : '#1F2937' },
                 ]}
               >
                 Continue with Google
               </Text>
             </TouchableOpacity>
 
-            {/* 10. Footer: Already have an account? Login */}
-            <View style={styles.footerRow}>
+            {/* ========================================================
+                11. BOTTOM PROMPT: "Already have an account? Login"
+                ======================================================== */}
+            <View style={styles.loginPromptRow}>
               <Text
                 style={[
-                  styles.footerLabel,
+                  styles.loginPromptText,
                   { color: isDark ? '#9CA3AF' : '#6B7280' },
                 ]}
               >
@@ -626,12 +749,7 @@ export const RegisterScreen: React.FC = () => {
                 onPress={() => navigation.navigate('Login')}
                 activeOpacity={0.7}
               >
-                <Text
-                  style={[
-                    styles.footerAction,
-                    { color: brandColors.primary },
-                  ]}
-                >
+                <Text style={[styles.loginLinkText, { color: primaryOrange }]}>
                   Login
                 </Text>
               </TouchableOpacity>
@@ -639,269 +757,281 @@ export const RegisterScreen: React.FC = () => {
           </View>
         </ScrollView>
       </KeyboardAvoidingView>
-
-      {/* SHOP TYPE SELECTOR MODAL */}
-      <Modal
-        visible={showShopPicker}
-        transparent
-        animationType="slide"
-        onRequestClose={() => setShowShopPicker(false)}
-      >
-        <TouchableOpacity
-          style={styles.modalBackdrop}
-          activeOpacity={1}
-          onPress={() => setShowShopPicker(false)}
-        >
-          <View
-            style={[
-              styles.pickerSheet,
-              { backgroundColor: isDark ? '#1C1E24' : '#FFFFFF' },
-            ]}
-          >
-            <View style={styles.pickerHeader}>
-              <Text
-                style={[
-                  styles.pickerTitle,
-                  { color: isDark ? '#FFFFFF' : '#111827' },
-                ]}
-              >
-                Select Store Type
-              </Text>
-              <TouchableOpacity
-                onPress={() => setShowShopPicker(false)}
-                style={styles.pickerDoneBtn}
-              >
-                <Text style={{ color: brandColors.primary, fontWeight: '700' }}>Done</Text>
-              </TouchableOpacity>
-            </View>
-
-            <ScrollView showsVerticalScrollIndicator={false}>
-              {STORE_TYPES.map((type) => {
-                const isSelected = shopType === type;
-                return (
-                  <TouchableOpacity
-                    key={type}
-                    style={[
-                      styles.pickerItem,
-                      isSelected && {
-                        backgroundColor: isDark
-                          ? 'rgba(255, 106, 26, 0.15)'
-                          : 'rgba(255, 106, 26, 0.08)',
-                      },
-                    ]}
-                    onPress={() => {
-                      setShopType(type);
-                      setShowShopPicker(false);
-                    }}
-                    activeOpacity={0.7}
-                  >
-                    <View style={styles.pickerItemLeft}>
-                      <StoreIcon
-                        size={18}
-                        color={isSelected ? brandColors.primary : '#9CA3AF'}
-                      />
-                      <Text
-                        style={[
-                          styles.pickerItemText,
-                          { color: isDark ? '#FFFFFF' : '#111827' },
-                          isSelected && {
-                            color: brandColors.primary,
-                            fontWeight: '700',
-                          },
-                        ]}
-                      >
-                        {type}
-                      </Text>
-                    </View>
-                    {isSelected && (
-                      <CheckIcon size={16} color={brandColors.primary} />
-                    )}
-                  </TouchableOpacity>
-                );
-              })}
-            </ScrollView>
-          </View>
-        </TouchableOpacity>
-      </Modal>
     </View>
   );
 };
 
 const styles = StyleSheet.create({
-  container: {
+  root: {
     flex: 1,
+    overflow: 'hidden',
   },
-  flexOne: {
+  keyboardView: {
     flex: 1,
   },
   scrollContent: {
-    flexGrow: 1,
-    paddingHorizontal: 22,
-    paddingTop: Platform.OS === 'android' ? (StatusBar.currentHeight || 28) + 12 : 52,
-    paddingBottom: 28,
+    paddingHorizontal: 24,
+    paddingTop: Platform.OS === 'ios' ? 44 : (StatusBar.currentHeight || 24) + 6,
+    paddingBottom: 40,
   },
+
+  // 1. Organic Corner Wave Backgrounds
+  topLeftWave: {
+    position: 'absolute',
+    top: -160,
+    left: -130,
+    width: 380,
+    height: 380,
+    borderRadius: 190,
+    transform: [{ scaleX: 1.15 }],
+  },
+  topLeftWaveGlow: {
+    position: 'absolute',
+    top: -150,
+    left: -120,
+    width: 400,
+    height: 400,
+    borderRadius: 200,
+  },
+  bottomRightWave: {
+    position: 'absolute',
+    bottom: -180,
+    right: -140,
+    width: 360,
+    height: 360,
+    borderRadius: 180,
+    transform: [{ scaleY: 0.95 }],
+  },
+  bottomRightWaveGlow: {
+    position: 'absolute',
+    bottom: -190,
+    right: -150,
+    width: 380,
+    height: 380,
+    borderRadius: 190,
+  },
+
+  // 2. Top Navigation Bar
   topBar: {
     flexDirection: 'row',
-    alignItems: 'center',
     justifyContent: 'space-between',
+    alignItems: 'center',
     marginBottom: 6,
+    zIndex: 10,
   },
   navCircularBtn: {
-    width: 38,
-    height: 38,
-    borderRadius: 19,
-    borderWidth: 1,
+    width: 40,
+    height: 40,
+    borderRadius: 20,
     alignItems: 'center',
     justifyContent: 'center',
+    borderWidth: 1,
+    shadowColor: '#000000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.08,
     shadowRadius: 4,
     elevation: 2,
   },
-  logoSection: {
+
+  // 3. Brand Header
+  brandHeader: {
     alignItems: 'center',
-    justifyContent: 'center',
     marginTop: 2,
     marginBottom: 10,
   },
-  illustrationSection: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: 14,
-  },
-  formContainer: {
-    width: '100%',
-  },
-  headerBlock: {
-    marginBottom: 16,
-  },
-  title: {
-    fontSize: 24,
-    fontWeight: '800',
-    letterSpacing: -0.4,
-  },
-  subtitle: {
-    fontSize: 13.5,
-    fontWeight: '400',
-    marginTop: 4,
-    letterSpacing: -0.2,
-  },
-  errorBanner: {
-    backgroundColor: 'rgba(239, 68, 68, 0.1)',
-    borderColor: 'rgba(239, 68, 68, 0.3)',
-    borderWidth: 1,
-    borderRadius: 10,
-    paddingVertical: 10,
-    paddingHorizontal: 14,
-    marginBottom: 14,
-  },
-  errorBannerText: {
-    color: '#EF4444',
-    fontSize: 13,
-    fontWeight: '500',
-  },
-  nameRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-  },
-  nameInput: {
-    flex: 0.485,
-  },
-  inputWrapper: {
+  logoRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    height: 52,
-    borderRadius: 14,
-    paddingHorizontal: 14,
-    marginBottom: 11,
-  },
-  inputIconLeft: {
-    width: 28,
-    alignItems: 'center',
     justifyContent: 'center',
-    marginRight: 6,
+    marginBottom: 8,
   },
-  textInput: {
-    flex: 1,
-    height: '100%',
-    fontSize: 14.5,
-    fontWeight: '400',
-    paddingVertical: 0,
-  },
-  selectTextWrap: {
-    flex: 1,
-  },
-  selectValueText: {
-    fontSize: 14.5,
-    fontWeight: '500',
-  },
-  eyeBtn: {
-    padding: 6,
-  },
-  termsRow: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    marginTop: 4,
-    marginBottom: 18,
-    paddingRight: 8,
-  },
-  checkboxBox: {
-    width: 18,
-    height: 18,
-    borderRadius: 4,
-    borderWidth: 1.5,
-    alignItems: 'center',
+  speedLinesCol: {
+    alignItems: 'flex-end',
     justifyContent: 'center',
-    marginRight: 8,
-    marginTop: 2,
+    marginRight: 9,
+    gap: 4.5,
   },
-  termsText: {
-    flex: 1,
-    fontSize: 13,
-    lineHeight: 18,
-    fontWeight: '400',
+  speedLine: {
+    height: 3.2,
+    borderRadius: 2,
   },
-  submitBtn: {
-    height: 52,
-    borderRadius: 14,
+  logoBadge: {
+    width: 44,
+    height: 44,
+    borderRadius: 13,
     alignItems: 'center',
     justifyContent: 'center',
     shadowColor: '#FF6A1A',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.38,
-    shadowRadius: 10,
-    elevation: 5,
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.35,
+    shadowRadius: 6,
+    elevation: 4,
   },
-  submitBtnDisabled: {
-    opacity: 0.7,
+  logoMText: {
+    color: '#FFFFFF',
+    fontSize: 27,
+    fontWeight: '900',
+    letterSpacing: -0.5,
+    marginTop: -1,
   },
-  submitBtnContent: {
+  wordmarkRow: {
     flexDirection: 'row',
+    alignItems: 'center',
+  },
+  wordNexora: {
+    fontSize: 25,
+    fontWeight: '800',
+    letterSpacing: -0.3,
+  },
+  wordMart: {
+    fontSize: 25,
+    fontWeight: '800',
+    letterSpacing: -0.3,
+  },
+  tagline: {
+    fontSize: 12.5,
+    fontWeight: '500',
+    marginTop: 3,
+    letterSpacing: 0.2,
+  },
+
+  // 4. Storefront Illustration
+  storefrontContainer: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginVertical: 4,
+  },
+
+  // 5. Title & Subtitle Section
+  titleSection: {
+    marginTop: 8,
+    marginBottom: 14,
+  },
+  mainTitle: {
+    fontSize: 25,
+    fontWeight: '800',
+    letterSpacing: -0.5,
+  },
+  subtitle: {
+    fontSize: 13.5,
+    marginTop: 3,
+    letterSpacing: 0.1,
+  },
+
+  // Error Banner
+  errorBanner: {
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+    borderRadius: 10,
+    marginBottom: 14,
+  },
+  errorText: {
+    fontSize: 13,
+    fontWeight: '600',
+  },
+
+  // 6. Input Cards
+  formContainer: {
+    gap: 12,
+  },
+  inputCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    height: 52,
+    borderRadius: 13,
+    paddingHorizontal: 14,
+  },
+  inputIconWrapper: {
+    width: 28,
+    alignItems: 'flex-start',
+    justifyContent: 'center',
+  },
+  textInput: {
+    flex: 1,
+    fontSize: 14.5,
+    height: '100%',
+    paddingVertical: 0,
+    paddingLeft: 4,
+  },
+  eyeBtn: {
+    padding: 6,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  submitBtnText: {
+
+  // 7. Terms & Conditions Row
+  termsRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    marginTop: 2,
+    marginBottom: 4,
+    paddingHorizontal: 2,
+  },
+  checkboxTouchable: {
+    paddingTop: 1,
+    paddingRight: 10,
+  },
+  checkbox: {
+    width: 19,
+    height: 19,
+    borderRadius: 5,
+    borderWidth: 1.5,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  termsLabel: {
+    flex: 1,
+    fontSize: 13,
+    lineHeight: 19,
+    letterSpacing: 0.1,
+  },
+  termsLink: {
+    fontWeight: '600',
+  },
+
+  // 8. Create Account Button
+  createAccountBtn: {
+    height: 52,
+    borderRadius: 14,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: 4,
+    shadowColor: '#FF6A1A',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.35,
+    shadowRadius: 8,
+    elevation: 4,
+  },
+  createBtnContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+  },
+  createBtnText: {
     color: '#FFFFFF',
     fontSize: 16,
     fontWeight: '700',
-    marginRight: 8,
-    letterSpacing: -0.2,
+    letterSpacing: 0.2,
   },
+
+  // 9. Divider
   dividerRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginTop: 20,
-    marginBottom: 16,
+    marginVertical: 4,
   },
   dividerLine: {
     flex: 1,
     height: 1,
   },
   dividerText: {
-    paddingHorizontal: 12,
-    fontSize: 13,
-    fontWeight: '400',
+    marginHorizontal: 14,
+    fontSize: 12.5,
+    fontWeight: '500',
   },
+
+  // 10. Google Sign-Up Button
   googleBtn: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -909,81 +1039,32 @@ const styles = StyleSheet.create({
     height: 52,
     borderRadius: 14,
     borderWidth: 1,
-    shadowColor: '#000000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.05,
-    shadowRadius: 3,
-    elevation: 1,
+  },
+  googleIconWrapper: {
+    marginRight: 10,
   },
   googleBtnText: {
-    marginLeft: 10,
-    fontSize: 15,
+    fontSize: 14.5,
     fontWeight: '600',
-    letterSpacing: -0.2,
+    letterSpacing: 0.1,
   },
-  footerRow: {
+
+  // 11. Bottom Prompt Row
+  loginPromptRow: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    marginTop: 22,
-    marginBottom: 12,
+    marginTop: 6,
+    marginBottom: 8,
   },
-  footerLabel: {
-    fontSize: 14,
-    fontWeight: '400',
+  loginPromptText: {
+    fontSize: 13.5,
   },
-  footerAction: {
-    fontSize: 14,
+  loginLinkText: {
+    fontSize: 13.5,
     fontWeight: '700',
-  },
-  modalBackdrop: {
-    flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.55)',
-    justifyContent: 'flex-end',
-  },
-  pickerSheet: {
-    borderTopLeftRadius: 24,
-    borderTopRightRadius: 24,
-    paddingHorizontal: 20,
-    paddingTop: 18,
-    paddingBottom: Platform.OS === 'ios' ? 36 : 24,
-    maxHeight: '65%',
-  },
-  pickerHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    marginBottom: 14,
-    paddingBottom: 10,
-    borderBottomWidth: 1,
-    borderBottomColor: 'rgba(0,0,0,0.06)',
-  },
-  pickerTitle: {
-    fontSize: 18,
-    fontWeight: '700',
-  },
-  pickerDoneBtn: {
-    paddingVertical: 6,
-    paddingHorizontal: 10,
-  },
-  pickerItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingVertical: 14,
-    paddingHorizontal: 14,
-    borderRadius: 12,
-    marginBottom: 4,
-  },
-  pickerItemLeft: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  pickerItemText: {
-    fontSize: 15,
-    fontWeight: '500',
-    marginLeft: 12,
   },
 });
 
 export default RegisterScreen;
+

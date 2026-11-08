@@ -1,5 +1,5 @@
 import datetime
-from typing import Optional, Any
+from typing import Optional
 import bcrypt
 from jose import jwt, JWTError
 from ..core.config import settings

@@ -4,7 +4,6 @@
  * and automatic dual-connection failover between Localhost and Render Cloud.
  */
 import {
-  API_BASE_URL,
   LOCAL_API_URL,
   RENDER_API_URL,
   getInitialApiUrl,

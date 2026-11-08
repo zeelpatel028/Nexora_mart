@@ -5,9 +5,7 @@ import {
   StyleSheet,
   ScrollView,
   Alert,
-  TouchableOpacity,
 } from 'react-native';
-import { useNavigation } from '@react-navigation/native';
 import { useAuth } from '../../hooks/useAuth';
 import { useTheme } from '../../hooks/useTheme';
 import { storeService, authService } from '../../services';
@@ -19,7 +17,6 @@ import Button from '../../components/common/Button';
 import Input from '../../components/common/Input';
 
 export const ProfileScreen: React.FC = () => {
-  const navigation = useNavigation();
   const { user, logout, refreshProfile } = useAuth();
   const { colors, brandColors } = useTheme();
 
@@ -142,7 +139,7 @@ export const ProfileScreen: React.FC = () => {
           <Text style={[styles.userEmail, { color: colors.textSecondary }]}>{user?.email}</Text>
 
           <View style={styles.badgeRow}>
-            <Badge label={user?.store_type || (user as any)?.storeType || 'Supermarket'} variant="primary" />
+            <Badge label={store?.category?.name || user?.store_type || (user as any)?.storeType || 'Grocery Store'} variant="primary" />
             <Badge label="Store Merchant" variant="success" />
           </View>
         </Card>

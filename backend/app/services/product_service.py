@@ -3,7 +3,7 @@ from typing import List, Optional, Dict, Any, Tuple
 from fastapi import HTTPException, status
 from sqlalchemy.orm import Session
 from sqlalchemy import or_
-from ..models.product import Product, ProductAttribute, ProductAttributeValue, ProductCategory
+from ..models.product import Product, ProductAttribute, ProductAttributeValue
 from ..models.inventory import ProductStock, StockAdjustment
 from ..models.store import Store, ShopCategory
 from ..models.user import User

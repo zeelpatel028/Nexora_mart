@@ -9,7 +9,6 @@ from ..models.partner import Customer, DebitCustomer
 from ..models.finance import Payment
 from ..models.store import Store, DocumentSequence
 from ..models.user import User
-from ..models.activity import DailySalesAnalytics
 from ..schemas.sale_schema import SaleCreate
 from ..category_rules.rule_registry import CategoryRuleRegistry
 

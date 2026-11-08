@@ -15,12 +15,11 @@ import { financeService } from '../../services';
 import { Expense, Payment } from '../../models/types';
 import Header from '../../components/common/Header';
 import Card from '../../components/common/Card';
-import Badge from '../../components/common/Badge';
 import Button from '../../components/common/Button';
 import Input from '../../components/common/Input';
 import EmptyState from '../../components/common/EmptyState';
 import Loader from '../../components/common/Loader';
-import { CreditCardIcon, ReceiptIcon } from '../../components/branding/Icons';
+import { ReceiptIcon } from '../../components/branding/Icons';
 import { formatCurrency, formatDate } from '../../utils/formatters';
 
 export const FinanceScreen: React.FC = () => {

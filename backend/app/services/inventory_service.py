@@ -1,8 +1,8 @@
 import datetime
-from typing import List, Optional, Tuple
+from typing import List, Optional
 from fastapi import HTTPException, status
 from sqlalchemy.orm import Session
-from sqlalchemy import or_, and_
+from sqlalchemy import or_
 from ..models.inventory import Inventory, StockMovement
 from ..models.product import Product, ProductVariant
 from ..models.store import Store

@@ -8,7 +8,6 @@ import {
   Alert,
   TouchableOpacity,
 } from 'react-native';
-import { useNavigation } from '@react-navigation/native';
 import { useTheme } from '../../hooks/useTheme';
 import { useAuth } from '../../hooks/useAuth';
 import apiClient from '../../api/apiClient';
@@ -20,10 +19,9 @@ import Card from '../../components/common/Card';
 import Button from '../../components/common/Button';
 import Input from '../../components/common/Input';
 import Badge from '../../components/common/Badge';
-import { SunIcon, MoonIcon, SettingsIcon, CheckIcon } from '../../components/branding/Icons';
+import { SunIcon, MoonIcon, SettingsIcon } from '../../components/branding/Icons';
 
 export const SettingsScreen: React.FC = () => {
-  const navigation = useNavigation();
   const { mode, isDark, setMode, toggleTheme, colors, brandColors } = useTheme();
   const { logout } = useAuth();
 

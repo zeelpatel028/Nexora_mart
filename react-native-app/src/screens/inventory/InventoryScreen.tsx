@@ -4,7 +4,6 @@ import {
   Text,
   StyleSheet,
   FlatList,
-  TextInput,
   TouchableOpacity,
   RefreshControl,
 } from 'react-native';
@@ -31,7 +30,7 @@ export const InventoryScreen: React.FC = () => {
   const [filterMode, setFilterMode] = useState<'all' | 'low' | 'expiring'>('all');
   const [inventory, setInventory] = useState<InventoryItem[]>([]);
   const [movements, setMovements] = useState<StockMovement[]>([]);
-  const [search, setSearch] = useState('');
+  const search = '';
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
 

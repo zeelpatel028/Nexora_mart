@@ -25,7 +25,7 @@ export const EditProductScreen: React.FC = () => {
   const navigation = useNavigation();
   const route = useRoute<EditProductRouteProp>();
   const { productId } = route.params;
-  const { colors, brandColors } = useTheme();
+  const { colors } = useTheme();
 
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);

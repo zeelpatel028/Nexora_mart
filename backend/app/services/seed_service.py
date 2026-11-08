@@ -2,7 +2,7 @@ import logging
 from sqlalchemy.orm import Session
 from ..models.category import Category, CategoryField
 from ..models.unit import Unit
-from ..models.store import Store, ShopCategory
+from ..models.store import Store
 from ..models.user import User
 
 logger = logging.getLogger("seed_service")

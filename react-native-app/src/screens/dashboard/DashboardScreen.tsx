@@ -7,7 +7,6 @@ import {
   RefreshControl,
   TouchableOpacity,
   StatusBar,
-  Dimensions,
   Modal,
   SafeAreaView,
   Platform,
@@ -28,24 +27,17 @@ import {
   PackageIcon,
   UsersIcon,
   UserRoundIcon,
-  BoxesIcon,
   TruckIcon,
   ChartColumnIcon,
-  SettingsIcon,
   LogOutIcon,
-  RefreshIcon,
-  UserIcon,
   StoreIcon,
   HomeIcon,
   ReceiptIcon,
-  CreditCardIcon,
   SunIcon,
   MoonIcon,
 } from '../../components/branding/Icons';
 
 type DashNavProp = NativeStackNavigationProp<RootStackParamList>;
-
-const { width: screenWidth } = Dimensions.get('window');
 
 export const DashboardScreen: React.FC = () => {
   const navigation = useNavigation<DashNavProp>();
@@ -157,16 +149,24 @@ export const DashboardScreen: React.FC = () => {
     },
   ];
 
-  // Sales Trend Data for Line Plot
-  const salesData = [
-    { day: 'Mon', sales: 18500, orders: 85, x: 25, y: 110 },
-    { day: 'Tue', sales: 24400, orders: 110, x: 75, y: 85 },
-    { day: 'Wed', sales: 21800, orders: 95, x: 125, y: 98 },
-    { day: 'Thu', sales: 31900, orders: 135, x: 175, y: 55 },
-    { day: 'Fri', sales: 36200, orders: 162, x: 225, y: 40 },
-    { day: 'Sat', sales: 42500, orders: 185, x: 275, y: 20 },
-    { day: 'Sun', sales: 38900, orders: 168, x: 325, y: 32 },
-  ];
+  // Sales Trend Data for Line Plot (Live Analytics with Fallback)
+  const salesData = (analytics?.sales_overview && analytics.sales_overview.length > 0)
+    ? analytics.sales_overview.map((p, idx) => ({
+        day: p.day,
+        sales: p.sales || 0,
+        orders: p.orders || 0,
+        x: 25 + idx * 50,
+        y: Math.max(20, 130 - Math.min(100, ((p.sales || 0) / 45000) * 100)),
+      }))
+    : [
+        { day: 'Mon', sales: 18500, orders: 85, x: 25, y: 110 },
+        { day: 'Tue', sales: 24400, orders: 110, x: 75, y: 85 },
+        { day: 'Wed', sales: 21800, orders: 95, x: 125, y: 98 },
+        { day: 'Thu', sales: 31900, orders: 135, x: 175, y: 55 },
+        { day: 'Fri', sales: 36200, orders: 162, x: 225, y: 40 },
+        { day: 'Sat', sales: 42500, orders: 185, x: 275, y: 20 },
+        { day: 'Sun', sales: 38900, orders: 168, x: 325, y: 32 },
+      ];
 
   // Quick Access 2 Rows x 4 Cols Grid
   const quickAccessGrid = [

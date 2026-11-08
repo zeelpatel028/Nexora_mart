@@ -9,9 +9,7 @@ import {
   StatusBar,
   Alert,
   ActivityIndicator,
-  Platform,
   SafeAreaView,
-  useWindowDimensions,
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { useTheme } from '../../hooks/useTheme';
@@ -23,10 +21,7 @@ import {
   MoonIcon,
   StoreIcon,
   UserIcon,
-  MailIcon,
-  PhoneIcon,
   SettingsIcon,
-  CheckIcon,
 } from '../../components/branding/Icons';
 
 type TabKey = 'basic' | 'owner' | 'address' | 'business' | 'config' | 'prefixes' | 'system';
@@ -34,7 +29,6 @@ type TabKey = 'basic' | 'owner' | 'address' | 'business' | 'config' | 'prefixes'
 export const AccountDetailScreen: React.FC = () => {
   const navigation = useNavigation();
   const { isDark, colors, brandColors, toggleTheme } = useTheme();
-  const { width } = useWindowDimensions();
 
   const [activeTab, setActiveTab] = useState<TabKey>('basic');
   const [loading, setLoading] = useState(false);

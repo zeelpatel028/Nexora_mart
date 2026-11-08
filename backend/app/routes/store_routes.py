@@ -1,4 +1,4 @@
-from typing import List, Optional
+from typing import List
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 from ..database.connection import get_db
@@ -15,7 +15,6 @@ from ..models.store import (
 )
 from ..schemas.store_schema import StoreResponse, StoreUpdate, StoreCreate
 from ..services.store_service import StoreService
-from ..services.category_service import CategoryService
 
 router = APIRouter(prefix="/stores", tags=["Stores"])
 

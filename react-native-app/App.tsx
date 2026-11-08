@@ -3,7 +3,6 @@
  * Professional React Native Android Store Management Application
  */
 import React from 'react';
-import { StatusBar } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { enableScreens } from 'react-native-screens';
 import { AuthProvider } from './src/context/AuthContext';

@@ -1,3 +1,8 @@
+/**
+ * Nexora Mart - Brand-New Login Screen
+ * Pixel-Perfect Implementation from Provided Reference Specification (Login Ui.png)
+ * Supports full Light Mode & Dark Mode with exact layout, proportions, and orange branding.
+ */
 import React, { useState } from 'react';
 import {
   View,
@@ -19,8 +24,6 @@ import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../../navigation/types';
 import { useAuth } from '../../hooks/useAuth';
 import { useTheme } from '../../hooks/useTheme';
-import { WaveBackground } from '../../components/branding/WaveBackground';
-import { BrandLogo } from '../../components/branding/BrandLogo';
 import {
   MailIcon,
   LockIcon,
@@ -29,7 +32,6 @@ import {
   ArrowRightIcon,
   GoogleIcon,
   CheckIcon,
-  CloseIcon,
   SunIcon,
   MoonIcon,
 } from '../../components/branding/Icons';
@@ -39,21 +41,27 @@ type LoginNavProp = NativeStackNavigationProp<RootStackParamList, 'Login'>;
 export const LoginScreen: React.FC = () => {
   const navigation = useNavigation<LoginNavProp>();
   const { login } = useAuth();
-  const { isDark, colors, brandColors, toggleTheme } = useTheme();
+  const { isDark, toggleTheme } = useTheme();
   const { width } = useWindowDimensions();
 
+  // Form State
   const [identifier, setIdentifier] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [rememberMe, setRememberMe] = useState(true);
   const [loading, setLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
+
+  // Focus States
   const [identifierFocused, setIdentifierFocused] = useState(false);
   const [passwordFocused, setPasswordFocused] = useState(false);
 
-  // Shop illustration responsive dimensions (aspect ratio ~1.96:1)
-  const illustrationWidth = Math.min(width * 0.72, 300);
+  // Store illustration responsive sizing (matches ~1.96:1 natural aspect ratio)
+  const illustrationWidth = Math.min(width * 0.74, 290);
   const illustrationHeight = illustrationWidth / 1.96;
+
+  // Primary brand orange color
+  const primaryOrange = '#FF6A1A';
 
   const handleLogin = async () => {
     setErrorMsg('');
@@ -75,7 +83,7 @@ export const LoginScreen: React.FC = () => {
         routes: [{ name: 'MainTabs' }],
       });
     } catch (err: any) {
-      const msg = err.message || 'Login failed. Please check your credentials.';
+      const msg = err.message || 'Login failed. Please verify your credentials.';
       setErrorMsg(msg);
     } finally {
       setLoading(false);
@@ -91,10 +99,10 @@ export const LoginScreen: React.FC = () => {
   const handleGoogleSignIn = () => {
     Alert.alert(
       'Google Sign-In',
-      'Connecting to Google authentication service...',
+      'Sign in with your Google account or use the pre-configured demo store account.',
       [
         {
-          text: 'Use Demo Store',
+          text: 'Use Demo Credentials',
           onPress: fillDemoCredentials,
         },
         { text: 'Cancel', style: 'cancel' },
@@ -102,40 +110,71 @@ export const LoginScreen: React.FC = () => {
     );
   };
 
-  const handleForgotPassword = () => {
-    navigation.navigate('ForgotPassword');
-  };
-
   return (
-    <View style={[styles.container, { backgroundColor: colors.background }]}>
+    <View style={[styles.root, { backgroundColor: isDark ? '#121316' : '#FFFFFF' }]}>
       <StatusBar
         barStyle={isDark ? 'light-content' : 'dark-content'}
         backgroundColor="transparent"
         translucent
       />
 
-      {/* Organic Top-Left & Bottom-Right Corner Waves */}
-      <WaveBackground />
+      {/* ========================================================
+          1. DECORATIVE TOP-LEFT & BOTTOM-RIGHT ORANGE CURVED WAVES
+          Exact visual match to the reference screenshot
+          ======================================================== */}
+      {/* Top-Left Curve */}
+      <View
+        pointerEvents="none"
+        style={[
+          styles.topLeftWave,
+          {
+            backgroundColor: primaryOrange,
+            opacity: isDark ? 0.95 : 0.9,
+          },
+        ]}
+      />
+      {isDark && (
+        <View
+          pointerEvents="none"
+          style={[
+            styles.topLeftWaveGlow,
+            { backgroundColor: 'rgba(255, 106, 26, 0.25)' },
+          ]}
+        />
+      )}
+
+      {/* Bottom-Right Curve */}
+      <View
+        pointerEvents="none"
+        style={[
+          styles.bottomRightWave,
+          {
+            backgroundColor: primaryOrange,
+            opacity: isDark ? 0.9 : 0.85,
+          },
+        ]}
+      />
 
       <KeyboardAvoidingView
-        style={styles.flexOne}
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+        style={styles.keyboardView}
       >
         <ScrollView
           contentContainerStyle={styles.scrollContent}
-          keyboardShouldPersistTaps="handled"
           showsVerticalScrollIndicator={false}
+          keyboardShouldPersistTaps="handled"
         >
-          {/* Top Bar with Theme Toggle Button */}
+          {/* ========================================================
+              2. TOP BAR: THEME TOGGLE BUTTON (SUN / MOON)
+              Positioned on top-right below system status bar
+              ======================================================== */}
           <View style={styles.topBar}>
-            <View style={styles.topBarSpacer} />
             <TouchableOpacity
               style={[
                 styles.themeToggleBtn,
                 {
-                  backgroundColor: colors.toggleBg,
-                  borderColor: colors.toggleBorder,
-                  shadowColor: isDark ? '#000000' : '#000000',
+                  backgroundColor: isDark ? '#1F222A' : '#FFFFFF',
+                  borderColor: isDark ? '#2D323E' : '#F3F4F6',
                 },
               ]}
               onPress={toggleTheme}
@@ -143,20 +182,51 @@ export const LoginScreen: React.FC = () => {
               accessibilityLabel="Toggle Theme Mode"
             >
               {isDark ? (
-                <MoonIcon size={18} color="#FFFFFF" />
+                <MoonIcon size={18} color="#FFFFFF" strokeWidth={2} />
               ) : (
-                <SunIcon size={19} color={brandColors.primary} />
+                <SunIcon size={19} color={primaryOrange} strokeWidth={2} />
               )}
             </TouchableOpacity>
           </View>
 
-          {/* Brand Logo & Wordmark Header */}
-          <View style={styles.logoSection}>
-            <BrandLogo size={46} textSize={25} />
+          {/* ========================================================
+              3. BRAND LOGO & WORDMARK HEADER
+              3 Horizontal Orange Speed Lines + Orange 'M' Badge
+              ======================================================== */}
+          <View style={styles.brandHeader}>
+            <View style={styles.logoRow}>
+              {/* 3 Horizontal Speed Lines */}
+              <View style={styles.speedLinesCol}>
+                <View style={[styles.speedLine, { width: 14, backgroundColor: primaryOrange }]} />
+                <View style={[styles.speedLine, { width: 22, backgroundColor: primaryOrange }]} />
+                <View style={[styles.speedLine, { width: 14, backgroundColor: primaryOrange }]} />
+              </View>
+
+              {/* Orange Rounded Badge with Stylized "M" */}
+              <View style={[styles.logoBadge, { backgroundColor: primaryOrange }]}>
+                <Text style={styles.logoMText}>M</Text>
+              </View>
+            </View>
+
+            {/* Wordmark: Nexora Mart */}
+            <View style={styles.wordmarkRow}>
+              <Text style={[styles.wordNexora, { color: isDark ? '#FFFFFF' : '#111827' }]}>
+                Nexora{' '}
+              </Text>
+              <Text style={[styles.wordMart, { color: primaryOrange }]}>Mart</Text>
+            </View>
+
+            {/* Tagline */}
+            <Text style={[styles.tagline, { color: isDark ? '#9CA3AF' : '#6B7280' }]}>
+              All-in-One Store Management
+            </Text>
           </View>
 
-          {/* 3D Storefront Illustration */}
-          <View style={styles.illustrationSection}>
+          {/* ========================================================
+              4. 3D STOREFRONT ILLUSTRATION
+              High-resolution 3D shop matching light/dark mode
+              ======================================================== */}
+          <View style={styles.storefrontContainer}>
             <Image
               source={
                 isDark
@@ -171,61 +241,65 @@ export const LoginScreen: React.FC = () => {
             />
           </View>
 
-          {/* Form Content Area */}
-          <View style={styles.formContainer}>
-            {/* Title & Subtitle */}
-            <View style={styles.headerBlock}>
-              <Text
-                style={[
-                  styles.title,
-                  { color: isDark ? '#FFFFFF' : '#111827' },
-                ]}
-              >
-                Welcome Back
-              </Text>
-              <Text
-                style={[
-                  styles.subtitle,
-                  { color: isDark ? '#9CA3AF' : '#6B7280' },
-                ]}
-              >
-                Login to continue to Nexora Mart
-              </Text>
-            </View>
+          {/* ========================================================
+              5. "WELCOME BACK" TITLE SECTION
+              ======================================================== */}
+          <View style={styles.welcomeSection}>
+            <Text style={[styles.welcomeTitle, { color: isDark ? '#FFFFFF' : '#111827' }]}>
+              Welcome Back
+            </Text>
+            <Text style={[styles.welcomeSubtitle, { color: isDark ? '#9CA3AF' : '#6B7280' }]}>
+              Login to continue to Nexora Mart
+            </Text>
+          </View>
 
-            {/* Error Banner */}
-            {errorMsg ? (
-              <View style={styles.errorBanner}>
-                <Text style={styles.errorBannerText}>{errorMsg}</Text>
-              </View>
-            ) : null}
-
-            {/* 1. Email or Mobile Number Input */}
+          {/* Error Message Alert Banner */}
+          {errorMsg ? (
             <View
               style={[
-                styles.inputWrapper,
+                styles.errorBanner,
+                { backgroundColor: isDark ? 'rgba(239, 68, 68, 0.15)' : '#FEE2E2' },
+              ]}
+            >
+              <Text style={[styles.errorText, { color: isDark ? '#FCA5A5' : '#DC2626' }]}>
+                {errorMsg}
+              </Text>
+            </View>
+          ) : null}
+
+          {/* ========================================================
+              6. INPUT FORM FIELDS
+              ======================================================== */}
+          <View style={styles.formContainer}>
+            {/* Input 1: Email or Mobile Number */}
+            <View
+              style={[
+                styles.inputCard,
                 {
-                  backgroundColor: colors.inputBg,
+                  backgroundColor: isDark ? '#1C1F26' : '#FFFFFF',
                   borderColor: identifierFocused
-                    ? brandColors.primary
-                    : colors.inputBorder,
+                    ? primaryOrange
+                    : isDark
+                    ? '#2D323E'
+                    : '#E5E7EB',
                   borderWidth: identifierFocused ? 1.5 : 1,
                 },
               ]}
             >
-              <View style={styles.inputIconLeft}>
-                <MailIcon size={19} color={identifierFocused ? brandColors.primary : '#9CA3AF'} />
+              <View style={styles.inputIconWrapper}>
+                <MailIcon
+                  size={19}
+                  color={identifierFocused ? primaryOrange : isDark ? '#8A909D' : '#9CA3AF'}
+                  strokeWidth={2}
+                />
               </View>
               <TextInput
-                style={[
-                  styles.textInput,
-                  { color: isDark ? '#FFFFFF' : '#111827' },
-                ]}
-                placeholder="User Name or Email"
-                placeholderTextColor={colors.textPlaceholder}
+                style={[styles.textInput, { color: isDark ? '#FFFFFF' : '#111827' }]}
+                placeholder="Email or Mobile Number"
+                placeholderTextColor={isDark ? '#6B7280' : '#9CA3AF'}
                 value={identifier}
-                onChangeText={(text) => {
-                  setIdentifier(text);
+                onChangeText={(val) => {
+                  setIdentifier(val);
                   if (errorMsg) setErrorMsg('');
                 }}
                 onFocus={() => setIdentifierFocused(true)}
@@ -234,43 +308,37 @@ export const LoginScreen: React.FC = () => {
                 autoCapitalize="none"
                 autoCorrect={false}
               />
-              {identifier ? (
-                <TouchableOpacity
-                  onPress={() => setIdentifier('')}
-                  style={styles.clearBtn}
-                  hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-                >
-                  <CloseIcon size={16} color={colors.textPlaceholder} />
-                </TouchableOpacity>
-              ) : null}
             </View>
 
-            {/* 2. Password Input */}
+            {/* Input 2: Password */}
             <View
               style={[
-                styles.inputWrapper,
+                styles.inputCard,
                 {
-                  backgroundColor: colors.inputBg,
+                  backgroundColor: isDark ? '#1C1F26' : '#FFFFFF',
                   borderColor: passwordFocused
-                    ? brandColors.primary
-                    : colors.inputBorder,
+                    ? primaryOrange
+                    : isDark
+                    ? '#2D323E'
+                    : '#E5E7EB',
                   borderWidth: passwordFocused ? 1.5 : 1,
                 },
               ]}
             >
-              <View style={styles.inputIconLeft}>
-                <LockIcon size={19} color={passwordFocused ? brandColors.primary : '#9CA3AF'} />
+              <View style={styles.inputIconWrapper}>
+                <LockIcon
+                  size={19}
+                  color={passwordFocused ? primaryOrange : isDark ? '#8A909D' : '#9CA3AF'}
+                  strokeWidth={2}
+                />
               </View>
               <TextInput
-                style={[
-                  styles.textInput,
-                  { color: isDark ? '#FFFFFF' : '#111827' },
-                ]}
+                style={[styles.textInput, { color: isDark ? '#FFFFFF' : '#111827' }]}
                 placeholder="Password"
-                placeholderTextColor={colors.textPlaceholder}
+                placeholderTextColor={isDark ? '#6B7280' : '#9CA3AF'}
                 value={password}
-                onChangeText={(text) => {
-                  setPassword(text);
+                onChangeText={(val) => {
+                  setPassword(val);
                   if (errorMsg) setErrorMsg('');
                 }}
                 onFocus={() => setPasswordFocused(true)}
@@ -281,43 +349,48 @@ export const LoginScreen: React.FC = () => {
               <TouchableOpacity
                 onPress={() => setShowPassword(!showPassword)}
                 style={styles.eyeBtn}
-                hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
+                activeOpacity={0.7}
               >
                 {showPassword ? (
-                  <EyeOffIcon size={19} color={brandColors.primary} />
+                  <EyeOffIcon
+                    size={20}
+                    color={isDark ? '#8A909D' : '#9CA3AF'}
+                    strokeWidth={1.8}
+                  />
                 ) : (
-                  <EyeIcon size={19} color={colors.textPlaceholder} />
+                  <EyeIcon
+                    size={20}
+                    color={isDark ? '#8A909D' : '#9CA3AF'}
+                    strokeWidth={1.8}
+                  />
                 )}
               </TouchableOpacity>
             </View>
 
-            {/* 3. Options Row: Remember Me & Forgot Password */}
+            {/* Options Row: Remember Me & Forgot Password? */}
             <View style={styles.optionsRow}>
               <TouchableOpacity
-                style={styles.checkboxRow}
+                style={styles.rememberMeTouchable}
                 onPress={() => setRememberMe(!rememberMe)}
-                activeOpacity={0.7}
+                activeOpacity={0.8}
               >
                 <View
                   style={[
-                    styles.checkboxBox,
-                    {
-                      borderColor: rememberMe
-                        ? brandColors.primary
-                        : isDark
-                        ? '#374151'
-                        : '#D1D5DB',
-                      backgroundColor: rememberMe
-                        ? brandColors.primary
-                        : 'transparent',
-                    },
+                    styles.checkbox,
+                    rememberMe
+                      ? { backgroundColor: primaryOrange, borderColor: primaryOrange }
+                      : {
+                          backgroundColor: 'transparent',
+                          borderColor: isDark ? '#4B5563' : '#D1D5DB',
+                        },
                   ]}
                 >
-                  {rememberMe && <CheckIcon size={11} color="#FFFFFF" />}
+                  {rememberMe && <CheckIcon size={12} color="#FFFFFF" strokeWidth={2.5} />}
                 </View>
                 <Text
                   style={[
-                    styles.checkboxLabel,
+                    styles.rememberMeLabel,
                     { color: isDark ? '#D1D5DB' : '#374151' },
                   ]}
                 >
@@ -326,27 +399,20 @@ export const LoginScreen: React.FC = () => {
               </TouchableOpacity>
 
               <TouchableOpacity
-                onPress={handleForgotPassword}
+                onPress={() => navigation.navigate('ForgotPassword')}
                 activeOpacity={0.7}
               >
-                <Text
-                  style={[
-                    styles.forgotLink,
-                    { color: brandColors.primary },
-                  ]}
-                >
+                <Text style={[styles.forgotPasswordText, { color: primaryOrange }]}>
                   Forgot Password?
                 </Text>
               </TouchableOpacity>
             </View>
 
-            {/* 4. Login Button with Arrow */}
+            {/* ========================================================
+                7. LOGIN BUTTON (ORANGE WITH RIGHT ARROW)
+                ======================================================== */}
             <TouchableOpacity
-              style={[
-                styles.loginBtn,
-                { backgroundColor: brandColors.primary },
-                loading && styles.loginBtnDisabled,
-              ]}
+              style={[styles.loginBtn, { backgroundColor: primaryOrange }]}
               onPress={handleLogin}
               disabled={loading}
               activeOpacity={0.88}
@@ -356,23 +422,25 @@ export const LoginScreen: React.FC = () => {
               ) : (
                 <View style={styles.loginBtnContent}>
                   <Text style={styles.loginBtnText}>Login</Text>
-                  <ArrowRightIcon size={18} color="#FFFFFF" />
+                  <ArrowRightIcon size={18} color="#FFFFFF" strokeWidth={2.4} />
                 </View>
               )}
             </TouchableOpacity>
 
-            {/* 5. Divider: or login with */}
+            {/* ========================================================
+                8. DIVIDER: "or login with"
+                ======================================================== */}
             <View style={styles.dividerRow}>
               <View
                 style={[
                   styles.dividerLine,
-                  { backgroundColor: colors.divider },
+                  { backgroundColor: isDark ? '#262A34' : '#E5E7EB' },
                 ]}
               />
               <Text
                 style={[
                   styles.dividerText,
-                  { color: isDark ? '#9CA3AF' : '#6B7280' },
+                  { color: isDark ? '#6B7280' : '#9CA3AF' },
                 ]}
               >
                 or login with
@@ -380,39 +448,45 @@ export const LoginScreen: React.FC = () => {
               <View
                 style={[
                   styles.dividerLine,
-                  { backgroundColor: colors.divider },
+                  { backgroundColor: isDark ? '#262A34' : '#E5E7EB' },
                 ]}
               />
             </View>
 
-            {/* 6. Continue with Google Button */}
+            {/* ========================================================
+                9. GOOGLE SIGN-IN BUTTON
+                ======================================================== */}
             <TouchableOpacity
               style={[
                 styles.googleBtn,
                 {
-                  backgroundColor: colors.socialBg,
-                  borderColor: colors.socialBorder,
+                  backgroundColor: isDark ? '#1C1F26' : '#FFFFFF',
+                  borderColor: isDark ? '#2D323E' : '#E5E7EB',
                 },
               ]}
               onPress={handleGoogleSignIn}
               activeOpacity={0.8}
             >
-              <GoogleIcon size={20} />
+              <View style={styles.googleIconWrapper}>
+                <GoogleIcon size={20} />
+              </View>
               <Text
                 style={[
                   styles.googleBtnText,
-                  { color: colors.socialText },
+                  { color: isDark ? '#FFFFFF' : '#1F2937' },
                 ]}
               >
                 Continue with Google
               </Text>
             </TouchableOpacity>
 
-            {/* 7. Footer: Don't have an account? Sign Up */}
-            <View style={styles.footerRow}>
+            {/* ========================================================
+                10. BOTTOM PROMPT: "Don't have an account? Sign Up"
+                ======================================================== */}
+            <View style={styles.signupPromptRow}>
               <Text
                 style={[
-                  styles.footerLabel,
+                  styles.signupPromptText,
                   { color: isDark ? '#9CA3AF' : '#6B7280' },
                 ]}
               >
@@ -422,32 +496,11 @@ export const LoginScreen: React.FC = () => {
                 onPress={() => navigation.navigate('Register')}
                 activeOpacity={0.7}
               >
-                <Text
-                  style={[
-                    styles.footerAction,
-                    { color: brandColors.primary },
-                  ]}
-                >
+                <Text style={[styles.signupLinkText, { color: primaryOrange }]}>
                   Sign Up
                 </Text>
               </TouchableOpacity>
             </View>
-
-            {/* Demo Helper Button (discreetly placed for quick testing) */}
-            <TouchableOpacity
-              style={styles.demoPill}
-              onPress={fillDemoCredentials}
-              activeOpacity={0.65}
-            >
-              <Text
-                style={[
-                  styles.demoPillText,
-                  { color: isDark ? '#4B5563' : '#CBD5E1' },
-                ]}
-              >
-                ⚡ Fill Demo Store Credentials
-              </Text>
-            </TouchableOpacity>
           </View>
         </ScrollView>
       </KeyboardAvoidingView>
@@ -456,95 +509,186 @@ export const LoginScreen: React.FC = () => {
 };
 
 const styles = StyleSheet.create({
-  container: {
+  root: {
     flex: 1,
   },
-  flexOne: {
+  keyboardView: {
     flex: 1,
   },
   scrollContent: {
     flexGrow: 1,
-    paddingHorizontal: 22,
-    paddingTop: Platform.OS === 'android' ? (StatusBar.currentHeight || 28) + 12 : 52,
-    paddingBottom: 28,
+    paddingBottom: 24,
   },
+
+  // Decorative Corner Waves
+  topLeftWave: {
+    position: 'absolute',
+    top: -85,
+    left: -75,
+    width: 220,
+    height: 220,
+    borderRadius: 110,
+    zIndex: 1,
+  },
+  topLeftWaveGlow: {
+    position: 'absolute',
+    top: -110,
+    left: -100,
+    width: 280,
+    height: 280,
+    borderRadius: 140,
+    zIndex: 0,
+  },
+  bottomRightWave: {
+    position: 'absolute',
+    bottom: -65,
+    right: -55,
+    width: 170,
+    height: 170,
+    borderRadius: 85,
+    zIndex: 1,
+  },
+
+  // Top Bar & Theme Toggle
   topBar: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    marginBottom: 6,
-  },
-  topBarSpacer: {
-    width: 38,
-    height: 38,
+    paddingTop: Platform.OS === 'ios' ? 52 : 36,
+    paddingHorizontal: 22,
+    alignItems: 'flex-end',
+    zIndex: 10,
   },
   themeToggleBtn: {
     width: 38,
     height: 38,
     borderRadius: 19,
     borderWidth: 1,
-    alignItems: 'center',
     justifyContent: 'center',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.08,
-    shadowRadius: 4,
-    elevation: 2,
+    alignItems: 'center',
+    ...Platform.select({
+      ios: {
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.08,
+        shadowRadius: 4,
+      },
+      android: {
+        elevation: 2,
+      },
+    }),
   },
-  logoSection: {
+
+  // Brand Header
+  brandHeader: {
     alignItems: 'center',
-    justifyContent: 'center',
-    marginTop: 2,
+    marginTop: 4,
     marginBottom: 10,
+    zIndex: 2,
   },
-  illustrationSection: {
+  logoRow: {
+    flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: 14,
+    marginBottom: 8,
   },
-  formContainer: {
-    width: '100%',
+  speedLinesCol: {
+    alignItems: 'flex-end',
+    marginRight: 6,
+    gap: 3.5,
   },
-  headerBlock: {
-    marginBottom: 16,
+  speedLine: {
+    height: 3,
+    borderRadius: 2,
   },
-  title: {
-    fontSize: 24,
+  logoBadge: {
+    width: 42,
+    height: 42,
+    borderRadius: 13,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  logoMText: {
+    fontSize: 27,
+    fontWeight: '800',
+    color: '#FFFFFF',
+    lineHeight: 31,
+  },
+  wordmarkRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  wordNexora: {
+    fontSize: 25,
     fontWeight: '800',
     letterSpacing: -0.4,
   },
-  subtitle: {
+  wordMart: {
+    fontSize: 25,
+    fontWeight: '800',
+    letterSpacing: -0.4,
+  },
+  tagline: {
+    fontSize: 13,
+    fontWeight: '500',
+    marginTop: 3,
+    letterSpacing: 0.1,
+  },
+
+  // 3D Storefront Illustration
+  storefrontContainer: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginVertical: 4,
+    zIndex: 2,
+  },
+
+  // "Welcome Back" Section
+  welcomeSection: {
+    paddingHorizontal: 24,
+    marginTop: 10,
+    marginBottom: 14,
+    zIndex: 2,
+  },
+  welcomeTitle: {
+    fontSize: 23,
+    fontWeight: '700',
+    letterSpacing: -0.3,
+  },
+  welcomeSubtitle: {
     fontSize: 13.5,
     fontWeight: '400',
-    marginTop: 4,
-    letterSpacing: -0.2,
+    marginTop: 3,
   },
+
+  // Error Banner
   errorBanner: {
-    backgroundColor: 'rgba(239, 68, 68, 0.1)',
-    borderColor: 'rgba(239, 68, 68, 0.3)',
-    borderWidth: 1,
-    borderRadius: 10,
+    marginHorizontal: 24,
+    marginBottom: 14,
     paddingVertical: 10,
     paddingHorizontal: 14,
-    marginBottom: 14,
+    borderRadius: 10,
   },
-  errorBannerText: {
-    color: '#EF4444',
+  errorText: {
     fontSize: 13,
     fontWeight: '500',
   },
-  inputWrapper: {
-    flexDirection: 'row',
-    alignItems: 'center',
+
+  // Form Container
+  formContainer: {
+    paddingHorizontal: 24,
+    zIndex: 2,
+  },
+  inputCard: {
     height: 52,
     borderRadius: 14,
-    paddingHorizontal: 14,
-    marginBottom: 12,
-  },
-  inputIconLeft: {
-    width: 28,
+    flexDirection: 'row',
     alignItems: 'center',
+    paddingHorizontal: 14,
+    marginBottom: 13,
+  },
+  inputIconWrapper: {
+    marginRight: 10,
     justifyContent: 'center',
-    marginRight: 6,
+    alignItems: 'center',
   },
   textInput: {
     flex: 1,
@@ -553,53 +697,59 @@ const styles = StyleSheet.create({
     fontWeight: '400',
     paddingVertical: 0,
   },
-  clearBtn: {
-    padding: 6,
-  },
   eyeBtn: {
     padding: 6,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
+
+  // Options: Remember Me & Forgot Password
   optionsRow: {
     flexDirection: 'row',
-    alignItems: 'center',
     justifyContent: 'space-between',
+    alignItems: 'center',
     marginTop: 2,
     marginBottom: 18,
   },
-  checkboxRow: {
+  rememberMeTouchable: {
     flexDirection: 'row',
     alignItems: 'center',
   },
-  checkboxBox: {
+  checkbox: {
     width: 18,
     height: 18,
     borderRadius: 4,
     borderWidth: 1.5,
-    alignItems: 'center',
     justifyContent: 'center',
-    marginRight: 8,
+    alignItems: 'center',
   },
-  checkboxLabel: {
-    fontSize: 13.5,
+  rememberMeLabel: {
+    fontSize: 13,
     fontWeight: '500',
+    marginLeft: 8,
   },
-  forgotLink: {
-    fontSize: 13.5,
+  forgotPasswordText: {
+    fontSize: 13,
     fontWeight: '600',
   },
+
+  // Login Button
   loginBtn: {
     height: 52,
     borderRadius: 14,
-    alignItems: 'center',
     justifyContent: 'center',
-    shadowColor: '#FF6A1A',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.38,
-    shadowRadius: 10,
-    elevation: 5,
-  },
-  loginBtnDisabled: {
-    opacity: 0.7,
+    alignItems: 'center',
+    ...Platform.select({
+      ios: {
+        shadowColor: '#FF6A1A',
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.35,
+        shadowRadius: 8,
+      },
+      android: {
+        elevation: 4,
+      },
+    }),
   },
   loginBtnContent: {
     flexDirection: 'row',
@@ -607,70 +757,61 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   loginBtnText: {
-    color: '#FFFFFF',
     fontSize: 16,
     fontWeight: '700',
+    color: '#FFFFFF',
     marginRight: 8,
-    letterSpacing: -0.2,
   },
+
+  // Divider
   dividerRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginTop: 20,
-    marginBottom: 16,
+    marginVertical: 18,
   },
   dividerLine: {
     flex: 1,
     height: 1,
   },
   dividerText: {
-    paddingHorizontal: 12,
-    fontSize: 13,
-    fontWeight: '400',
+    fontSize: 12.5,
+    fontWeight: '500',
+    marginHorizontal: 12,
   },
+
+  // Google Button
   googleBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    height: 52,
+    height: 50,
     borderRadius: 14,
     borderWidth: 1,
-    shadowColor: '#000000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.05,
-    shadowRadius: 3,
-    elevation: 1,
-  },
-  googleBtnText: {
-    marginLeft: 10,
-    fontSize: 15,
-    fontWeight: '600',
-    letterSpacing: -0.2,
-  },
-  footerRow: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    marginTop: 24,
-    marginBottom: 12,
   },
-  footerLabel: {
-    fontSize: 14,
-    fontWeight: '400',
+  googleIconWrapper: {
+    marginRight: 10,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
-  footerAction: {
-    fontSize: 14,
+  googleBtnText: {
+    fontSize: 14.5,
+    fontWeight: '600',
+  },
+
+  // Sign-Up Prompt
+  signupPromptRow: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginTop: 20,
+    marginBottom: 10,
+  },
+  signupPromptText: {
+    fontSize: 13.5,
+  },
+  signupLinkText: {
+    fontSize: 13.5,
     fontWeight: '700',
-  },
-  demoPill: {
-    alignSelf: 'center',
-    paddingVertical: 6,
-    paddingHorizontal: 12,
-    marginTop: 4,
-  },
-  demoPillText: {
-    fontSize: 11,
-    fontWeight: '500',
   },
 });
 

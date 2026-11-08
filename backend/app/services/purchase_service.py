@@ -1,6 +1,6 @@
 import datetime
 from typing import List, Optional, Tuple
-from fastapi import HTTPException, status
+from fastapi import HTTPException
 from sqlalchemy.orm import Session
 from ..models.purchase import Purchase, PurchaseItem
 from ..models.product import Product, ProductVariant

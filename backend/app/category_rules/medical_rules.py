@@ -1,5 +1,5 @@
 import datetime
-from typing import Dict, Any, Optional
+from typing import Dict, Any
 from .base_rule import BaseCategoryRule, ValidationResult
 
 class MedicalRules(BaseCategoryRule):
