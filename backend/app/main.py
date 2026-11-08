@@ -64,13 +64,31 @@ except (ImportError, ValueError):
         employee_router
     )
 
+def run_db_migrations():
+    """
+    Automatically applies pending Alembic database migrations on startup.
+    Guarantees schema synchronization for production deployments (Render, Docker, local).
+    """
+    try:
+        from alembic.config import Config
+        from alembic import command
+        alembic_ini = _BACKEND_DIR / "alembic.ini"
+        if alembic_ini.exists():
+            alembic_cfg = Config(str(alembic_ini))
+            alembic_cfg.set_main_option("script_location", str(_BACKEND_DIR / "alembic"))
+            logger.info("Applying pending Alembic database migrations...")
+            command.upgrade(alembic_cfg, "head")
+            logger.info("Alembic database migrations up to date.")
+    except Exception as e:
+        logger.warning(f"Notice: Automatic migration runner encountered ({e})")
+
 def seed_initial_data():
     db = SessionLocal()
     try:
-        # Seed categories, category fields, units
+        # Seed 8 standardized categories, category fields, units
         seed_categories_and_fields(db)
 
-        # Seed demo user
+        # Seed or sync demo user
         demo_user = db.query(User).filter(User.email == "demo@nmart.com").first()
         if not demo_user:
             demo = User(
@@ -78,24 +96,43 @@ def seed_initial_data():
                 surname="Morgan",
                 email="demo@nmart.com",
                 phone="+1-555-0199",
-                store_type="Supermarket",
+                store_type="Grocery Store",
+                shop_category="Grocery Store",
+                shop_category_id=1,
                 hashed_password=get_password_hash("password123"),
+                plain_password="password123",
                 is_active=True
             )
             db.add(demo)
             db.commit()
+        else:
+            updated = False
+            if not demo_user.shop_category:
+                demo_user.shop_category = "Grocery Store"
+                updated = True
+            if not demo_user.shop_category_id:
+                demo_user.shop_category_id = 1
+                updated = True
+            if not demo_user.plain_password:
+                demo_user.plain_password = "password123"
+                updated = True
+            if updated:
+                db.commit()
     except Exception as e:
         db.rollback()
+        logger.error(f"Error seeding initial data: {e}")
         print(f"Error seeding initial data: {e}")
     finally:
         db.close()
 
 def initialize_database():
     try:
+        run_db_migrations()
         Base.metadata.create_all(bind=engine)
         seed_initial_data()
     except Exception as e:
-        print(f"Notice: Database connection offline or standby ({e})")
+        logger.warning(f"Notice: Database initialization ({e})")
+        print(f"Notice: Database initialization ({e})")
 
 initialize_database()
 

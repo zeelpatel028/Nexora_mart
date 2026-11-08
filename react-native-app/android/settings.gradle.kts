@@ -32,3 +32,4 @@ dependencyResolutionManagement {
 
 rootProject.name = "NexoraMart"
 include(":app")
+

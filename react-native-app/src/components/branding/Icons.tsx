@@ -6,7 +6,6 @@
  */
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
-import Svg, { Path } from 'react-native-svg';
 
 export interface IconProps {
   size?: number;
@@ -1017,40 +1016,6 @@ export const ArrowRightIcon: React.FC<IconProps> = ({ size = 20, color = '#FFFFF
 };
 export const ArrowRight = ArrowRightIcon;
 
-// ArrowLeft – Horizontal stem with sharp left chevron
-export const ArrowLeftIcon: React.FC<IconProps> = ({ size = 20, color = '#111827', strokeWidth = 2.2, style }) => {
-  const s = size;
-  return (
-    <IconBox size={s} style={style}>
-      {/* Stem */}
-      <View
-        style={{
-          position: 'absolute',
-          right: s * 0.12,
-          width: s * 0.62,
-          height: strokeWidth,
-          backgroundColor: color,
-          borderRadius: 1,
-        }}
-      />
-      {/* Arrowhead */}
-      <View
-        style={{
-          position: 'absolute',
-          left: s * 0.14,
-          width: s * 0.34,
-          height: s * 0.34,
-          borderBottomWidth: strokeWidth,
-          borderLeftWidth: strokeWidth,
-          borderColor: color,
-          transform: [{ rotate: '45deg' }],
-        }}
-      />
-    </IconBox>
-  );
-};
-export const ArrowLeft = ArrowLeftIcon;
-
 // Check – Sharp checkmark
 export const CheckIcon: React.FC<IconProps> = ({ size = 16, color = '#FFFFFF', strokeWidth = 2.4, style }) => {
   const s = size;
@@ -1428,14 +1393,13 @@ export const RefreshIcon: React.FC<IconProps> = ({ size = 18, color = '#FF6A1A',
 export const Refresh = RefreshIcon;
 export const RefreshCw = RefreshIcon;
 
-// Sun – Sun circle with radiating rays (Theme toggle)
-export const SunIcon: React.FC<IconProps> = ({ size = 20, color = '#FF6A1A', strokeWidth = 1.8, style }) => {
+// Sun – Sun circle with radiating rays
+export const SunIcon: React.FC<IconProps> = ({ size = 20, color = '#FF6A1A', strokeWidth = 2, style }) => {
   const s = size;
   const sunCenter = s * 0.44;
-  const rayLen = s * 0.16;
   return (
     <IconBox size={s} style={style}>
-      {/* Center Core Ring */}
+      {/* Center Core */}
       <View
         style={{
           width: sunCenter,
@@ -1446,32 +1410,32 @@ export const SunIcon: React.FC<IconProps> = ({ size = 20, color = '#FF6A1A', str
         }}
       />
       {/* Vertical Rays */}
-      <View style={{ position: 'absolute', top: 1, width: strokeWidth, height: rayLen, backgroundColor: color, borderRadius: 1 }} />
-      <View style={{ position: 'absolute', bottom: 1, width: strokeWidth, height: rayLen, backgroundColor: color, borderRadius: 1 }} />
+      <View style={{ position: 'absolute', top: 1, width: strokeWidth, height: 3, backgroundColor: color }} />
+      <View style={{ position: 'absolute', bottom: 1, width: strokeWidth, height: 3, backgroundColor: color }} />
       {/* Horizontal Rays */}
-      <View style={{ position: 'absolute', left: 1, height: strokeWidth, width: rayLen, backgroundColor: color, borderRadius: 1 }} />
-      <View style={{ position: 'absolute', right: 1, height: strokeWidth, width: rayLen, backgroundColor: color, borderRadius: 1 }} />
-      {/* 4 Diagonal Rays */}
-      <View style={{ position: 'absolute', top: s * 0.14, left: s * 0.14, width: strokeWidth, height: rayLen * 0.85, backgroundColor: color, transform: [{ rotate: '-45deg' }], borderRadius: 1 }} />
-      <View style={{ position: 'absolute', top: s * 0.14, right: s * 0.14, width: strokeWidth, height: rayLen * 0.85, backgroundColor: color, transform: [{ rotate: '45deg' }], borderRadius: 1 }} />
-      <View style={{ position: 'absolute', bottom: s * 0.14, left: s * 0.14, width: strokeWidth, height: rayLen * 0.85, backgroundColor: color, transform: [{ rotate: '45deg' }], borderRadius: 1 }} />
-      <View style={{ position: 'absolute', bottom: s * 0.14, right: s * 0.14, width: strokeWidth, height: rayLen * 0.85, backgroundColor: color, transform: [{ rotate: '-45deg' }], borderRadius: 1 }} />
+      <View style={{ position: 'absolute', left: 1, height: strokeWidth, width: 3, backgroundColor: color }} />
+      <View style={{ position: 'absolute', right: 1, height: strokeWidth, width: 3, backgroundColor: color }} />
     </IconBox>
   );
 };
 export const Sun = SunIcon;
 
 // Moon – Crescent moon
-export const MoonIcon: React.FC<IconProps> = ({ size = 20, color = '#FFFFFF', style }) => {
+export const MoonIcon: React.FC<IconProps> = ({ size = 20, color = '#FF6A1A', strokeWidth = 2, style }) => {
   const s = size;
   return (
     <IconBox size={s} style={style}>
-      <Svg width={s * 0.85} height={s * 0.85} viewBox="0 0 24 24" fill="none">
-        <Path
-          d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"
-          fill={color}
-        />
-      </Svg>
+      <View
+        style={{
+          width: s * 0.68,
+          height: s * 0.68,
+          borderRadius: (s * 0.68) / 2,
+          borderLeftWidth: strokeWidth * 1.6,
+          borderBottomWidth: strokeWidth * 1.6,
+          borderColor: color,
+          transform: [{ rotate: '-20deg' }],
+        }}
+      />
     </IconBox>
   );
 };
@@ -1503,33 +1467,141 @@ export const FilterIcon: React.FC<IconProps> = ({ size = 18, color = '#FF6A1A', 
 };
 export const Filter = FilterIcon;
 
-// Google – Official 4-color Google G SVG logo
+// Google – Clean Google branded badge
 export const GoogleIcon: React.FC<{ size?: number; style?: any }> = ({ size = 20, style }) => {
+  const s = size;
   return (
-    <View style={[{ width: size, height: size, alignItems: 'center', justifyContent: 'center' }, style]}>
-      <Svg width={size} height={size} viewBox="0 0 48 48">
-        <Path
-          fill="#EA4335"
-          d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"
-        />
-        <Path
-          fill="#4285F4"
-          d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"
-        />
-        <Path
-          fill="#FBBC05"
-          d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"
-        />
-        <Path
-          fill="#34A853"
-          d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"
-        />
-        <Path fill="none" d="M0 0h48v48H0z" />
-      </Svg>
+    <View
+      style={[
+        {
+          width: s,
+          height: s,
+          borderRadius: s / 2,
+          backgroundColor: '#FFFFFF',
+          alignItems: 'center',
+          justifyContent: 'center',
+          shadowColor: '#000000',
+          shadowOffset: { width: 0, height: 1 },
+          shadowOpacity: 0.15,
+          shadowRadius: 2,
+          elevation: 2,
+          borderWidth: 1,
+          borderColor: '#E5E7EB',
+        },
+        style,
+      ]}
+    >
+      <Text style={{ fontSize: s * 0.62, fontWeight: '900', color: '#4285F4' }}>G</Text>
     </View>
   );
 };
 export const Google = GoogleIcon;
+
+// ArrowLeft – Horizontal stem with sharp left chevron
+export const ArrowLeftIcon: React.FC<IconProps> = ({ size = 20, color = '#111827', strokeWidth = 2.2, style }) => {
+  const s = size;
+  return (
+    <IconBox size={s} style={style}>
+      {/* Stem */}
+      <View
+        style={{
+          position: 'absolute',
+          right: s * 0.12,
+          width: s * 0.62,
+          height: strokeWidth,
+          backgroundColor: color,
+          borderRadius: 1,
+        }}
+      />
+      {/* Arrowhead */}
+      <View
+        style={{
+          position: 'absolute',
+          left: s * 0.14,
+          width: s * 0.34,
+          height: s * 0.34,
+          borderTopWidth: strokeWidth,
+          borderLeftWidth: strokeWidth,
+          borderColor: color,
+          transform: [{ rotate: '-45deg' }],
+        }}
+      />
+    </IconBox>
+  );
+};
+export const ArrowLeft = ArrowLeftIcon;
+
+// FileText – Document with text lines
+export const FileTextIcon: React.FC<IconProps> = ({ size = 20, color = '#6B7280', strokeWidth = 1.8, style }) => {
+  const s = size;
+  return (
+    <IconBox size={s} style={style}>
+      <View
+        style={{
+          width: s * 0.68,
+          height: s * 0.84,
+          borderWidth: strokeWidth,
+          borderColor: color,
+          borderRadius: 3,
+          paddingHorizontal: 3,
+          paddingVertical: 4,
+          justifyContent: 'space-evenly',
+        }}
+      >
+        <View style={{ width: '80%', height: strokeWidth, backgroundColor: color, borderRadius: 1 }} />
+        <View style={{ width: '60%', height: strokeWidth, backgroundColor: color, borderRadius: 1 }} />
+        <View style={{ width: '70%', height: strokeWidth, backgroundColor: color, borderRadius: 1 }} />
+      </View>
+    </IconBox>
+  );
+};
+export const FileText = FileTextIcon;
+
+// AlertTriangle – Warning triangle with exclamation mark
+export const AlertTriangleIcon: React.FC<IconProps> = ({ size = 20, color = '#EF4444', strokeWidth = 2, style }) => {
+  const s = size;
+  return (
+    <IconBox size={s} style={style}>
+      <View
+        style={{
+          width: 0,
+          height: 0,
+          backgroundColor: 'transparent',
+          borderStyle: 'solid',
+          borderLeftWidth: s * 0.44,
+          borderRightWidth: s * 0.44,
+          borderBottomWidth: s * 0.76,
+          borderLeftColor: 'transparent',
+          borderRightColor: 'transparent',
+          borderBottomColor: color,
+          position: 'absolute',
+          top: s * 0.1,
+        }}
+      />
+      <View
+        style={{
+          position: 'absolute',
+          top: s * 0.38,
+          width: strokeWidth + 0.5,
+          height: s * 0.22,
+          backgroundColor: '#FFFFFF',
+          borderRadius: 1,
+        }}
+      />
+      <View
+        style={{
+          position: 'absolute',
+          top: s * 0.68,
+          width: strokeWidth + 0.5,
+          height: strokeWidth + 0.5,
+          borderRadius: (strokeWidth + 0.5) / 2,
+          backgroundColor: '#FFFFFF',
+        }}
+      />
+    </IconBox>
+  );
+};
+export const AlertTriangle = AlertTriangleIcon;
 
 export default {
   Home,
@@ -1554,9 +1626,6 @@ export default {
   Eye,
   EyeOff,
   ArrowRight,
-  ArrowRightIcon,
-  ArrowLeft,
-  ArrowLeftIcon,
   Check,
   X,
   Plus,

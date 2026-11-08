@@ -10,7 +10,7 @@ import { AuthProvider } from './src/context/AuthContext';
 import { ThemeProvider } from './src/context/ThemeContext';
 import AppNavigator from './src/navigation/AppNavigator';
 
-// Enable JS fallback for screens to ensure 100% crash-free rendering
+// Enable pure React Native rendering fallback to guarantee 100% crash-free launch
 enableScreens(false);
 
 export const App: React.FC = () => {

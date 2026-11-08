@@ -2,131 +2,121 @@ import logging
 from sqlalchemy.orm import Session
 from ..models.category import Category, CategoryField
 from ..models.unit import Unit
-from ..models.store import Store
+from ..models.store import Store, ShopCategory
 from ..models.user import User
 
 logger = logging.getLogger("seed_service")
 
+# 8 Standardized Store Categories as specified by NMART requirements
 INITIAL_CATEGORIES = [
     {
         "name": "Grocery Store",
-        "code": "grocery",
+        "code": "GROCERY",
         "icon": "shopping-basket",
         "description": "Daily essentials, packaged food items, groceries, and staples.",
+        "legacy_aliases": ["Supermarket & Grocery", "Supermarket", "grocery", "supermarket"],
         "fields": [
-            {"field_name": "brand", "field_label": "Brand", "field_type": "text", "is_required": False, "placeholder": "e.g. Nestle, Kellogg's", "display_order": 1},
-            {"field_name": "weight", "field_label": "Weight", "field_type": "number", "is_required": False, "placeholder": "e.g. 500, 1", "display_order": 2},
+            {"field_name": "brand", "field_label": "Brand", "field_type": "text", "is_required": False, "placeholder": "e.g. Nestle, Kellogg's, Tata", "display_order": 1},
+            {"field_name": "weight", "field_label": "Weight / Volume", "field_type": "number", "is_required": False, "placeholder": "e.g. 500, 1", "display_order": 2},
             {"field_name": "unit", "field_label": "Unit", "field_type": "select", "is_required": True, "options": ["kg", "g", "liter", "ml", "packet", "piece", "box"], "default_value": "kg", "display_order": 3},
             {"field_name": "mrp", "field_label": "MRP", "field_type": "number", "is_required": False, "placeholder": "Maximum Retail Price", "display_order": 4},
             {"field_name": "expiry_date", "field_label": "Expiry Date", "field_type": "date", "is_required": False, "placeholder": "YYYY-MM-DD", "display_order": 5},
         ]
     },
     {
-        "name": "Supermarket",
-        "code": "supermarket",
-        "icon": "shopping-cart",
-        "description": "Large-scale retail mart covering multi-department merchandise.",
-        "fields": [
-            {"field_name": "brand", "field_label": "Brand", "field_type": "text", "is_required": False, "placeholder": "e.g. Unilever, P&G", "display_order": 1},
-            {"field_name": "barcode", "field_label": "Barcode / EAN", "field_type": "text", "is_required": False, "placeholder": "Scan or enter barcode", "display_order": 2},
-            {"field_name": "unit", "field_label": "Unit", "field_type": "select", "is_required": True, "options": ["piece", "packet", "box", "kg", "g", "bottle", "can"], "default_value": "piece", "display_order": 3},
-            {"field_name": "expiry_date", "field_label": "Expiry Date", "field_type": "date", "is_required": False, "placeholder": "YYYY-MM-DD", "display_order": 4},
-            {"field_name": "mrp", "field_label": "MRP", "field_type": "number", "is_required": False, "placeholder": "Maximum Retail Price", "display_order": 5},
-        ]
-    },
-    {
-        "name": "Medical Store",
-        "code": "medical",
-        "icon": "medical-services",
-        "description": "Pharmaceuticals, medicines, surgical supplies, and healthcare goods.",
-        "fields": [
-            {"field_name": "manufacturer", "field_label": "Manufacturer", "field_type": "text", "is_required": True, "placeholder": "e.g. Cipla, Sun Pharma, Pfizer", "display_order": 1},
-            {"field_name": "batch_number", "field_label": "Batch Number", "field_type": "text", "is_required": True, "placeholder": "e.g. BATCH-2026-X", "display_order": 2},
-            {"field_name": "expiry_date", "field_label": "Expiry Date", "field_type": "date", "is_required": True, "placeholder": "YYYY-MM-DD", "display_order": 3},
-            {"field_name": "mrp", "field_label": "MRP", "field_type": "number", "is_required": True, "placeholder": "Maximum Retail Price", "display_order": 4},
-        ]
-    },
-    {
         "name": "Clothing Store",
-        "code": "clothing",
+        "code": "CLOTHING",
         "icon": "checkroom",
         "description": "Men's, women's, and kids' apparel, textiles, and fashion garments.",
+        "legacy_aliases": ["Clothing & Fashion", "clothing"],
         "fields": [
-            {"field_name": "brand", "field_label": "Brand", "field_type": "text", "is_required": False, "placeholder": "e.g. Zara, Levi's, Nike", "display_order": 1},
+            {"field_name": "brand", "field_label": "Brand", "field_type": "text", "is_required": False, "placeholder": "e.g. Zara, Levi's, Raymond", "display_order": 1},
             {"field_name": "size", "field_label": "Size", "field_type": "select", "is_required": True, "options": ["XS", "S", "M", "L", "XL", "XXL", "3XL", "28", "30", "32", "34", "36", "38"], "default_value": "M", "is_variant_field": True, "display_order": 2},
             {"field_name": "color", "field_label": "Color", "field_type": "select", "is_required": True, "options": ["Black", "White", "Navy Blue", "Red", "Green", "Grey", "Yellow", "Beige", "Olive"], "default_value": "Black", "is_variant_field": True, "display_order": 3},
             {"field_name": "fabric", "field_label": "Fabric", "field_type": "select", "is_required": False, "options": ["100% Cotton", "Polyester", "Denim", "Linen", "Silk", "Wool", "Rayon", "Blend"], "default_value": "100% Cotton", "display_order": 4},
         ]
     },
     {
-        "name": "Electronics Store",
-        "code": "electronics",
+        "name": "Medical / Pharmacy Store",
+        "code": "PHARMACY",
+        "icon": "medical-services",
+        "description": "Pharmaceuticals, medicines, surgical supplies, and healthcare goods.",
+        "legacy_aliases": ["Pharmacy & Medical", "Medical Store", "medical", "pharmacy"],
+        "fields": [
+            {"field_name": "manufacturer", "field_label": "Manufacturer", "field_type": "text", "is_required": True, "placeholder": "e.g. Cipla, Sun Pharma, Pfizer", "display_order": 1},
+            {"field_name": "batch_number", "field_label": "Batch Number", "field_type": "text", "is_required": True, "placeholder": "e.g. BATCH-2026-X", "display_order": 2},
+            {"field_name": "composition", "field_label": "Composition / Salt", "field_type": "text", "is_required": False, "placeholder": "e.g. Paracetamol 500mg", "display_order": 3},
+            {"field_name": "expiry_date", "field_label": "Expiry Date", "field_type": "date", "is_required": True, "placeholder": "YYYY-MM-DD", "display_order": 4},
+            {"field_name": "mrp", "field_label": "MRP", "field_type": "number", "is_required": True, "placeholder": "Maximum Retail Price", "display_order": 5},
+            {"field_name": "prescription_required", "field_label": "Prescription Required", "field_type": "select", "is_required": False, "options": ["Yes", "No"], "default_value": "No", "display_order": 6},
+        ]
+    },
+    {
+        "name": "Mobile & Electronics Store",
+        "code": "ELECTRONICS",
         "icon": "devices",
-        "description": "Consumer appliances, computing devices, TV, audio, and home tech.",
+        "description": "Smartphones, consumer appliances, computing devices, audio, and gadgets.",
+        "legacy_aliases": ["Electronics & Mobile", "Electronics Store", "Mobile Accessories", "electronics", "mobile_accessories"],
         "fields": [
-            {"field_name": "brand", "field_label": "Brand", "field_type": "text", "is_required": True, "placeholder": "e.g. Sony, Samsung, LG, Apple", "display_order": 1},
-            {"field_name": "model_number", "field_label": "Model Number", "field_type": "text", "is_required": True, "placeholder": "e.g. OLED-55X90, WH-1000XM5", "display_order": 2},
-            {"field_name": "serial_number", "field_label": "Serial Number", "field_type": "text", "is_required": False, "placeholder": "Unique Device Serial No", "display_order": 3},
-            {"field_name": "warranty", "field_label": "Warranty", "field_type": "select", "is_required": True, "options": ["No Warranty", "6 Months", "1 Year", "2 Years", "3 Years", "5 Years"], "default_value": "1 Year", "display_order": 4},
+            {"field_name": "brand", "field_label": "Brand", "field_type": "text", "is_required": True, "placeholder": "e.g. Apple, Samsung, Sony, OnePlus", "display_order": 1},
+            {"field_name": "model_number", "field_label": "Model Number / Name", "field_type": "text", "is_required": True, "placeholder": "e.g. iPhone 15 Pro, Galaxy S24", "display_order": 2},
+            {"field_name": "serial_imei", "field_label": "Serial / IMEI Number", "field_type": "text", "is_required": False, "placeholder": "Unique Serial or IMEI", "display_order": 3},
+            {"field_name": "storage_ram", "field_label": "Storage / RAM", "field_type": "select", "is_required": False, "options": ["64GB", "128GB", "256GB", "512GB", "1TB", "8GB/128GB", "12GB/256GB"], "default_value": "128GB", "display_order": 4},
+            {"field_name": "warranty", "field_label": "Warranty", "field_type": "select", "is_required": True, "options": ["No Warranty", "6 Months", "1 Year", "2 Years", "3 Years"], "default_value": "1 Year", "display_order": 5},
         ]
     },
     {
-        "name": "Mobile Accessories",
-        "code": "mobile_accessories",
-        "icon": "smartphone",
-        "description": "Phone covers, screen guards, chargers, cables, and power banks.",
+        "name": "Plastic Store",
+        "code": "PLASTIC",
+        "icon": "inventory",
+        "description": "Plastic housewares, containers, storage boxes, kitchen utilities, and polymer goods.",
+        "legacy_aliases": ["plastic"],
         "fields": [
-            {"field_name": "brand", "field_label": "Brand", "field_type": "text", "is_required": False, "placeholder": "e.g. Anker, Spigen, Boat", "display_order": 1},
-            {"field_name": "compatible_device", "field_label": "Compatible Device", "field_type": "text", "is_required": True, "placeholder": "e.g. iPhone 15 Pro, Galaxy S24, Universal", "display_order": 2},
-            {"field_name": "model", "field_label": "Model / Variant", "field_type": "text", "is_required": False, "placeholder": "e.g. MagSafe Clear, Braided 65W", "display_order": 3},
-            {"field_name": "color", "field_label": "Color", "field_type": "text", "is_required": False, "placeholder": "e.g. Matte Black, Transparent", "display_order": 4},
+            {"field_name": "material", "field_label": "Plastic Material", "field_type": "select", "is_required": False, "options": ["Virgin Plastic", "BPA Free", "HDPE", "Polypropylene (PP)", "Polycarbonate"], "default_value": "BPA Free", "display_order": 1},
+            {"field_name": "capacity", "field_label": "Capacity / Volume", "field_type": "select", "is_required": False, "options": ["250ml", "500ml", "1 Liter", "2 Liters", "5 Liters", "10 Liters", "25 Liters", "50 Liters"], "default_value": "1 Liter", "display_order": 2},
+            {"field_name": "color", "field_label": "Color", "field_type": "text", "is_required": False, "placeholder": "e.g. Transparent, Blue, Red", "display_order": 3},
+            {"field_name": "pack_size", "field_label": "Pack Size", "field_type": "number", "is_required": False, "placeholder": "e.g. 1, 3, 6, 12", "display_order": 4},
         ]
     },
     {
-        "name": "Hardware Store",
-        "code": "hardware",
-        "icon": "build",
-        "description": "Tools, fasteners, plumbing, electrical, paints, and building materials.",
+        "name": "Handloom store",
+        "code": "HANDLOOM",
+        "icon": "style",
+        "description": "Handloom textiles, traditional fabrics, sarees, artisanal weaves, and home furnishings.",
+        "legacy_aliases": ["Handloom Store", "handloom"],
         "fields": [
-            {"field_name": "material", "field_label": "Material", "field_type": "select", "is_required": False, "options": ["Stainless Steel", "Brass", "Iron", "Aluminum", "Copper", "PVC", "Wood", "Alloy"], "default_value": "Stainless Steel", "display_order": 1},
-            {"field_name": "size", "field_label": "Size / Dimensions", "field_type": "text", "is_required": False, "placeholder": "e.g. 1/2 inch, 10mm, 2x4 ft", "display_order": 2},
-            {"field_name": "weight", "field_label": "Weight", "field_type": "number", "is_required": False, "placeholder": "Weight in kg", "display_order": 3},
-            {"field_name": "unit", "field_label": "Unit", "field_type": "select", "is_required": True, "options": ["piece", "kg", "box", "meter", "set", "roll"], "default_value": "piece", "display_order": 4},
+            {"field_name": "weave_type", "field_label": "Weave Type", "field_type": "select", "is_required": True, "options": ["Khadi", "Chanderi", "Banarasi", "Silk Weave", "Pure Cotton", "Ikat", "Linen"], "default_value": "Pure Cotton", "display_order": 1},
+            {"field_name": "pattern", "field_label": "Pattern / Style", "field_type": "text", "is_required": False, "placeholder": "e.g. Hand Block Print, Zari Border, Floral", "display_order": 2},
+            {"field_name": "color", "field_label": "Color", "field_type": "text", "is_required": False, "placeholder": "e.g. Maroon, Indigo, Mustard", "display_order": 3},
+            {"field_name": "dimensions", "field_label": "Dimensions / Length", "field_type": "text", "is_required": False, "placeholder": "e.g. 5.5m Saree, 2.5m Dupatta, 6x6 ft", "display_order": 4},
         ]
     },
     {
-        "name": "Stationery Store",
-        "code": "stationery",
-        "icon": "edit-note",
-        "description": "School, office, art supplies, notebooks, pens, and paper products.",
+        "name": "Furniture Store",
+        "code": "FURNITURE",
+        "icon": "chair",
+        "description": "Home and office furniture, wooden decor, tables, chairs, and furnishings.",
+        "legacy_aliases": ["furniture"],
         "fields": [
-            {"field_name": "brand", "field_label": "Brand", "field_type": "text", "is_required": False, "placeholder": "e.g. Faber-Castell, Classmate, Parker", "display_order": 1},
-            {"field_name": "paper_size", "field_label": "Paper Size", "field_type": "select", "is_required": False, "options": ["A4", "A3", "A5", "Letter", "Legal", "Custom", "Not Applicable"], "default_value": "A4", "display_order": 2},
-            {"field_name": "product_type", "field_label": "Product Type", "field_type": "select", "is_required": True, "options": ["Notebook / Journal", "Pen / Pencil", "Paper Ream", "Folder / File", "Art & Craft", "Desk Accessory"], "default_value": "Notebook / Journal", "display_order": 3},
-            {"field_name": "quantity", "field_label": "Pack Quantity", "field_type": "number", "is_required": False, "placeholder": "e.g. 1, 5, 10, 500", "display_order": 4},
+            {"field_name": "material", "field_label": "Primary Material", "field_type": "select", "is_required": True, "options": ["Teak Wood", "Sheesham Wood", "Solid Oak", "Engineered Wood", "Metal / Iron", "Leather", "Fabric Upholstery"], "default_value": "Teak Wood", "display_order": 1},
+            {"field_name": "dimensions", "field_label": "Dimensions (L x W x H)", "field_type": "text", "is_required": False, "placeholder": "e.g. 72 x 36 x 30 inches", "display_order": 2},
+            {"field_name": "finish_color", "field_label": "Finish / Color", "field_type": "text", "is_required": False, "placeholder": "e.g. Walnut Finish, Matte Black, Natural Wood", "display_order": 3},
+            {"field_name": "assembly", "field_label": "Assembly Required", "field_type": "select", "is_required": False, "options": ["Pre-assembled", "Carpenter Assembly Required", "DIY Assembly"], "default_value": "Pre-assembled", "display_order": 4},
+            {"field_name": "warranty", "field_label": "Warranty", "field_type": "select", "is_required": False, "options": ["No Warranty", "1 Year", "3 Years", "5 Years", "10 Years"], "default_value": "1 Year", "display_order": 5},
         ]
     },
     {
-        "name": "Footwear Store",
-        "code": "footwear",
-        "icon": "hiking",
-        "description": "Shoes, sandals, sneakers, boots, and athletic footwear.",
-        "fields": [
-            {"field_name": "brand", "field_label": "Brand", "field_type": "text", "is_required": False, "placeholder": "e.g. Nike, Adidas, Puma, Clarks", "display_order": 1},
-            {"field_name": "shoe_size", "field_label": "Shoe Size", "field_type": "select", "is_required": True, "options": ["UK 4", "UK 5", "UK 6", "UK 7", "UK 8", "UK 9", "UK 10", "UK 11", "UK 12"], "default_value": "UK 8", "is_variant_field": True, "display_order": 2},
-            {"field_name": "color", "field_label": "Color", "field_type": "select", "is_required": True, "options": ["Black", "White", "Brown", "Tan", "Navy", "Grey", "Red"], "default_value": "Black", "is_variant_field": True, "display_order": 3},
-            {"field_name": "material", "field_label": "Material", "field_type": "select", "is_required": False, "options": ["Genuine Leather", "Mesh / Breathable", "Canvas", "Synthetic Leather", "Suede", "Rubber"], "default_value": "Mesh / Breathable", "display_order": 4},
-        ]
-    },
-    {
-        "name": "Vegetable & Fruit Shop",
-        "code": "vegetable_fruit",
+        "name": "Agro Store",
+        "code": "AGRO",
         "icon": "eco",
-        "description": "Fresh farm produce, vegetables, seasonal fruits, and greens.",
+        "description": "Seeds, fertilizers, agricultural implements, farming equipment, and pesticides.",
+        "legacy_aliases": ["agro"],
         "fields": [
-            {"field_name": "weight", "field_label": "Weight / Qty", "field_type": "number", "is_required": False, "placeholder": "Quantity in unit", "display_order": 1},
-            {"field_name": "unit", "field_label": "Unit", "field_type": "select", "is_required": True, "options": ["kg", "g", "bunch", "piece", "dozen", "crate", "box"], "default_value": "kg", "display_order": 2},
-            {"field_name": "quality", "field_label": "Quality Grade", "field_type": "select", "is_required": True, "options": ["Organic / Farm Fresh", "Premium Grade A", "Standard Grade B", "Export Quality"], "default_value": "Premium Grade A", "display_order": 3},
+            {"field_name": "product_type", "field_label": "Agro Product Type", "field_type": "select", "is_required": True, "options": ["Seeds", "Fertilizer / Bio-fertilizer", "Pesticide / Insecticide", "Farming Tools", "Irrigation Equipment"], "default_value": "Seeds", "display_order": 1},
+            {"field_name": "technical_name", "field_label": "Technical / Chemical Name", "field_type": "text", "is_required": False, "placeholder": "e.g. NPK 19:19:19, Chlorpyrifos 20% EC", "display_order": 2},
+            {"field_name": "net_quantity", "field_label": "Net Quantity", "field_type": "text", "is_required": False, "placeholder": "e.g. 1 kg, 5 kg, 500 ml, 5 Liters", "display_order": 3},
+            {"field_name": "target_crop", "field_label": "Target Crops", "field_type": "text", "is_required": False, "placeholder": "e.g. Wheat, Cotton, Rice, Vegetables", "display_order": 4},
+            {"field_name": "expiry_date", "field_label": "Expiry Date", "field_type": "date", "is_required": False, "placeholder": "YYYY-MM-DD", "display_order": 5},
         ]
     }
 ]
@@ -147,8 +137,9 @@ SYSTEM_UNITS = [
 
 def seed_categories_and_fields(db: Session):
     """
-    Seeds the 10 initial dynamic store categories and their specific product field definitions.
+    Seeds the 8 standardized store categories and their specific product field definitions.
     Safe and idempotent - updates existing categories or creates missing ones without deleting data.
+    Preserves all existing store, user, and product records.
     """
     try:
         # 1. Seed Units
@@ -165,9 +156,17 @@ def seed_categories_and_fields(db: Session):
 
         # 2. Seed Categories & Fields
         for cat_data in INITIAL_CATEGORIES:
-            category = db.query(Category).filter(
-                (Category.code == cat_data["code"]) | (Category.name == cat_data["name"])
-            ).first()
+            aliases = cat_data.get("legacy_aliases", [])
+            query_filters = [
+                Category.code == cat_data["code"],
+                Category.name == cat_data["name"],
+            ]
+            for alias in aliases:
+                query_filters.append(Category.name == alias)
+                query_filters.append(Category.code == alias)
+
+            from sqlalchemy import or_
+            category = db.query(Category).filter(or_(*query_filters)).first()
 
             if not category:
                 category = Category(
@@ -181,9 +180,14 @@ def seed_categories_and_fields(db: Session):
                 db.add(category)
                 db.flush()
             else:
+                # Update to official standardized name & code
+                category.name = cat_data["name"]
+                category.code = cat_data["code"]
                 category.description = cat_data["description"]
                 category.icon = cat_data["icon"]
                 category.is_system = True
+                category.is_active = True
+                db.flush()
 
             # Sync fields for category
             existing_fields = {f.field_name: f for f in category.fields}
@@ -214,22 +218,29 @@ def seed_categories_and_fields(db: Session):
                     )
                     db.add(new_field)
 
-        # 3. Ensure existing users have a valid Store linked to their store category
+        # 3. Ensure existing users have valid shop_category, shop_category_id, and Store linked
+        grocery_cat = db.query(Category).filter(Category.code == "GROCERY").first() or db.query(Category).first()
         users = db.query(User).all()
         for user in users:
-            # Match user store_type to Category
             target_cat = None
-            if user.store_type:
-                # Fuzzy match user.store_type to one of the 10 categories
-                st_lower = user.store_type.lower()
+            cat_name = user.shop_category or user.store_type
+            if cat_name:
+                cat_lower = cat_name.lower()
                 for cat in db.query(Category).all():
-                    if cat.name.lower() in st_lower or cat.code in st_lower or st_lower in cat.name.lower():
+                    if cat.name.lower() in cat_lower or cat.code.lower() in cat_lower or cat_lower in cat.name.lower():
                         target_cat = cat
                         break
             if not target_cat:
-                target_cat = db.query(Category).filter(Category.code == "grocery").first() or db.query(Category).first()
+                target_cat = grocery_cat
 
             if target_cat:
+                if not user.shop_category:
+                    user.shop_category = target_cat.name
+                if not user.store_type:
+                    user.store_type = target_cat.name
+                if not user.shop_category_id:
+                    user.shop_category_id = target_cat.id
+
                 existing_store = db.query(Store).filter(Store.user_id == user.id).first()
                 if not existing_store:
                     store_name = f"{user.first_name}'s {target_cat.name}"
@@ -237,20 +248,23 @@ def seed_categories_and_fields(db: Session):
                         name=store_name,
                         shop_category_id=target_cat.id,
                         user_id=user.id,
-                        code=f"STORE-{user.id:03d}",
+                        code=f"STR-{user.id:03d}",
+                        store_code=f"STR-{user.id:03d}",
                         currency="INR",
                         currency_symbol="₹",
                         is_active=True
                     )
                     db.add(new_store)
                     db.flush()
-                elif not user.store_id:
-                    user.store_id = existing_store.id
+                else:
+                    if not existing_store.shop_category_id:
+                        existing_store.shop_category_id = target_cat.id
 
         db.commit()
-        logger.info("Successfully seeded categories, units, and synced existing user stores.")
+        logger.info("Successfully seeded 8 standardized categories, units, and synced existing user stores.")
     except Exception as e:
         db.rollback()
         logger.error(f"Error seeding categories: {e}", exc_info=True)
         raise e
+
 

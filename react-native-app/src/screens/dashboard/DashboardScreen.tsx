@@ -14,7 +14,6 @@ import {
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import Svg, { Path, Defs, LinearGradient, Stop, Circle, Polyline, Line, Rect } from 'react-native-svg';
 import { RootStackParamList } from '../../navigation/types';
 import { useAuth } from '../../hooks/useAuth';
 import { useTheme } from '../../hooks/useTheme';
@@ -398,71 +397,63 @@ export const DashboardScreen: React.FC = () => {
             </View>
           )}
 
-          {/* SVG Smooth Line Plot */}
+          {/* Pure React Native Responsive Sales Chart */}
           <View style={styles.svgPlotWrapper}>
-            <Svg width="100%" height={150} viewBox="0 0 350 140">
-              <Defs>
-                <LinearGradient id="salesLineGrad" x1="0" y1="0" x2="0" y2="1">
-                  <Stop offset="0%" stopColor="#FF6A1A" stopOpacity="0.45" />
-                  <Stop offset="100%" stopColor="#FF6A1A" stopOpacity="0.0" />
-                </LinearGradient>
-              </Defs>
+            {/* Horizontal Grid Guides */}
+            <View style={styles.chartGridContainer}>
+              <View style={[styles.chartGridLine, { borderColor: isDark ? '#262A34' : '#F1F5F9' }]} />
+              <View style={[styles.chartGridLine, { borderColor: isDark ? '#262A34' : '#F1F5F9' }]} />
+              <View style={[styles.chartGridLine, { borderColor: isDark ? '#262A34' : '#F1F5F9' }]} />
+              <View style={[styles.chartBaseLine, { backgroundColor: isDark ? '#2D323E' : '#E2E8F0' }]} />
+            </View>
 
-              {/* Grid Lines */}
-              <Line x1="10" y1="30" x2="340" y2="30" stroke={isDark ? '#262A34' : '#F1F5F9'} strokeWidth="1" strokeDasharray="4,4" />
-              <Line x1="10" y1="65" x2="340" y2="65" stroke={isDark ? '#262A34' : '#F1F5F9'} strokeWidth="1" strokeDasharray="4,4" />
-              <Line x1="10" y1="100" x2="340" y2="100" stroke={isDark ? '#262A34' : '#F1F5F9'} strokeWidth="1" strokeDasharray="4,4" />
-              <Line x1="10" y1="130" x2="340" y2="130" stroke={isDark ? '#2D323E' : '#E2E8F0'} strokeWidth="1" />
-
-              {/* Area Under Curve */}
-              <Path
-                d="M 25 110 L 75 85 L 125 98 L 175 55 L 225 40 L 275 20 L 325 32 L 325 130 L 25 130 Z"
-                fill="url(#salesLineGrad)"
-              />
-
-              {/* Connecting Line Plot */}
-              <Polyline
-                points="25,110 75,85 125,98 175,55 225,40 275,20 325,32"
-                fill="none"
-                stroke="#FF6A1A"
-                strokeWidth="3"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              />
-
-              {/* Data Nodes */}
-              {salesData.map((d) => (
-                <Circle
-                  key={d.day}
-                  cx={d.x}
-                  cy={d.y}
-                  r={selectedDayInfo?.day === d.day ? 6 : 4}
-                  fill="#FFFFFF"
-                  stroke="#FF6A1A"
-                  strokeWidth="2.5"
-                />
-              ))}
-            </Svg>
-
-            {/* Day Labels Row */}
-            <View style={styles.chartDaysRow}>
-              {salesData.map((d) => (
-                <TouchableOpacity
-                  key={d.day}
-                  style={styles.dayTextWrap}
-                  onPress={() => setSelectedDayInfo(selectedDayInfo?.day === d.day ? null : d)}
-                >
-                  <Text
-                    style={[
-                      styles.dayText,
-                      { color: isDark ? '#9CA3AF' : '#64748B' },
-                      selectedDayInfo?.day === d.day && { color: brandColors.primary, fontWeight: '700' },
-                    ]}
+            {/* 7-Day Visual Bars & Peak Nodes */}
+            <View style={styles.chartBarsContainer}>
+              {salesData.map((d) => {
+                const heightPercent = Math.min(Math.max((d.sales / 45000) * 110, 24), 110);
+                const isSelected = selectedDayInfo?.day === d.day;
+                return (
+                  <TouchableOpacity
+                    key={d.day}
+                    style={styles.chartColTouchable}
+                    activeOpacity={0.7}
+                    onPress={() => setSelectedDayInfo(isSelected ? null : d)}
                   >
-                    {d.day}
-                  </Text>
-                </TouchableOpacity>
-              ))}
+                    <View style={styles.barTrack}>
+                      <View
+                        style={[
+                          styles.barFill,
+                          {
+                            height: heightPercent,
+                            backgroundColor: isSelected
+                              ? '#FF6A1A'
+                              : isDark
+                              ? 'rgba(255, 106, 26, 0.45)'
+                              : 'rgba(255, 106, 26, 0.30)',
+                          },
+                        ]}
+                      >
+                        {/* Peak Node Indicator */}
+                        <View
+                          style={[
+                            styles.barNode,
+                            isSelected && styles.barNodeSelected,
+                          ]}
+                        />
+                      </View>
+                    </View>
+                    <Text
+                      style={[
+                        styles.dayText,
+                        { color: isDark ? '#9CA3AF' : '#64748B' },
+                        isSelected && { color: brandColors.primary, fontWeight: '700' },
+                      ]}
+                    >
+                      {d.day}
+                    </Text>
+                  </TouchableOpacity>
+                );
+              })}
             </View>
           </View>
         </View>
@@ -921,6 +912,67 @@ const styles = StyleSheet.create({
   svgPlotWrapper: {
     width: '100%',
     alignItems: 'center',
+    height: 160,
+    justifyContent: 'flex-end',
+    position: 'relative',
+  },
+  chartGridContainer: {
+    ...StyleSheet.absoluteFillObject,
+    justifyContent: 'space-between',
+    paddingBottom: 28,
+    paddingTop: 10,
+    pointerEvents: 'none',
+  },
+  chartGridLine: {
+    borderBottomWidth: 1,
+    borderStyle: 'dashed',
+    width: '100%',
+  },
+  chartBaseLine: {
+    height: 1,
+    width: '100%',
+  },
+  chartBarsContainer: {
+    flexDirection: 'row',
+    alignItems: 'flex-end',
+    justifyContent: 'space-between',
+    width: '100%',
+    height: 150,
+    paddingHorizontal: 8,
+  },
+  chartColTouchable: {
+    alignItems: 'center',
+    flex: 1,
+    height: '100%',
+    justifyContent: 'flex-end',
+  },
+  barTrack: {
+    width: 22,
+    height: 115,
+    justifyContent: 'flex-end',
+    alignItems: 'center',
+    marginBottom: 6,
+  },
+  barFill: {
+    width: '100%',
+    borderRadius: 6,
+    alignItems: 'center',
+    justifyContent: 'flex-start',
+    paddingTop: 2,
+  },
+  barNode: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: '#FFFFFF',
+    borderWidth: 2,
+    borderColor: '#FF6A1A',
+  },
+  barNodeSelected: {
+    width: 10,
+    height: 10,
+    borderRadius: 5,
+    borderWidth: 2.5,
   },
   chartDaysRow: {
     flexDirection: 'row',
