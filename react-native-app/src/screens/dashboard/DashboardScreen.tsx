@@ -19,6 +19,7 @@ import {
 } from 'react-native';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { RootStackParamList } from '../../navigation/types';
 import { useAuth } from '../../hooks/useAuth';
 import { useTheme } from '../../hooks/useTheme';
@@ -49,6 +50,8 @@ export const DashboardScreen: React.FC = () => {
   const navigation = useNavigation<DashNavProp>();
   const { user, logout } = useAuth();
   const { isDark, colors, brandColors, toggleTheme } = useTheme();
+  const insets = useSafeAreaInsets();
+  const topInset = Math.max(insets.top, Platform.OS === 'android' ? (StatusBar.currentHeight || 0) : 0);
 
   const [store, setStore] = useState<Store | null>(null);
   const [summary, setSummary] = useState<DashboardSummary | null>(null);
@@ -355,9 +358,8 @@ export const DashboardScreen: React.FC = () => {
       />
 
       {/* 1. TOP HEADER WITH ORANGE BANNER (EXTENDS SEAMLESSLY INTO TOP STATUS BAR AREA) */}
-      <View style={styles.headerTopContainer}>
-        <SafeAreaView style={styles.headerSafeArea}>
-          <View style={styles.topHeader}>
+      <View style={[styles.headerTopContainer, { paddingTop: topInset + 6 }]}>
+        <View style={styles.topHeader}>
           {/* Hamburger Menu Button */}
           <TouchableOpacity
             style={styles.headerIconBtn}
@@ -406,8 +408,7 @@ export const DashboardScreen: React.FC = () => {
             </TouchableOpacity>
           </View>
         </View>
-      </SafeAreaView>
-    </View>
+      </View>
 
       {/* 2. SCROLLABLE SCREEN CONTENT */}
       <ScrollView
@@ -854,10 +855,6 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   headerTopContainer: {
-    backgroundColor: '#FF6A1A',
-    paddingTop: Platform.OS === 'android' ? (StatusBar.currentHeight || 24) : 0,
-  },
-  headerSafeArea: {
     backgroundColor: '#FF6A1A',
   },
   topHeader: {

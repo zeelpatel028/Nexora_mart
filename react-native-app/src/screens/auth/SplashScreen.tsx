@@ -15,25 +15,8 @@ export const SplashScreen: React.FC = () => {
   const { isAuthenticated, isLoading } = useAuth();
   const { isDark, colors, brandColors } = useTheme();
 
-  useEffect(() => {
-    if (!isLoading) {
-      const timer = setTimeout(() => {
-        if (isAuthenticated) {
-          navigation.reset({
-            index: 0,
-            routes: [{ name: 'MainTabs' }],
-          });
-        } else {
-          navigation.reset({
-            index: 0,
-            routes: [{ name: 'Login' }],
-          });
-        }
-      }, 1500);
-
-      return () => clearTimeout(timer);
-    }
-  }, [isAuthenticated, isLoading, navigation]);
+  // Declarative navigation in AppNavigator automatically handles screen transition
+  // once authentication loading completes.
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>

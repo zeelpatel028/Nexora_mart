@@ -25,6 +25,13 @@ def list_store_types(active_only: bool = True, db: Session = Depends(get_db)):
         query = query.filter(StoreType.is_active == True)
     return query.order_by(StoreType.id.asc()).all()
 
+@router.get("/config/{code_or_id}")
+def get_store_type_config(code_or_id: str, db: Session = Depends(get_db)):
+    """Retrieve UI configuration and field definitions for a store type"""
+    from ..store_types.registry import StoreTypeRegistry
+    strat = StoreTypeRegistry.get_strategy(code_or_id)
+    return strat.get_ui_config()
+
 @router.get("/{id}", response_model=StoreTypeResponse)
 def get_store_type(id: int, db: Session = Depends(get_db)):
     """Retrieve details for a single store type by ID"""

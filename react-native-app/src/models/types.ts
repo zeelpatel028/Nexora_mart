@@ -179,6 +179,7 @@ export interface ProductCreatePayload {
 export interface ProductUpdatePayload {
   name?: string;
   category_id?: number;
+  sku?: string;
   barcode?: string;
   description?: string;
   image_url?: string;

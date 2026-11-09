@@ -4,6 +4,10 @@ from pathlib import Path
 backend_dir = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(backend_dir))
 
+from app.database.connection import Base, engine
+from app.models import *
+Base.metadata.create_all(bind=engine)
+
 from tests.test_authentication_lifecycle import test_registration_and_login_lifecycle
 from tests.test_store_isolation import test_store_isolation_and_cross_access_prevention
 from tests.test_store_types_and_products import test_store_types_and_product_validation

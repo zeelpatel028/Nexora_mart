@@ -7,6 +7,7 @@ import { Platform } from 'react-native';
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { RootStackParamList, MainTabParamList } from './types';
 import { useAuth } from '../hooks/useAuth';
 import { useTheme } from '../hooks/useTheme';
@@ -56,9 +57,12 @@ const Tab = createBottomTabNavigator<MainTabParamList>();
 
 const MainTabNavigator: React.FC = () => {
   const { colors, brandColors } = useTheme();
+  const insets = useSafeAreaInsets();
 
   return (
     <Tab.Navigator
+      initialRouteName="DashboardTab"
+      backBehavior="initialRoute"
       screenOptions={{
         headerShown: false,
         tabBarActiveTintColor: brandColors.primary,
@@ -67,13 +71,17 @@ const MainTabNavigator: React.FC = () => {
         tabBarStyle: {
           backgroundColor: colors.surface,
           borderTopColor: colors.border,
-          height: Platform.OS === 'android' ? 68 : 62,
-          paddingBottom: Platform.OS === 'android' ? 12 : 8,
-          paddingTop: 8,
+          height: 62 + Math.max(insets.bottom, Platform.OS === 'android' ? 6 : 0),
+          paddingBottom: Math.max(insets.bottom, Platform.OS === 'android' ? 8 : 4),
+          paddingTop: 6,
         },
         tabBarLabelStyle: {
           fontSize: 11,
           fontWeight: '700',
+        },
+        tabBarItemStyle: {
+          justifyContent: 'center',
+          alignItems: 'center',
         },
       }}
     >
@@ -90,6 +98,11 @@ const MainTabNavigator: React.FC = () => {
             />
           ),
         }}
+        listeners={({ navigation }) => ({
+          tabPress: () => {
+            navigation.navigate('DashboardTab');
+          },
+        })}
       />
       <Tab.Screen
         name="CustomerTab"
@@ -104,12 +117,17 @@ const MainTabNavigator: React.FC = () => {
             />
           ),
         }}
+        listeners={({ navigation }) => ({
+          tabPress: () => {
+            navigation.navigate('CustomerTab');
+          },
+        })}
       />
       <Tab.Screen
         name="PosTab"
         component={PosBillingScreen}
         options={{
-          tabBarLabel: "Make Bill's",
+          tabBarLabel: 'Make Bills',
           tabBarIcon: ({ focused }) => (
             <ReceiptIcon
               size={22}
@@ -118,6 +136,11 @@ const MainTabNavigator: React.FC = () => {
             />
           ),
         }}
+        listeners={({ navigation }) => ({
+          tabPress: () => {
+            navigation.navigate('PosTab');
+          },
+        })}
       />
       <Tab.Screen
         name="ProductsTab"
@@ -132,6 +155,11 @@ const MainTabNavigator: React.FC = () => {
             />
           ),
         }}
+        listeners={({ navigation }) => ({
+          tabPress: () => {
+            navigation.navigate('ProductsTab');
+          },
+        })}
       />
       <Tab.Screen
         name="MoreTab"
@@ -146,6 +174,11 @@ const MainTabNavigator: React.FC = () => {
             />
           ),
         }}
+        listeners={({ navigation }) => ({
+          tabPress: () => {
+            navigation.navigate('MoreTab');
+          },
+        })}
       />
     </Tab.Navigator>
   );
@@ -154,6 +187,16 @@ const MainTabNavigator: React.FC = () => {
 export const AppNavigator: React.FC = () => {
   const { isAuthenticated, isLoading } = useAuth();
   const { isDark, colors, brandColors } = useTheme();
+  const [showSplash, setShowSplash] = React.useState(true);
+
+  React.useEffect(() => {
+    if (!isLoading) {
+      const timer = setTimeout(() => {
+        setShowSplash(false);
+      }, 800);
+      return () => clearTimeout(timer);
+    }
+  }, [isLoading]);
 
   return (
     <NavigationContainer
@@ -175,7 +218,7 @@ export const AppNavigator: React.FC = () => {
           animation: 'slide_from_right',
         }}
       >
-        {isLoading ? (
+        {isLoading || showSplash ? (
           <Stack.Screen name="Splash" component={SplashScreen} />
         ) : !isAuthenticated ? (
           <>
@@ -186,15 +229,21 @@ export const AppNavigator: React.FC = () => {
         ) : (
           <>
             <Stack.Screen name="MainTabs" component={MainTabNavigator} />
+            <Stack.Screen name="PosBilling" component={PosBillingScreen} />
+            <Stack.Screen name="ProductList" component={ProductListScreen} />
+            <Stack.Screen name="Inventory" component={InventoryScreen} />
             <Stack.Screen name="ProductDetail" component={ProductDetailScreen} />
+            <Stack.Screen name="ProductDetails" component={ProductDetailScreen} />
             <Stack.Screen name="AddProduct" component={AddProductScreen} />
             <Stack.Screen name="EditProduct" component={EditProductScreen} />
             <Stack.Screen name="CategoryManager" component={CategoryListScreen} />
             <Stack.Screen name="StockInward" component={StockInwardScreen} />
             <Stack.Screen name="StockAdjustment" component={StockAdjustmentScreen} />
             <Stack.Screen name="SalesList" component={SalesListScreen} />
+            <Stack.Screen name="Sales" component={SalesListScreen} />
             <Stack.Screen name="SaleDetail" component={SaleDetailScreen} />
             <Stack.Screen name="PurchaseList" component={PurchaseListScreen} />
+            <Stack.Screen name="Purchases" component={PurchaseListScreen} />
             <Stack.Screen name="CreatePurchase" component={CreatePurchaseScreen} />
             <Stack.Screen name="CustomerList" component={CustomerListScreen} />
             <Stack.Screen name="SupplierList" component={SupplierListScreen} />

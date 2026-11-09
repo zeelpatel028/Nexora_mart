@@ -9,9 +9,10 @@ import {
   StatusBar,
   Alert,
   ActivityIndicator,
-  SafeAreaView,
+  Platform,
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTheme } from '../../hooks/useTheme';
 import { storeService } from '../../services';
 import storage from '../../utils/storage';
@@ -29,6 +30,8 @@ type TabKey = 'basic' | 'owner' | 'address' | 'business' | 'config' | 'prefixes'
 export const AccountDetailScreen: React.FC = () => {
   const navigation = useNavigation();
   const { isDark, colors, brandColors, toggleTheme } = useTheme();
+  const insets = useSafeAreaInsets();
+  const topInset = Math.max(insets.top, Platform.OS === 'android' ? (StatusBar.currentHeight || 0) : 0);
 
   const [activeTab, setActiveTab] = useState<TabKey>('basic');
   const [loading, setLoading] = useState(false);
@@ -281,11 +284,15 @@ export const AccountDetailScreen: React.FC = () => {
   );
 
   return (
-    <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
-      <StatusBar barStyle={isDark ? 'light-content' : 'dark-content'} />
+    <View style={[styles.container, { backgroundColor: colors.background }]}>
+      <StatusBar
+        barStyle={isDark ? 'light-content' : 'dark-content'}
+        backgroundColor={colors.background}
+        translucent={Platform.OS === 'android'}
+      />
 
       {/* TOP HEADER */}
-      <View style={[styles.header, { borderBottomColor: isDark ? '#262A34' : '#E5E7EB' }]}>
+      <View style={[styles.header, { borderBottomColor: isDark ? '#262A34' : '#E5E7EB', paddingTop: topInset + 8 }]}>
         <View style={styles.headerLeft}>
           <TouchableOpacity
             style={[styles.circularBtn, { backgroundColor: colors.toggleBg, borderColor: colors.toggleBorder }]}
@@ -294,8 +301,8 @@ export const AccountDetailScreen: React.FC = () => {
           >
             <ArrowLeftIcon size={18} color={isDark ? '#FFFFFF' : '#111827'} />
           </TouchableOpacity>
-          <Text style={[styles.headerTitle, { color: isDark ? '#FFFFFF' : '#111827' }]}>
-            Store Account Details
+          <Text style={[styles.headerTitle, { color: isDark ? '#FFFFFF' : '#111827' }]} numberOfLines={1}>
+            Account & Store Details
           </Text>
         </View>
 
@@ -360,7 +367,13 @@ export const AccountDetailScreen: React.FC = () => {
           <Text style={{ marginTop: 12, color: isDark ? '#9CA3AF' : '#6B7280' }}>Loading store profile...</Text>
         </View>
       ) : (
-        <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
+        <ScrollView
+          contentContainerStyle={[
+            styles.scrollContent,
+            { paddingBottom: 40 + Math.max(insets.bottom, 16) },
+          ]}
+          showsVerticalScrollIndicator={false}
+        >
           {/* TAB 1: BASIC STORE INFORMATION */}
           {activeTab === 'basic' && (
             <View style={[styles.card, { backgroundColor: isDark ? '#181A20' : '#FFFFFF', borderColor: isDark ? '#2D323E' : '#E5E7EB' }]}>
@@ -594,7 +607,7 @@ export const AccountDetailScreen: React.FC = () => {
           <View style={{ height: 40 }} />
         </ScrollView>
       )}
-    </SafeAreaView>
+    </View>
   );
 };
 
@@ -613,6 +626,8 @@ const styles = StyleSheet.create({
   headerLeft: {
     flexDirection: 'row',
     alignItems: 'center',
+    flex: 1,
+    marginRight: 8,
   },
   headerRight: {
     flexDirection: 'row',
@@ -628,9 +643,10 @@ const styles = StyleSheet.create({
     marginRight: 8,
   },
   headerTitle: {
-    fontSize: 18,
+    fontSize: 16,
     fontWeight: '700',
     marginLeft: 6,
+    flexShrink: 1,
   },
   saveBtn: {
     paddingHorizontal: 16,

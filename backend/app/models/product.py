@@ -77,6 +77,7 @@ class Product(Base):
     store = relationship("Store", back_populates="products")
     category = relationship("ProductCategory", back_populates="products")
     attribute_values = relationship("ProductAttributeValue", back_populates="product", cascade="all, delete-orphan")
+    extra_details = relationship("ProductExtraDetail", back_populates="product", cascade="all, delete-orphan")
     images = relationship("ProductImages", back_populates="product", cascade="all, delete-orphan")
     stock_records = relationship("ProductStock", back_populates="product", cascade="all, delete-orphan")
     stock_adjustments = relationship("StockAdjustment", back_populates="product", cascade="all, delete-orphan")
@@ -100,7 +101,23 @@ class Product(Base):
                 attr_dict[val.attribute.field_name] = val.attribute_value
             elif val.attribute_id:
                 attr_dict[str(val.attribute_id)] = val.attribute_value
+        for detail in self.extra_details:
+            if detail.field_name and detail.field_name not in attr_dict:
+                attr_dict[detail.field_name] = detail.field_value
         return attr_dict
+
+
+class ProductExtraDetail(Base):
+    __tablename__ = "product_extra_details"
+
+    id = Column(Integer, primary_key=True, index=True, autoincrement=True)
+    store_id = Column(Integer, ForeignKey("stores.id", ondelete="CASCADE"), nullable=False, index=True)
+    product_id = Column(Integer, ForeignKey("products.id", ondelete="CASCADE"), nullable=False, index=True)
+    field_name = Column(String(100), nullable=False, index=True)
+    field_value = Column(Text, nullable=True)
+    created_at = Column(DateTime, default=lambda: datetime.datetime.now(datetime.timezone.utc))
+
+    product = relationship("Product", back_populates="extra_details")
 
 
 class ProductAttributeValue(Base):

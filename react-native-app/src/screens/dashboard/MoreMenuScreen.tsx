@@ -9,14 +9,15 @@ import {
   StatusBar,
   Image,
   Platform,
-  SafeAreaView,
 } from 'react-native';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { RootStackParamList } from '../../navigation/types';
 import { useTheme } from '../../hooks/useTheme';
 import { useAuth } from '../../hooks/useAuth';
 import {
+  HomeIcon,
   ShoppingCartIcon,
   ReceiptIcon,
   PackageIcon,
@@ -43,7 +44,7 @@ interface MenuListItem {
   subtitle: string;
   color: string;
   icon: (color: string) => React.ReactNode;
-  screen?: keyof RootStackParamList;
+  screen?: keyof RootStackParamList | 'DashboardTab';
   params?: any;
   isDanger?: boolean;
 }
@@ -52,6 +53,8 @@ export const MoreMenuScreen: React.FC = () => {
   const navigation = useNavigation<MoreNavProp>();
   const { colors, brandColors, isDark, toggleTheme } = useTheme();
   const { logout, user } = useAuth();
+  const insets = useSafeAreaInsets();
+  const topInset = Math.max(insets.top, Platform.OS === 'android' ? (StatusBar.currentHeight || 0) : 0);
 
   // Set orange status bar every time MoreMenu comes into focus
   useFocusEffect(
@@ -65,8 +68,20 @@ export const MoreMenuScreen: React.FC = () => {
   );
 
   // Categorized Sections
-  // "Account & Store Details" is placed inside "App Settings & Store Account" section!
   const categorizedSections: { title: string; items: MenuListItem[] }[] = [
+    {
+      title: 'Main Store Navigation',
+      items: [
+        {
+          id: 'nav_home',
+          title: 'Home (Dashboard)',
+          subtitle: 'Store overview, live sales metrics & recent activities',
+          color: '#FF6A1A',
+          icon: (c) => <HomeIcon size={20} color={c} />,
+          screen: 'DashboardTab',
+        },
+      ],
+    },
     {
       title: 'Billing & POS Operations',
       items: [
@@ -226,8 +241,18 @@ export const MoreMenuScreen: React.FC = () => {
           },
         },
       ]);
-    } else if (item.screen) {
-      navigation.navigate(item.screen as any, item.params);
+    } else if (item.screen || item.id === 'nav_home') {
+      if (item.screen === 'DashboardTab' || item.id === 'nav_home') {
+        navigation.navigate('MainTabs' as any, { screen: 'DashboardTab' });
+      } else if (item.screen === 'PosBilling') {
+        navigation.navigate('MainTabs' as any, { screen: 'PosTab' });
+      } else if (item.screen === 'ProductList') {
+        navigation.navigate('MainTabs' as any, { screen: 'ProductsTab' });
+      } else if (item.screen === 'CustomerList') {
+        navigation.navigate('MainTabs' as any, { screen: 'CustomerTab' });
+      } else {
+        navigation.navigate(item.screen as any, item.params);
+      }
     }
   };
 
@@ -240,37 +265,35 @@ export const MoreMenuScreen: React.FC = () => {
       />
 
       {/* Top Header Bar with Seamless Orange Status Bar Space and White Circle Brand Logo */}
-      <View style={styles.headerTopContainer}>
-        <SafeAreaView style={styles.headerSafeArea}>
-          <View style={styles.topHeader}>
-            <View style={styles.headerLeft}>
-              <View style={styles.headerLogoCircle}>
-                <Image
-                  source={require('../../assets/m-logo-3d.png')}
-                  style={styles.headerLogoImg}
-                  resizeMode="contain"
-                />
-              </View>
-              <View>
-                <Text style={styles.headerBrandTitle}>NEXORA MART</Text>
-                <Text style={styles.headerSubTitle}>All Store Operations</Text>
-              </View>
+      <View style={[styles.headerTopContainer, { paddingTop: topInset + 6 }]}>
+        <View style={styles.topHeader}>
+          <View style={styles.headerLeft}>
+            <View style={styles.headerLogoCircle}>
+              <Image
+                source={require('../../assets/m-logo-3d.png')}
+                style={styles.headerLogoImg}
+                resizeMode="contain"
+              />
             </View>
-
-            <TouchableOpacity
-              style={styles.themeToggleBtn}
-              onPress={toggleTheme}
-              activeOpacity={0.7}
-              accessibilityLabel="Toggle Theme Mode"
-            >
-              {isDark ? (
-                <MoonIcon size={18} color="#FFFFFF" strokeWidth={2} />
-              ) : (
-                <SunIcon size={18} color="#FFFFFF" strokeWidth={2} />
-              )}
-            </TouchableOpacity>
+            <View>
+              <Text style={styles.headerBrandTitle}>NEXORA MART</Text>
+              <Text style={styles.headerSubTitle}>All Store Operations</Text>
+            </View>
           </View>
-        </SafeAreaView>
+
+          <TouchableOpacity
+            style={styles.themeToggleBtn}
+            onPress={toggleTheme}
+            activeOpacity={0.7}
+            accessibilityLabel="Toggle Theme Mode"
+          >
+            {isDark ? (
+              <MoonIcon size={18} color="#FFFFFF" strokeWidth={2} />
+            ) : (
+              <SunIcon size={18} color="#FFFFFF" strokeWidth={2} />
+            )}
+          </TouchableOpacity>
+        </View>
       </View>
 
       <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
@@ -358,10 +381,6 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   headerTopContainer: {
-    backgroundColor: '#FF6A1A',
-    paddingTop: Platform.OS === 'android' ? (StatusBar.currentHeight || 24) : 0,
-  },
-  headerSafeArea: {
     backgroundColor: '#FF6A1A',
   },
   topHeader: {

@@ -1,5 +1,6 @@
 import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, StatusBar } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, StatusBar, Platform } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTheme } from '../../hooks/useTheme';
 import { ChevronLeftIcon } from '../branding/Icons';
 
@@ -22,13 +23,24 @@ export const Header: React.FC<HeaderProps> = ({
   rightAction,
 }) => {
   const { colors, brandColors, isDark } = useTheme();
+  const insets = useSafeAreaInsets();
+  const topInset = Math.max(insets.top, Platform.OS === 'android' ? (StatusBar.currentHeight || 0) : 0);
 
   return (
-    <View style={[styles.container, { backgroundColor: colors.surface, borderBottomColor: colors.border }]}>
+    <View
+      style={[
+        styles.container,
+        {
+          backgroundColor: colors.surface,
+          borderBottomColor: colors.border,
+          paddingTop: topInset + 8,
+        },
+      ]}
+    >
       <StatusBar
         barStyle={isDark ? 'light-content' : 'dark-content'}
         backgroundColor={colors.surface}
-        translucent={false}
+        translucent={Platform.OS === 'android'}
       />
       <View style={styles.content}>
         {showBack && (

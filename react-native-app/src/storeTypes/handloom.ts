@@ -8,52 +8,86 @@ export const handloomConfig: StoreTypeConfig = {
   defaultUnits: ['piece', 'meter', 'pair', 'set'],
   fields: [
     {
-      fieldName: 'weave_type',
-      fieldLabel: 'Weave Type / Fabric',
+      fieldName: 'fabric_type',
+      fieldLabel: 'Fabric Type',
       fieldType: 'select',
       isRequired: true,
-      options: ['Khadi', 'Chanderi', 'Banarasi', 'Silk Weave', 'Pure Cotton', 'Ikat', 'Linen', 'Tussar Silk'],
-      defaultValue: 'Pure Cotton',
+      options: ['Khadi Cotton', 'Chanderi', 'Banarasi Silk', 'Tussar Silk', 'Mulmul Cotton', 'Linen', 'Ikat Cotton', 'Kanjivaram Silk', 'Pashmina Wool', 'Matka Silk'],
+      defaultValue: 'Khadi Cotton',
       displayOrder: 1,
     },
     {
-      fieldName: 'pattern',
-      fieldLabel: 'Pattern / Style',
-      fieldType: 'text',
+      fieldName: 'weaving_type',
+      fieldLabel: 'Weaving Type',
+      fieldType: 'select',
       isRequired: false,
-      placeholder: 'e.g. Hand Block Print, Zari Border, Floral',
+      options: ['Traditional Handloom', 'Pit Loom', 'Frame Loom', 'Jacquard Handloom', 'Dobby Handloom', 'Backstrap Loom'],
+      defaultValue: 'Traditional Handloom',
       displayOrder: 2,
     },
     {
-      fieldName: 'color',
-      fieldLabel: 'Color / Dye',
-      fieldType: 'text',
+      fieldName: 'pattern',
+      fieldLabel: 'Pattern',
+      fieldType: 'select',
       isRequired: false,
-      placeholder: 'e.g. Maroon, Indigo, Mustard',
+      options: ['Zari Border', 'Floral Jaal', 'Geometric Ikat', 'Butti / Buta Work', 'Temple Border', 'Plain with Border', 'Stripes & Checks', 'Solid'],
+      defaultValue: 'Plain with Border',
       displayOrder: 3,
     },
     {
-      fieldName: 'dimensions',
-      fieldLabel: 'Dimensions / Length',
+      fieldName: 'design',
+      fieldLabel: 'Design',
       fieldType: 'text',
       isRequired: false,
-      placeholder: 'e.g. 5.5m Saree, 2.5m Dupatta, 6x6 ft',
+      placeholder: 'e.g. Traditional Paisley Motif, Contemporary Artisan Block',
       displayOrder: 4,
     },
     {
-      fieldName: 'artisan_source',
-      fieldLabel: 'Artisan / Source Origin',
+      fieldName: 'color',
+      fieldLabel: 'Color',
       fieldType: 'text',
       isRequired: false,
-      placeholder: 'e.g. Kutch Cluster, Varanasi Weavers',
+      placeholder: 'e.g. Indigo Blue, Madder Red, Turmeric Yellow, Natural Ecru',
       displayOrder: 5,
+    },
+    {
+      fieldName: 'material',
+      fieldLabel: 'Material',
+      fieldType: 'text',
+      isRequired: false,
+      placeholder: 'e.g. 100% Pure Organic Cotton, Mulberry Silk, Pure Wool',
+      displayOrder: 6,
+    },
+    {
+      fieldName: 'length',
+      fieldLabel: 'Length',
+      fieldType: 'text',
+      isRequired: false,
+      placeholder: 'e.g. 5.5 Meters, 6.3 Meters with Blouse, 2.5 Meters Dupatta',
+      displayOrder: 7,
+    },
+    {
+      fieldName: 'width',
+      fieldLabel: 'Width',
+      fieldType: 'text',
+      isRequired: false,
+      placeholder: 'e.g. 44 Inches, 48 Inches, 36 Inches',
+      displayOrder: 8,
+    },
+    {
+      fieldName: 'origin',
+      fieldLabel: 'Origin',
+      fieldType: 'text',
+      isRequired: false,
+      placeholder: 'e.g. Varanasi (UP), Chanderi (MP), Pochampally (Telangana), Sambalpur (Odisha), Kutch (Gujarat)',
+      displayOrder: 9,
     },
   ],
   validate: (values: Record<string, any>) => {
-    if (!values.weave_type || !String(values.weave_type).trim()) {
-      return { isValid: false, error: 'Weave Type is required for Handloom items.' };
+    const fabric = values.fabric_type || values.weave_type;
+    if (!fabric || !String(fabric).trim()) {
+      return { isValid: false, error: 'Fabric Type is required for Handloom products.' };
     }
     return { isValid: true };
   },
 };
-

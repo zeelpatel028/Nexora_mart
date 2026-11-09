@@ -3,7 +3,7 @@ from typing import List, Optional, Dict, Any, Tuple
 from fastapi import HTTPException, status
 from sqlalchemy.orm import Session
 from sqlalchemy import or_
-from ..models.product import Product, ProductAttribute, ProductAttributeValue
+from ..models.product import Product, ProductAttribute, ProductAttributeValue, ProductExtraDetail
 from ..models.inventory import ProductStock, StockAdjustment
 from ..models.store import Store, ShopCategory
 from ..models.user import User
@@ -98,7 +98,7 @@ class ProductService:
 
     @staticmethod
     def _save_attribute_values(db: Session, store_id: int, product_id: int, attributes: Dict[str, Any]):
-        """Persist key-value attributes into product_attribute_values linking to product_attributes."""
+        """Persist key-value attributes into both product_attribute_values and product_extra_details."""
         for field_name, val in attributes.items():
             if val is None or val == "":
                 continue
@@ -121,6 +121,15 @@ class ProductService:
                 attribute_value=str(val)
             )
             db.add(pav)
+
+            # Also persist in product_extra_details structured table
+            ped = ProductExtraDetail(
+                store_id=store_id,
+                product_id=product_id,
+                field_name=field_name,
+                field_value=str(val)
+            )
+            db.add(ped)
 
     @staticmethod
     def create_product(db: Session, store: Store, current_user: User, request: ProductCreate) -> Product:
@@ -256,8 +265,22 @@ class ProductService:
             product.is_active = request.is_active
 
         if request.attributes is not None:
-            # Delete old and insert updated
+            # Validate Store Type specific rules on update
+            store_strategy = StoreTypeRegistry.get_strategy_for_store(store)
+            is_valid, err_msg = store_strategy.validate_product_data(
+                request.model_dump(),
+                request.attributes,
+                is_create=False
+            )
+            if not is_valid:
+                raise HTTPException(
+                    status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                    detail=err_msg
+                )
+
+            # Delete old and insert updated into both attribute tables
             db.query(ProductAttributeValue).filter(ProductAttributeValue.product_id == product.id).delete()
+            db.query(ProductExtraDetail).filter(ProductExtraDetail.product_id == product.id).delete()
             ProductService._save_attribute_values(db, store.id, product.id, request.attributes)
 
         db.commit()
