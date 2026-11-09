@@ -1,16 +1,40 @@
-from typing import Optional
+from typing import Optional, Any, Dict
 from pydantic import BaseModel, EmailStr, Field
+
+class StoreTypeSummary(BaseModel):
+    id: int
+    code: str
+    name: str
+
+    class Config:
+        from_attributes = True
+
+class StoreSummary(BaseModel):
+    id: int
+    name: str
+    code: Optional[str] = None
+    store_type: Optional[StoreTypeSummary] = None
+
+    class Config:
+        from_attributes = True
 
 class UserLoginRequest(BaseModel):
     email: str = Field(..., min_length=1, description="Email, phone or username")
     password: str = Field(..., min_length=1)
 
+class RefreshTokenRequest(BaseModel):
+    refresh_token: str = Field(..., min_length=1, description="Cryptographic refresh token")
+
 class UserRegisterRequest(BaseModel):
-    firstName: str = Field(..., min_length=1, max_length=100)
-    surname: str = Field(..., min_length=1, max_length=100)
+    name: Optional[str] = Field(None, max_length=150)
+    firstName: Optional[str] = Field(None, max_length=100)
+    surname: Optional[str] = Field(None, max_length=100)
     email: EmailStr
-    phone: str = Field(..., min_length=5, max_length=30)
-    storeType: str = Field(..., min_length=2, max_length=100)
+    phone: Optional[str] = Field(None, max_length=30)
+    store_type_id: Optional[int] = None
+    store_type_code: Optional[str] = None
+    storeType: Optional[str] = None
+    store_name: Optional[str] = None
     password: str = Field(..., min_length=6)
 
 class ForgotPasswordRequest(BaseModel):
@@ -28,24 +52,40 @@ class ResetPasswordRequest(BaseModel):
 class UpdateProfileRequest(BaseModel):
     firstName: Optional[str] = Field(None, max_length=100)
     surname: Optional[str] = Field(None, max_length=100)
+    name: Optional[str] = Field(None, max_length=150)
     phone: Optional[str] = Field(None, max_length=30)
     currentPassword: Optional[str] = None
     newPassword: Optional[str] = Field(None, min_length=6)
+
+class SafeUser(BaseModel):
+    id: int
+    name: str
+    email: str
+
+    class Config:
+        from_attributes = True
 
 class UserResponse(BaseModel):
     id: int
     email: str
     name: str
-    firstName: str
-    surname: str
-    phone: str
-    storeType: str
-    isActive: bool
+    firstName: Optional[str] = ""
+    surname: Optional[str] = ""
+    phone: Optional[str] = ""
+    storeType: Optional[str] = ""
+    isActive: bool = True
+    user: Optional[SafeUser] = None
+    store: Optional[StoreSummary] = None
 
     class Config:
         from_attributes = True
 
 class TokenResponse(BaseModel):
-    token: str
+    access_token: str
+    token: Optional[str] = None
+    refresh_token: Optional[str] = None
     tokenType: str = "bearer"
+    token_type: str = "bearer"
+    expires_in: int = 900
     user: UserResponse
+    store: Optional[StoreSummary] = None

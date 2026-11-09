@@ -17,8 +17,6 @@ import {
 import { useNavigation } from '@react-navigation/native';
 import { useTheme } from '../../hooks/useTheme';
 import authService from '../../services/authService';
-import { WaveBackground } from '../../components/branding/WaveBackground';
-import { BrandLogo } from '../../components/branding/BrandLogo';
 import {
   MailIcon,
   LockIcon,
@@ -33,7 +31,7 @@ import {
 
 export const ForgotPasswordScreen: React.FC = () => {
   const navigation = useNavigation();
-  const { isDark, colors, brandColors, toggleTheme } = useTheme();
+  const { isDark, toggleTheme } = useTheme();
   const { width } = useWindowDimensions();
 
   // Step 1: Request OTP; Step 2: Verify OTP; Step 3: Set New Password; Step 4: Success
@@ -50,9 +48,10 @@ export const ForgotPasswordScreen: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const [focusedField, setFocusedField] = useState<string | null>(null);
 
-  // Shop illustration responsive dimensions
-  const illustrationWidth = Math.min(width * 0.72, 300);
-  const illustrationHeight = illustrationWidth / 1.96;
+  // Responsive Storefront illustration sizing matching LoginScreen
+  const illustrationWidth = Math.min(width * 0.88, 350);
+  const illustrationHeight = illustrationWidth / 2.2;
+  const primaryOrange = '#FF6A1A';
 
   // Step 1: Request OTP
   const handleRequestOtp = async () => {
@@ -100,11 +99,11 @@ export const ForgotPasswordScreen: React.FC = () => {
     }
   };
 
-  // Step 3: Reset Password in DB
+  // Step 3: Set New Password
   const handleResetPassword = async () => {
     setErrorMsg('');
     if (!newPassword || newPassword.length < 6) {
-      setErrorMsg('New password must be at least 6 characters');
+      setErrorMsg('Password must be at least 6 characters long');
       return;
     }
     if (newPassword !== confirmPassword) {
@@ -114,44 +113,47 @@ export const ForgotPasswordScreen: React.FC = () => {
 
     setLoading(true);
     try {
-      await authService.resetPassword(identifier.trim(), otp.trim(), newPassword);
-      setStep('success');
+      await authService.resetPassword(
+        identifier.trim(),
+        otp.trim(),
+        newPassword,
+      );
+
       Alert.alert(
-        'Password Reset Successful! 🎉',
-        'Your account password has been updated in the database. You can now log in.',
+        'Password Updated Successfully! 🔐',
+        'Your password has been changed. You can now login with your new credentials.',
         [
           {
-            text: 'Login Now',
+            text: 'Proceed to Login',
             onPress: () => navigation.goBack(),
           },
         ]
       );
     } catch (err: any) {
-      setErrorMsg(err.message || 'Failed to update password.');
+      setErrorMsg(err.message || 'Failed to update password. Please try again.');
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <View style={[styles.container, { backgroundColor: colors.background }]}>
+    <View style={[styles.root, { backgroundColor: isDark ? '#121316' : '#FFFFFF' }]}>
       <StatusBar
         barStyle={isDark ? 'light-content' : 'dark-content'}
         backgroundColor="transparent"
         translucent
       />
 
-      {/* Organic Corner Waves */}
-      <WaveBackground />
-
       <KeyboardAvoidingView
-        style={styles.flexOne}
+        style={styles.keyboardView}
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
       >
         <ScrollView
           contentContainerStyle={styles.scrollContent}
           keyboardShouldPersistTaps="handled"
           showsVerticalScrollIndicator={false}
+          scrollEnabled={false}
+          bounces={false}
         >
           {/* Top Bar with Back Button & Theme Toggle Button */}
           <View style={styles.topBar}>
@@ -159,9 +161,8 @@ export const ForgotPasswordScreen: React.FC = () => {
               style={[
                 styles.navCircularBtn,
                 {
-                  backgroundColor: colors.toggleBg,
-                  borderColor: colors.toggleBorder,
-                  shadowColor: '#000000',
+                  backgroundColor: isDark ? '#1F222A' : '#FFFFFF',
+                  borderColor: isDark ? '#2D323E' : '#F3F4F6',
                 },
               ]}
               onPress={() => navigation.goBack()}
@@ -171,6 +172,7 @@ export const ForgotPasswordScreen: React.FC = () => {
               <ArrowLeftIcon
                 size={18}
                 color={isDark ? '#FFFFFF' : '#111827'}
+                strokeWidth={2.4}
               />
             </TouchableOpacity>
 
@@ -178,9 +180,8 @@ export const ForgotPasswordScreen: React.FC = () => {
               style={[
                 styles.navCircularBtn,
                 {
-                  backgroundColor: colors.toggleBg,
-                  borderColor: colors.toggleBorder,
-                  shadowColor: '#000000',
+                  backgroundColor: isDark ? '#1F222A' : '#FFFFFF',
+                  borderColor: isDark ? '#2D323E' : '#F3F4F6',
                 },
               ]}
               onPress={toggleTheme}
@@ -188,20 +189,35 @@ export const ForgotPasswordScreen: React.FC = () => {
               accessibilityLabel="Toggle Theme Mode"
             >
               {isDark ? (
-                <MoonIcon size={18} color="#FFFFFF" />
+                <MoonIcon size={18} color="#FFFFFF" strokeWidth={2} />
               ) : (
-                <SunIcon size={19} color={brandColors.primary} />
+                <SunIcon size={19} color={primaryOrange} strokeWidth={2} />
               )}
             </TouchableOpacity>
           </View>
 
           {/* Brand Logo & Wordmark Header */}
-          <View style={styles.logoSection}>
-            <BrandLogo size={46} textSize={25} />
+          <View style={styles.brandHeader}>
+            <View style={styles.logoRow}>
+              <Image
+                source={require('../../assets/m-logo-3d.png')}
+                style={styles.mLogo3d}
+                resizeMode="contain"
+              />
+            </View>
+            <View style={styles.wordmarkRow}>
+              <Text style={[styles.wordNexora, { color: isDark ? '#FFFFFF' : '#111827' }]}>
+                Nexora{' '}
+              </Text>
+              <Text style={[styles.wordMart, { color: primaryOrange }]}>Mart</Text>
+            </View>
+            <Text style={[styles.tagline, { color: isDark ? '#9CA3AF' : '#6B7280' }]}>
+              All-in-One Store Management
+            </Text>
           </View>
 
           {/* 3D Storefront Illustration */}
-          <View style={styles.illustrationSection}>
+          <View style={styles.storefrontContainer}>
             <Image
               source={
                 isDark
@@ -219,10 +235,10 @@ export const ForgotPasswordScreen: React.FC = () => {
           {/* Form Content Area */}
           <View style={styles.formContainer}>
             {/* Header Title */}
-            <View style={styles.headerBlock}>
+            <View style={styles.welcomeSection}>
               <Text
                 style={[
-                  styles.title,
+                  styles.welcomeTitle,
                   { color: isDark ? '#FFFFFF' : '#111827' },
                 ]}
               >
@@ -234,7 +250,7 @@ export const ForgotPasswordScreen: React.FC = () => {
               </Text>
               <Text
                 style={[
-                  styles.subtitle,
+                  styles.welcomeSubtitle,
                   { color: isDark ? '#9CA3AF' : '#6B7280' },
                 ]}
               >
@@ -249,7 +265,7 @@ export const ForgotPasswordScreen: React.FC = () => {
             {/* Error Banner */}
             {errorMsg ? (
               <View style={styles.errorBanner}>
-                <Text style={styles.errorBannerText}>{errorMsg}</Text>
+                <Text style={styles.errorText}>{errorMsg}</Text>
               </View>
             ) : null}
 
@@ -258,21 +274,24 @@ export const ForgotPasswordScreen: React.FC = () => {
               <>
                 <View
                   style={[
-                    styles.inputWrapper,
+                    styles.inputCard,
                     {
-                      backgroundColor: colors.inputBg,
+                      backgroundColor: isDark ? '#1C1F26' : '#FFFFFF',
                       borderColor:
                         focusedField === 'identifier'
-                          ? brandColors.primary
-                          : colors.inputBorder,
+                          ? primaryOrange
+                          : isDark
+                          ? '#2D323E'
+                          : '#E5E7EB',
                       borderWidth: focusedField === 'identifier' ? 1.5 : 1,
                     },
                   ]}
                 >
-                  <View style={styles.inputIconLeft}>
+                  <View style={styles.inputIconWrapper}>
                     <MailIcon
                       size={19}
-                      color={focusedField === 'identifier' ? brandColors.primary : '#9CA3AF'}
+                      color={focusedField === 'identifier' ? primaryOrange : isDark ? '#8A909D' : '#9CA3AF'}
+                      strokeWidth={2}
                     />
                   </View>
                   <TextInput
@@ -281,7 +300,7 @@ export const ForgotPasswordScreen: React.FC = () => {
                       { color: isDark ? '#FFFFFF' : '#111827' },
                     ]}
                     placeholder="User Name or Email"
-                    placeholderTextColor={colors.textPlaceholder}
+                    placeholderTextColor={isDark ? '#6B7280' : '#9CA3AF'}
                     value={identifier}
                     onChangeText={(text) => {
                       setIdentifier(text);
@@ -297,7 +316,7 @@ export const ForgotPasswordScreen: React.FC = () => {
                 <TouchableOpacity
                   style={[
                     styles.submitBtn,
-                    { backgroundColor: brandColors.primary, marginTop: 12 },
+                    { backgroundColor: primaryOrange },
                     loading && styles.submitBtnDisabled,
                   ]}
                   onPress={handleRequestOtp}
@@ -309,7 +328,7 @@ export const ForgotPasswordScreen: React.FC = () => {
                   ) : (
                     <View style={styles.submitBtnContent}>
                       <Text style={styles.submitBtnText}>Send OTP</Text>
-                      <ArrowRightIcon size={18} color="#FFFFFF" />
+                      <ArrowRightIcon size={18} color="#FFFFFF" strokeWidth={2.4} />
                     </View>
                   )}
                 </TouchableOpacity>
@@ -321,21 +340,24 @@ export const ForgotPasswordScreen: React.FC = () => {
               <>
                 <View
                   style={[
-                    styles.inputWrapper,
+                    styles.inputCard,
                     {
-                      backgroundColor: colors.inputBg,
+                      backgroundColor: isDark ? '#1C1F26' : '#FFFFFF',
                       borderColor:
                         focusedField === 'otp'
-                          ? brandColors.primary
-                          : colors.inputBorder,
+                          ? primaryOrange
+                          : isDark
+                          ? '#2D323E'
+                          : '#E5E7EB',
                       borderWidth: focusedField === 'otp' ? 1.5 : 1,
                     },
                   ]}
                 >
-                  <View style={styles.inputIconLeft}>
+                  <View style={styles.inputIconWrapper}>
                     <KeyIcon
                       size={19}
-                      color={focusedField === 'otp' ? brandColors.primary : '#9CA3AF'}
+                      color={focusedField === 'otp' ? primaryOrange : isDark ? '#8A909D' : '#9CA3AF'}
+                      strokeWidth={2}
                     />
                   </View>
                   <TextInput
@@ -344,7 +366,7 @@ export const ForgotPasswordScreen: React.FC = () => {
                       { color: isDark ? '#FFFFFF' : '#111827', letterSpacing: 4, fontWeight: '700' },
                     ]}
                     placeholder="6-Digit OTP"
-                    placeholderTextColor={colors.textPlaceholder}
+                    placeholderTextColor={isDark ? '#6B7280' : '#9CA3AF'}
                     value={otp}
                     onChangeText={(text) => {
                       setOtp(text);
@@ -360,7 +382,7 @@ export const ForgotPasswordScreen: React.FC = () => {
                 <TouchableOpacity
                   style={[
                     styles.submitBtn,
-                    { backgroundColor: brandColors.primary, marginTop: 12 },
+                    { backgroundColor: primaryOrange },
                     loading && styles.submitBtnDisabled,
                   ]}
                   onPress={handleVerifyOtp}
@@ -372,7 +394,7 @@ export const ForgotPasswordScreen: React.FC = () => {
                   ) : (
                     <View style={styles.submitBtnContent}>
                       <Text style={styles.submitBtnText}>Verify OTP</Text>
-                      <ArrowRightIcon size={18} color="#FFFFFF" />
+                      <ArrowRightIcon size={18} color="#FFFFFF" strokeWidth={2.4} />
                     </View>
                   )}
                 </TouchableOpacity>
@@ -382,7 +404,7 @@ export const ForgotPasswordScreen: React.FC = () => {
                   onPress={handleRequestOtp}
                   activeOpacity={0.7}
                 >
-                  <Text style={[styles.resendText, { color: brandColors.primary }]}>
+                  <Text style={[styles.resendText, { color: primaryOrange }]}>
                     Didn't receive code? Resend OTP
                   </Text>
                 </TouchableOpacity>
@@ -394,21 +416,24 @@ export const ForgotPasswordScreen: React.FC = () => {
               <>
                 <View
                   style={[
-                    styles.inputWrapper,
+                    styles.inputCard,
                     {
-                      backgroundColor: colors.inputBg,
+                      backgroundColor: isDark ? '#1C1F26' : '#FFFFFF',
                       borderColor:
                         focusedField === 'newPassword'
-                          ? brandColors.primary
-                          : colors.inputBorder,
+                          ? primaryOrange
+                          : isDark
+                          ? '#2D323E'
+                          : '#E5E7EB',
                       borderWidth: focusedField === 'newPassword' ? 1.5 : 1,
                     },
                   ]}
                 >
-                  <View style={styles.inputIconLeft}>
+                  <View style={styles.inputIconWrapper}>
                     <LockIcon
                       size={19}
-                      color={focusedField === 'newPassword' ? brandColors.primary : '#9CA3AF'}
+                      color={focusedField === 'newPassword' ? primaryOrange : isDark ? '#8A909D' : '#9CA3AF'}
+                      strokeWidth={2}
                     />
                   </View>
                   <TextInput
@@ -417,7 +442,7 @@ export const ForgotPasswordScreen: React.FC = () => {
                       { color: isDark ? '#FFFFFF' : '#111827' },
                     ]}
                     placeholder="New Password (min 6 chars)"
-                    placeholderTextColor={colors.textPlaceholder}
+                    placeholderTextColor={isDark ? '#6B7280' : '#9CA3AF'}
                     value={newPassword}
                     onChangeText={(text) => {
                       setNewPassword(text);
@@ -431,32 +456,36 @@ export const ForgotPasswordScreen: React.FC = () => {
                   <TouchableOpacity
                     onPress={() => setShowPassword(!showPassword)}
                     style={styles.eyeBtn}
+                    activeOpacity={0.7}
                   >
                     {showPassword ? (
-                      <EyeOffIcon size={19} color={brandColors.primary} />
+                      <EyeOffIcon size={19} color={primaryOrange} strokeWidth={1.8} />
                     ) : (
-                      <EyeIcon size={19} color={colors.textPlaceholder} />
+                      <EyeIcon size={19} color={isDark ? '#8A909D' : '#9CA3AF'} strokeWidth={1.8} />
                     )}
                   </TouchableOpacity>
                 </View>
 
                 <View
                   style={[
-                    styles.inputWrapper,
+                    styles.inputCard,
                     {
-                      backgroundColor: colors.inputBg,
+                      backgroundColor: isDark ? '#1C1F26' : '#FFFFFF',
                       borderColor:
                         focusedField === 'confirmPassword'
-                          ? brandColors.primary
-                          : colors.inputBorder,
+                          ? primaryOrange
+                          : isDark
+                          ? '#2D323E'
+                          : '#E5E7EB',
                       borderWidth: focusedField === 'confirmPassword' ? 1.5 : 1,
                     },
                   ]}
                 >
-                  <View style={styles.inputIconLeft}>
+                  <View style={styles.inputIconWrapper}>
                     <LockIcon
                       size={19}
-                      color={focusedField === 'confirmPassword' ? brandColors.primary : '#9CA3AF'}
+                      color={focusedField === 'confirmPassword' ? primaryOrange : isDark ? '#8A909D' : '#9CA3AF'}
+                      strokeWidth={2}
                     />
                   </View>
                   <TextInput
@@ -465,7 +494,7 @@ export const ForgotPasswordScreen: React.FC = () => {
                       { color: isDark ? '#FFFFFF' : '#111827' },
                     ]}
                     placeholder="Confirm New Password"
-                    placeholderTextColor={colors.textPlaceholder}
+                    placeholderTextColor={isDark ? '#6B7280' : '#9CA3AF'}
                     value={confirmPassword}
                     onChangeText={(text) => {
                       setConfirmPassword(text);
@@ -479,11 +508,12 @@ export const ForgotPasswordScreen: React.FC = () => {
                   <TouchableOpacity
                     onPress={() => setShowConfirmPassword(!showConfirmPassword)}
                     style={styles.eyeBtn}
+                    activeOpacity={0.7}
                   >
                     {showConfirmPassword ? (
-                      <EyeOffIcon size={19} color={brandColors.primary} />
+                      <EyeOffIcon size={19} color={primaryOrange} strokeWidth={1.8} />
                     ) : (
-                      <EyeIcon size={19} color={colors.textPlaceholder} />
+                      <EyeIcon size={19} color={isDark ? '#8A909D' : '#9CA3AF'} strokeWidth={1.8} />
                     )}
                   </TouchableOpacity>
                 </View>
@@ -491,7 +521,7 @@ export const ForgotPasswordScreen: React.FC = () => {
                 <TouchableOpacity
                   style={[
                     styles.submitBtn,
-                    { backgroundColor: brandColors.primary, marginTop: 12 },
+                    { backgroundColor: primaryOrange },
                     loading && styles.submitBtnDisabled,
                   ]}
                   onPress={handleResetPassword}
@@ -503,7 +533,7 @@ export const ForgotPasswordScreen: React.FC = () => {
                   ) : (
                     <View style={styles.submitBtnContent}>
                       <Text style={styles.submitBtnText}>Update Password</Text>
-                      <ArrowRightIcon size={18} color="#FFFFFF" />
+                      <ArrowRightIcon size={18} color="#FFFFFF" strokeWidth={2.4} />
                     </View>
                   )}
                 </TouchableOpacity>
@@ -527,7 +557,7 @@ export const ForgotPasswordScreen: React.FC = () => {
                 <Text
                   style={[
                     styles.footerAction,
-                    { color: brandColors.primary },
+                    { color: primaryOrange },
                   ]}
                 >
                   Login
@@ -542,112 +572,165 @@ export const ForgotPasswordScreen: React.FC = () => {
 };
 
 const styles = StyleSheet.create({
-  container: {
+  root: {
     flex: 1,
   },
-  flexOne: {
+  keyboardView: {
     flex: 1,
   },
   scrollContent: {
     flexGrow: 1,
-    paddingHorizontal: 22,
-    paddingTop: Platform.OS === 'android' ? (StatusBar.currentHeight || 28) + 12 : 52,
-    paddingBottom: 28,
+    paddingBottom: 16,
   },
   topBar: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    marginBottom: 6,
+    paddingTop: Platform.OS === 'android' ? (StatusBar.currentHeight ? StatusBar.currentHeight + 10 : 38) : 50,
+    paddingHorizontal: 22,
+    marginBottom: 4,
+    zIndex: 10,
   },
   navCircularBtn: {
-    width: 38,
-    height: 38,
-    borderRadius: 19,
+    width: 36,
+    height: 36,
+    borderRadius: 18,
     borderWidth: 1,
     alignItems: 'center',
     justifyContent: 'center',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.08,
-    shadowRadius: 4,
-    elevation: 2,
+    ...Platform.select({
+      ios: {
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.08,
+        shadowRadius: 4,
+      },
+      android: {
+        elevation: 2,
+      },
+    }),
   },
-  logoSection: {
+  brandHeader: {
     alignItems: 'center',
-    justifyContent: 'center',
     marginTop: 2,
-    marginBottom: 10,
+    marginBottom: 6,
+    zIndex: 2,
   },
-  illustrationSection: {
+  logoRow: {
+    flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: 14,
+    marginBottom: 6,
+  },
+  mLogo3d: {
+    width: 66,
+    height: 44,
+  },
+  wordmarkRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  wordNexora: {
+    fontSize: 23,
+    fontWeight: '800',
+    letterSpacing: -0.4,
+  },
+  wordMart: {
+    fontSize: 23,
+    fontWeight: '800',
+    letterSpacing: -0.4,
+  },
+  tagline: {
+    fontSize: 12.5,
+    fontWeight: '500',
+    marginTop: 2,
+    letterSpacing: 0.1,
+  },
+  storefrontContainer: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginVertical: 4,
+    zIndex: 2,
+  },
+  welcomeSection: {
+    paddingHorizontal: 24,
+    marginTop: 6,
+    marginBottom: 10,
+    zIndex: 2,
+  },
+  welcomeTitle: {
+    fontSize: 21,
+    fontWeight: '700',
+    letterSpacing: -0.3,
+  },
+  welcomeSubtitle: {
+    fontSize: 13,
+    fontWeight: '400',
+    marginTop: 2,
+  },
+  errorBanner: {
+    marginHorizontal: 24,
+    marginBottom: 10,
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    borderRadius: 10,
+    backgroundColor: 'rgba(239, 68, 68, 0.12)',
+    borderColor: 'rgba(239, 68, 68, 0.3)',
+    borderWidth: 1,
+  },
+  errorText: {
+    color: '#EF4444',
+    fontSize: 12.5,
+    fontWeight: '500',
   },
   formContainer: {
     width: '100%',
   },
-  headerBlock: {
-    marginBottom: 16,
-  },
-  title: {
-    fontSize: 24,
-    fontWeight: '800',
-    letterSpacing: -0.4,
-  },
-  subtitle: {
-    fontSize: 13.5,
-    fontWeight: '400',
-    marginTop: 4,
-    letterSpacing: -0.2,
-  },
-  errorBanner: {
-    backgroundColor: 'rgba(239, 68, 68, 0.1)',
-    borderColor: 'rgba(239, 68, 68, 0.3)',
-    borderWidth: 1,
-    borderRadius: 10,
-    paddingVertical: 10,
-    paddingHorizontal: 14,
-    marginBottom: 14,
-  },
-  errorBannerText: {
-    color: '#EF4444',
-    fontSize: 13,
-    fontWeight: '500',
-  },
-  inputWrapper: {
+  inputCard: {
+    height: 48,
+    borderRadius: 12,
     flexDirection: 'row',
     alignItems: 'center',
-    height: 52,
-    borderRadius: 14,
     paddingHorizontal: 14,
-    marginBottom: 12,
+    marginHorizontal: 24,
+    marginBottom: 10,
   },
-  inputIconLeft: {
-    width: 28,
-    alignItems: 'center',
+  inputIconWrapper: {
+    marginRight: 10,
     justifyContent: 'center',
-    marginRight: 6,
+    alignItems: 'center',
   },
   textInput: {
     flex: 1,
     height: '100%',
-    fontSize: 14.5,
+    fontSize: 14,
     fontWeight: '400',
     paddingVertical: 0,
   },
   eyeBtn: {
     padding: 6,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   submitBtn: {
-    height: 52,
-    borderRadius: 14,
+    height: 48,
+    borderRadius: 12,
     alignItems: 'center',
     justifyContent: 'center',
-    shadowColor: '#FF6A1A',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.38,
-    shadowRadius: 10,
-    elevation: 5,
+    marginHorizontal: 24,
+    marginTop: 4,
+    ...Platform.select({
+      ios: {
+        shadowColor: '#FF6A1A',
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.35,
+        shadowRadius: 8,
+      },
+      android: {
+        elevation: 4,
+      },
+    }),
   },
   submitBtnDisabled: {
     opacity: 0.7,
@@ -659,33 +742,32 @@ const styles = StyleSheet.create({
   },
   submitBtnText: {
     color: '#FFFFFF',
-    fontSize: 16,
+    fontSize: 15.5,
     fontWeight: '700',
     marginRight: 8,
-    letterSpacing: -0.2,
   },
   resendBtn: {
     alignSelf: 'center',
-    marginTop: 14,
+    marginTop: 12,
     paddingVertical: 6,
   },
   resendText: {
-    fontSize: 13.5,
+    fontSize: 13,
     fontWeight: '600',
   },
   footerRow: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    marginTop: 26,
-    marginBottom: 12,
+    marginTop: 16,
+    marginBottom: 10,
   },
   footerLabel: {
-    fontSize: 14,
+    fontSize: 13.5,
     fontWeight: '400',
   },
   footerAction: {
-    fontSize: 14,
+    fontSize: 13.5,
     fontWeight: '700',
   },
 });

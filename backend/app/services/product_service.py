@@ -9,6 +9,7 @@ from ..models.store import Store, ShopCategory
 from ..models.user import User
 from ..schemas.product_schema import ProductCreate, ProductUpdate
 from ..category_rules.rule_registry import CategoryRuleRegistry
+from ..store_types.registry import StoreTypeRegistry
 
 class ProductService:
     @staticmethod
@@ -130,6 +131,19 @@ class ProductService:
             category_id = category.id if category else 1
 
         attributes = request.attributes or {}
+
+        # Validate Store Type specific rules
+        store_strategy = StoreTypeRegistry.get_strategy_for_store(store)
+        is_valid, err_msg = store_strategy.validate_product_data(
+            request.model_dump(),
+            attributes,
+            is_create=True
+        )
+        if not is_valid:
+            raise HTTPException(
+                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                detail=err_msg
+            )
 
         # Validate category rules
         if category:

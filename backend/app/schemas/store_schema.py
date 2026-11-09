@@ -26,11 +26,13 @@ class StoreUpdate(BaseModel):
 
 class StoreResponse(StoreBase):
     id: int
-    category_id: int
+    category_id: Optional[int] = None
+    store_type_id: Optional[int] = None
     owner_id: int
     is_active: bool
     code: Optional[str] = None
     currency_symbol: Optional[str] = "₹"
+    store_type: Optional[Dict[str, Any]] = None
     category: Optional[CategoryResponse] = None
     configuration: Optional[Dict[str, Any]] = None
 

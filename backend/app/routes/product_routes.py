@@ -135,6 +135,7 @@ def get_product(
     )
 
 @router.put("/{id}", response_model=ProductDetailResponse)
+@router.patch("/{id}", response_model=ProductDetailResponse)
 def update_product(
     id: int,
     request: ProductUpdate,

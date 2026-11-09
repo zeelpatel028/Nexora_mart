@@ -23,11 +23,30 @@ def _format_store_response(store: Store) -> dict:
     biz = store.business_details
     cfg = store.configuration
     cat = store.shop_category
+    st = store.store_type_rel
+    store_type_dict = {
+        "id": st.id,
+        "code": st.code,
+        "name": st.name,
+        "description": st.description,
+        "icon": st.icon,
+        "is_active": st.is_active
+    } if st else (
+        {
+            "id": cat.id if cat else 1,
+            "code": cat.code.lower() if cat else "grocery",
+            "name": cat.name if cat else (store.store_type or "Grocery Store"),
+            "description": cat.description if cat else "",
+            "icon": cat.icon if cat else "",
+            "is_active": True
+        } if cat else None
+    )
     return {
         "id": store.id,
         "name": store.name,
         "code": store.code,
         "category_id": store.shop_category_id,
+        "store_type_id": store.store_type_id,
         "owner_id": store.user_id,
         "phone": store.owner_details.contact_phone if store.owner_details else None,
         "email": store.owner_details.contact_email if store.owner_details else None,
@@ -37,6 +56,7 @@ def _format_store_response(store: Store) -> dict:
         "currency": store.currency,
         "currency_symbol": store.currency_symbol,
         "is_active": store.is_active,
+        "store_type": store_type_dict,
         "category": {
             "id": cat.id,
             "name": cat.name,
@@ -65,6 +85,7 @@ def list_user_stores(
     return [_format_store_response(s) for s in stores]
 
 @router.get("/my-store", response_model=StoreResponse)
+@router.get("/current", response_model=StoreResponse)
 def get_my_store(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user)
@@ -72,6 +93,17 @@ def get_my_store(
     """Get active store details for authenticated merchant"""
     store = StoreService.get_user_store(db, current_user)
     return _format_store_response(store)
+
+@router.patch("/current", response_model=StoreResponse)
+def update_current_store(
+    request: StoreUpdate,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    """Update permitted fields for authenticated user's current store"""
+    store = StoreService.get_user_store(db, current_user)
+    updated = StoreService.update_store(db, store.id, request, current_user)
+    return _format_store_response(updated)
 
 @router.post("", response_model=StoreResponse, status_code=status.HTTP_201_CREATED, include_in_schema=False)
 @router.post("/", response_model=StoreResponse, status_code=status.HTTP_201_CREATED)

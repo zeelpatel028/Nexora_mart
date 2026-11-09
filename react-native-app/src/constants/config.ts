@@ -25,7 +25,10 @@ export const Config = {
 
   STORAGE_KEYS: {
     AUTH_TOKEN: 'nmart_auth_token',
+    REFRESH_TOKEN: 'nmart_refresh_token',
+    SESSION_EXPIRES_AT: 'nmart_session_expires_at',
     USER_DATA: 'nmart_auth_user',
+    STORE_DATA: 'nmart_auth_store',
     API_URL: 'nmart_custom_api_url',
     THEME_MODE: 'nmart_theme_mode',
   },

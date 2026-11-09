@@ -30,6 +30,7 @@ class User(Base):
     stores = relationship("Store", back_populates="owner", cascade="all, delete-orphan")
     shop_category_rel = relationship("ShopCategory", foreign_keys=[shop_category_id])
     otps = relationship("PasswordResetOtp", back_populates="user", cascade="all, delete-orphan")
+    refresh_tokens = relationship("RefreshToken", back_populates="user", cascade="all, delete-orphan")
     activity_logs = relationship("ActivityLog", back_populates="user")
     employees = relationship("Employee", back_populates="user")
     stock_adjustments = relationship("StockAdjustment", back_populates="user")

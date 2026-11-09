@@ -1,10 +1,11 @@
 /**
  * Authentication & Merchant Session Service
+ * Manages 15-minute access JWT, 15-hour refresh sessions, and profile synchronization.
  */
 import apiClient from '../api/apiClient';
 import Endpoints from '../api/endpoints';
 import storage from '../utils/storage';
-import { AuthResponse, LoginPayload, RegisterPayload, User } from '../models/types';
+import { AuthResponse, LoginPayload, RegisterPayload, User, StoreType } from '../models/types';
 
 export const authService = {
   async login(payload: LoginPayload): Promise<AuthResponse> {
@@ -13,42 +14,73 @@ export const authService = {
       password: payload.password,
     });
 
-    const token = res.token || res.access_token;
+    const token = res.access_token || res.token;
     if (token) {
       await storage.setAuthToken(token);
     }
+    if (res.refresh_token) {
+      await storage.setRefreshToken(res.refresh_token);
+      // Absolute 15-hour session lifetime:
+      const fifteenHoursMs = 15 * 60 * 60 * 1000;
+      await storage.setSessionExpiresAt(Date.now() + fifteenHoursMs);
+    }
     if (res.user) {
       await storage.setUser(res.user);
+    }
+    if (res.store) {
+      await storage.setStore(res.store);
     }
     return res;
   },
 
   async register(payload: RegisterPayload): Promise<AuthResponse> {
     const res = await apiClient.post<AuthResponse>(Endpoints.AUTH.REGISTER, {
-      firstName: payload.firstName.trim(),
-      surname: payload.surname.trim(),
+      firstName: payload.firstName ? payload.firstName.trim() : (payload.name?.split(' ')[0] || ''),
+      surname: payload.surname ? payload.surname.trim() : (payload.name?.split(' ').slice(1).join(' ') || 'Owner'),
+      name: payload.name || `${payload.firstName || ''} ${payload.surname || ''}`.trim(),
       email: payload.email.trim().toLowerCase(),
-      phone: payload.phone.trim(),
+      phone: (payload.phone || '').trim(),
       storeType: payload.storeType,
+      store_type_id: payload.store_type_id,
+      store_type_code: payload.store_type_code,
+      store_name: payload.store_name,
       password: payload.password,
     });
 
-    const token = res.token || res.access_token;
+    const token = res.access_token || res.token;
     if (token) {
       await storage.setAuthToken(token);
     }
+    if (res.refresh_token) {
+      await storage.setRefreshToken(res.refresh_token);
+      const fifteenHoursMs = 15 * 60 * 60 * 1000;
+      await storage.setSessionExpiresAt(Date.now() + fifteenHoursMs);
+    }
     if (res.user) {
       await storage.setUser(res.user);
+    }
+    if (res.store) {
+      await storage.setStore(res.store);
     }
     return res;
   },
 
   async getMe(): Promise<User> {
-    const user = await apiClient.get<User>(Endpoints.AUTH.ME);
+    const res = await apiClient.get<any>(Endpoints.AUTH.ME);
+    const user: User = res.user ? { ...res.user, storeType: res.storeType || res.store?.store_type?.name } : res;
     if (user) {
       await storage.setUser(user);
     }
+    if (res.store) {
+      await storage.setStore(res.store);
+    }
     return user;
+  },
+
+  async getStoreTypes(activeOnly: boolean = true): Promise<StoreType[]> {
+    return apiClient.get<StoreType[]>(Endpoints.STORE_TYPES.LIST, {
+      params: { active_only: activeOnly },
+    });
   },
 
   async forgotPassword(email: string): Promise<{ success: boolean; message: string; otp?: string }> {
@@ -88,12 +120,12 @@ export const authService = {
 
   async logout(): Promise<void> {
     try {
-      await apiClient.post(Endpoints.AUTH.LOGOUT);
+      const refreshToken = await storage.getRefreshToken();
+      await apiClient.post(Endpoints.AUTH.LOGOUT, { refresh_token: refreshToken });
     } catch {
       // Ignore network errors on logout
     } finally {
-      await storage.removeAuthToken();
-      await storage.removeUser();
+      await storage.clearAuth();
     }
   },
 
@@ -103,4 +135,3 @@ export const authService = {
 };
 
 export default authService;
-

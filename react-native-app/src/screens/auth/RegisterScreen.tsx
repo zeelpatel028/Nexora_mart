@@ -1,9 +1,4 @@
-/**
- * Nexora Mart - Brand-New Create Account Screen
- * Pixel-Perfect Implementation from Provided Reference Specification (media_1794072024251_9047cfc3.jpg)
- * Supports full Light Mode & Dark Mode with exact layout, proportions, and orange branding.
- */
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -17,6 +12,8 @@ import {
   Alert,
   StatusBar,
   Image,
+  Modal,
+  FlatList,
   useWindowDimensions,
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
@@ -24,6 +21,7 @@ import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../../navigation/types';
 import { useAuth } from '../../hooks/useAuth';
 import { useTheme } from '../../hooks/useTheme';
+import categoryService from '../../services/categoryService';
 import {
   UserIcon,
   MailIcon,
@@ -33,14 +31,29 @@ import {
   EyeOffIcon,
   ArrowRightIcon,
   ArrowLeftIcon,
-  GoogleIcon,
   CheckIcon,
   SunIcon,
   MoonIcon,
+  StoreIcon,
+  ChevronDownIcon,
+  CloseIcon,
 } from '../../components/branding/Icons';
 import { isValidEmail, isValidPhone } from '../../utils/validators';
+import storeTypeService from '../../services/storeTypeService';
+import { StoreType } from '../../models/types';
 
 type RegisterNavProp = NativeStackNavigationProp<RootStackParamList, 'Register'>;
+
+const DEFAULT_STORE_TYPES: StoreType[] = [
+  { id: 1, code: 'grocery', name: 'Grocery Store', description: 'Daily essentials, packaged food items, groceries, and staples.', is_active: true },
+  { id: 2, code: 'clothing', name: 'Clothing Store', description: "Men's, women's, and kids' apparel, textiles, and fashion garments.", is_active: true },
+  { id: 3, code: 'medical', name: 'Medical / Pharmacy Store', description: 'Pharmaceuticals, medicines, surgical supplies, and healthcare goods.', is_active: true },
+  { id: 4, code: 'mobile_electronics', name: 'Mobile & Electronics Store', description: 'Smartphones, consumer appliances, computing devices, audio, and gadgets.', is_active: true },
+  { id: 5, code: 'plastic', name: 'Plastic Store', description: 'Plastic housewares, containers, storage boxes, kitchen utilities, and polymer goods.', is_active: true },
+  { id: 6, code: 'handloom', name: 'Handloom Store', description: 'Handloom textiles, traditional fabrics, sarees, artisanal weaves, and home furnishings.', is_active: true },
+  { id: 7, code: 'furniture', name: 'Furniture Store', description: 'Home and office furniture, wooden decor, tables, chairs, and furnishings.', is_active: true },
+  { id: 8, code: 'agro', name: 'Agro Store', description: 'Seeds, fertilizers, agricultural implements, farming equipment, and pesticides.', is_active: true },
+];
 
 export const RegisterScreen: React.FC = () => {
   const navigation = useNavigation<RegisterNavProp>();
@@ -48,16 +61,21 @@ export const RegisterScreen: React.FC = () => {
   const { isDark, toggleTheme } = useTheme();
   const { width } = useWindowDimensions();
 
-  // Form State matching reference UI fields
+  // Form State
   const [fullName, setFullName] = useState('');
   const [email, setEmail] = useState('');
   const [phone, setPhone] = useState('');
   const [password, setPassword] = useState('');
-  const [confirmPassword, setConfirmPassword] = useState('');
 
-  // Password visibility toggles
+  // Store Type State (Starts with empty / Select Store Type)
+  const [storeTypesList, setStoreTypesList] = useState<StoreType[]>(DEFAULT_STORE_TYPES);
+  const [selectedStoreTypeObj, setSelectedStoreTypeObj] = useState<StoreType | null>(null);
+  const [selectedStoreType, setSelectedStoreType] = useState('');
+  const [showStoreTypeModal, setShowStoreTypeModal] = useState(false);
+  const [loadingCategories, setLoadingCategories] = useState(false);
+
+  // Password visibility toggle
   const [showPassword, setShowPassword] = useState(false);
-  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
   // Checkbox State
   const [agreeTerms, setAgreeTerms] = useState(true);
@@ -66,19 +84,39 @@ export const RegisterScreen: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
 
-  // Focus States for glowing orange border highlight
+  // Focus States
   const [fullNameFocused, setFullNameFocused] = useState(false);
   const [emailFocused, setEmailFocused] = useState(false);
   const [phoneFocused, setPhoneFocused] = useState(false);
   const [passwordFocused, setPasswordFocused] = useState(false);
-  const [confirmPasswordFocused, setConfirmPasswordFocused] = useState(false);
 
-  // Storefront illustration responsive sizing (matches natural ~1.96:1 aspect ratio)
-  const illustrationWidth = Math.min(width * 0.74, 290);
-  const illustrationHeight = illustrationWidth / 1.96;
-
-  // Primary brand orange color
+  // Sizing optimized for single screen without scrolling
+  const illustrationWidth = Math.min(width * 0.72, 250);
+  const illustrationHeight = illustrationWidth / 2.5;
   const primaryOrange = '#FF6A1A';
+
+  // Fetch live store types from backend API (GET /store-types)
+  useEffect(() => {
+    let isMounted = true;
+    setLoadingCategories(true);
+    storeTypeService
+      .getStoreTypes(true)
+      .then((types) => {
+        if (isMounted && types && types.length > 0) {
+          setStoreTypesList(types);
+        }
+      })
+      .catch(() => {
+        // Fallback default 8 store types are maintained
+      })
+      .finally(() => {
+        if (isMounted) setLoadingCategories(false);
+      });
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
 
   const validate = () => {
     const trimmedName = fullName.trim();
@@ -102,16 +140,16 @@ export const RegisterScreen: React.FC = () => {
       setErrorMsg('Please enter a valid mobile number');
       return false;
     }
+    if (!selectedStoreType || selectedStoreType === 'Select Store Type') {
+      setErrorMsg('Please select your store type');
+      return false;
+    }
     if (!password) {
       setErrorMsg('Please enter a password');
       return false;
     }
     if (password.length < 6) {
       setErrorMsg('Password must be at least 6 characters');
-      return false;
-    }
-    if (password !== confirmPassword) {
-      setErrorMsg('Passwords do not match');
       return false;
     }
     if (!agreeTerms) {
@@ -127,7 +165,6 @@ export const RegisterScreen: React.FC = () => {
 
     setLoading(true);
     try {
-      // Split full name into first name and surname
       const nameParts = fullName.trim().split(/\s+/);
       const firstName = nameParts[0];
       const surname = nameParts.length > 1 ? nameParts.slice(1).join(' ') : 'Store Owner';
@@ -135,13 +172,15 @@ export const RegisterScreen: React.FC = () => {
       await register({
         firstName,
         surname,
+        name: fullName.trim(),
         email: email.trim().toLowerCase(),
         phone: phone.trim(),
-        storeType: 'General Store',
+        storeType: selectedStoreTypeObj?.name || selectedStoreType,
+        store_type_id: selectedStoreTypeObj?.id,
+        store_type_code: selectedStoreTypeObj?.code,
         password,
       });
 
-      // Navigate to Home screen with setup modal trigger
       navigation.reset({
         index: 0,
         routes: [{ name: 'MainTabs' }],
@@ -152,27 +191,6 @@ export const RegisterScreen: React.FC = () => {
     } finally {
       setLoading(false);
     }
-  };
-
-  const handleGoogleSignUp = () => {
-    Alert.alert(
-      'Google Sign-Up',
-      'Sign up using your Google account or proceed with standard registration.',
-      [
-        {
-          text: 'Fill Demo Account',
-          onPress: () => {
-            setFullName('Demo Store Owner');
-            setEmail('demo.store@nmart.com');
-            setPhone('9876543210');
-            setPassword('password123');
-            setConfirmPassword('password123');
-            setErrorMsg('');
-          },
-        },
-        { text: 'Cancel', style: 'cancel' },
-      ]
-    );
   };
 
   const showTermsModal = () => {
@@ -199,52 +217,6 @@ export const RegisterScreen: React.FC = () => {
         translucent
       />
 
-      {/* ========================================================
-          1. DECORATIVE TOP-LEFT & BOTTOM-RIGHT ORANGE CURVED WAVES
-          Exact visual match to the reference screenshot
-          ======================================================== */}
-      {/* Top-Left Curve */}
-      <View
-        pointerEvents="none"
-        style={[
-          styles.topLeftWave,
-          {
-            backgroundColor: primaryOrange,
-            opacity: isDark ? 0.95 : 0.9,
-          },
-        ]}
-      />
-      {isDark && (
-        <View
-          pointerEvents="none"
-          style={[
-            styles.topLeftWaveGlow,
-            { backgroundColor: 'rgba(255, 106, 26, 0.25)' },
-          ]}
-        />
-      )}
-
-      {/* Bottom-Right Curve */}
-      <View
-        pointerEvents="none"
-        style={[
-          styles.bottomRightWave,
-          {
-            backgroundColor: primaryOrange,
-            opacity: isDark ? 0.9 : 0.85,
-          },
-        ]}
-      />
-      {isDark && (
-        <View
-          pointerEvents="none"
-          style={[
-            styles.bottomRightWaveGlow,
-            { backgroundColor: 'rgba(255, 106, 26, 0.22)' },
-          ]}
-        />
-      )}
-
       <KeyboardAvoidingView
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
         style={styles.keyboardView}
@@ -252,14 +224,12 @@ export const RegisterScreen: React.FC = () => {
         <ScrollView
           contentContainerStyle={styles.scrollContent}
           showsVerticalScrollIndicator={false}
+          scrollEnabled={false}
+          bounces={false}
           keyboardShouldPersistTaps="handled"
         >
-          {/* ========================================================
-              2. TOP BAR: BACK BUTTON (LEFT) & THEME TOGGLE BUTTON (RIGHT)
-              Positioned below system status bar
-              ======================================================== */}
+          {/* Top Bar with Back Button (Left) & Theme Toggle Button (Right) */}
           <View style={styles.topBar}>
-            {/* Back Button on Top Left */}
             <TouchableOpacity
               style={[
                 styles.navCircularBtn,
@@ -279,7 +249,6 @@ export const RegisterScreen: React.FC = () => {
               />
             </TouchableOpacity>
 
-            {/* Theme Toggle Button on Top Right */}
             <TouchableOpacity
               style={[
                 styles.navCircularBtn,
@@ -300,26 +269,16 @@ export const RegisterScreen: React.FC = () => {
             </TouchableOpacity>
           </View>
 
-          {/* ========================================================
-              3. BRAND LOGO & WORDMARK HEADER
-              3 Horizontal Orange Speed Lines + Orange 'M' Badge
-              ======================================================== */}
+          {/* Brand Logo & Wordmark Header */}
           <View style={styles.brandHeader}>
             <View style={styles.logoRow}>
-              {/* 3 Horizontal Speed Lines */}
-              <View style={styles.speedLinesCol}>
-                <View style={[styles.speedLine, { width: 14, backgroundColor: primaryOrange }]} />
-                <View style={[styles.speedLine, { width: 22, backgroundColor: primaryOrange }]} />
-                <View style={[styles.speedLine, { width: 14, backgroundColor: primaryOrange }]} />
-              </View>
-
-              {/* Orange Rounded Badge with Stylized "M" */}
-              <View style={[styles.logoBadge, { backgroundColor: primaryOrange }]}>
-                <Text style={styles.logoMText}>M</Text>
-              </View>
+              <Image
+                source={require('../../assets/m-logo-3d.png')}
+                style={styles.mLogo3d}
+                resizeMode="contain"
+              />
             </View>
 
-            {/* Wordmark: Nexora Mart */}
             <View style={styles.wordmarkRow}>
               <Text style={[styles.wordNexora, { color: isDark ? '#FFFFFF' : '#111827' }]}>
                 Nexora{' '}
@@ -327,16 +286,12 @@ export const RegisterScreen: React.FC = () => {
               <Text style={[styles.wordMart, { color: primaryOrange }]}>Mart</Text>
             </View>
 
-            {/* Tagline */}
             <Text style={[styles.tagline, { color: isDark ? '#9CA3AF' : '#6B7280' }]}>
               All-in-One Store Management
             </Text>
           </View>
 
-          {/* ========================================================
-              4. 3D STOREFRONT ILLUSTRATION
-              High-resolution 3D shop matching light/dark mode
-              ======================================================== */}
+          {/* 3D Storefront Illustration */}
           <View style={styles.storefrontContainer}>
             <Image
               source={
@@ -352,9 +307,7 @@ export const RegisterScreen: React.FC = () => {
             />
           </View>
 
-          {/* ========================================================
-              5. "CREATE ACCOUNT" TITLE SECTION
-              ======================================================== */}
+          {/* Title Section */}
           <View style={styles.titleSection}>
             <Text style={[styles.mainTitle, { color: isDark ? '#FFFFFF' : '#111827' }]}>
               Create Account
@@ -366,21 +319,12 @@ export const RegisterScreen: React.FC = () => {
 
           {/* Error Message Alert Banner */}
           {errorMsg ? (
-            <View
-              style={[
-                styles.errorBanner,
-                { backgroundColor: isDark ? 'rgba(239, 68, 68, 0.15)' : '#FEE2E2' },
-              ]}
-            >
-              <Text style={[styles.errorText, { color: isDark ? '#FCA5A5' : '#DC2626' }]}>
-                {errorMsg}
-              </Text>
+            <View style={styles.errorBanner}>
+              <Text style={styles.errorText}>{errorMsg}</Text>
             </View>
           ) : null}
 
-          {/* ========================================================
-              6. INPUT FORM FIELDS (5 INPUTS IN SPECIFICATION)
-              ======================================================== */}
+          {/* Input Form Fields (5 fields - Confirm Password removed) */}
           <View style={styles.formContainer}>
             {/* Field 1: Full Name */}
             <View
@@ -399,7 +343,7 @@ export const RegisterScreen: React.FC = () => {
             >
               <View style={styles.inputIconWrapper}>
                 <UserIcon
-                  size={19}
+                  size={18}
                   color={fullNameFocused ? primaryOrange : isDark ? '#8A909D' : '#9CA3AF'}
                   strokeWidth={2}
                 />
@@ -437,7 +381,7 @@ export const RegisterScreen: React.FC = () => {
             >
               <View style={styles.inputIconWrapper}>
                 <MailIcon
-                  size={19}
+                  size={18}
                   color={emailFocused ? primaryOrange : isDark ? '#8A909D' : '#9CA3AF'}
                   strokeWidth={2}
                 />
@@ -476,7 +420,7 @@ export const RegisterScreen: React.FC = () => {
             >
               <View style={styles.inputIconWrapper}>
                 <PhoneIcon
-                  size={19}
+                  size={18}
                   color={phoneFocused ? primaryOrange : isDark ? '#8A909D' : '#9CA3AF'}
                   strokeWidth={2}
                 />
@@ -496,7 +440,55 @@ export const RegisterScreen: React.FC = () => {
               />
             </View>
 
-            {/* Field 4: Password */}
+            {/* Field 4: Store Type Selector (Shows 'Select Store Type' initially) */}
+            <TouchableOpacity
+              style={[
+                styles.inputCard,
+                {
+                  backgroundColor: isDark ? '#1C1F26' : '#FFFFFF',
+                  borderColor: showStoreTypeModal ? primaryOrange : isDark ? '#2D323E' : '#E5E7EB',
+                  borderWidth: showStoreTypeModal ? 1.5 : 1,
+                },
+              ]}
+              onPress={() => setShowStoreTypeModal(true)}
+              activeOpacity={0.8}
+            >
+              <View style={styles.inputIconWrapper}>
+                <StoreIcon
+                  size={18}
+                  color={showStoreTypeModal ? primaryOrange : isDark ? '#8A909D' : '#9CA3AF'}
+                  strokeWidth={2}
+                />
+              </View>
+              <View style={styles.storeTypeSelectedWrapper}>
+                <Text style={[styles.storeTypeLabel, { color: isDark ? '#9CA3AF' : '#6B7280' }]}>
+                  Store Type
+                </Text>
+                <Text
+                  style={[
+                    styles.storeTypeValue,
+                    {
+                      color: selectedStoreType
+                        ? isDark
+                          ? '#FFFFFF'
+                          : '#111827'
+                        : isDark
+                        ? '#6B7280'
+                        : '#9CA3AF',
+                      fontWeight: selectedStoreType ? '600' : '400',
+                    },
+                  ]}
+                  numberOfLines={1}
+                >
+                  {selectedStoreType || 'Select Store Type'}
+                </Text>
+              </View>
+              <View style={styles.storeTypeBadge}>
+                <ChevronDownIcon size={16} color={primaryOrange} strokeWidth={2.2} />
+              </View>
+            </TouchableOpacity>
+
+            {/* Field 5: Password */}
             <View
               style={[
                 styles.inputCard,
@@ -513,14 +505,14 @@ export const RegisterScreen: React.FC = () => {
             >
               <View style={styles.inputIconWrapper}>
                 <LockIcon
-                  size={19}
+                  size={18}
                   color={passwordFocused ? primaryOrange : isDark ? '#8A909D' : '#9CA3AF'}
                   strokeWidth={2}
                 />
               </View>
               <TextInput
                 style={[styles.textInput, { color: isDark ? '#FFFFFF' : '#111827' }]}
-                placeholder="Password"
+                placeholder="Password (min 6 characters)"
                 placeholderTextColor={isDark ? '#6B7280' : '#9CA3AF'}
                 value={password}
                 onChangeText={(val) => {
@@ -535,18 +527,18 @@ export const RegisterScreen: React.FC = () => {
               <TouchableOpacity
                 onPress={() => setShowPassword(!showPassword)}
                 style={styles.eyeBtn}
-                hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
+                hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
                 activeOpacity={0.7}
               >
                 {showPassword ? (
                   <EyeOffIcon
-                    size={20}
+                    size={18}
                     color={isDark ? '#8A909D' : '#9CA3AF'}
                     strokeWidth={1.8}
                   />
                 ) : (
                   <EyeIcon
-                    size={20}
+                    size={18}
                     color={isDark ? '#8A909D' : '#9CA3AF'}
                     strokeWidth={1.8}
                   />
@@ -554,68 +546,7 @@ export const RegisterScreen: React.FC = () => {
               </TouchableOpacity>
             </View>
 
-            {/* Field 5: Confirm Password */}
-            <View
-              style={[
-                styles.inputCard,
-                {
-                  backgroundColor: isDark ? '#1C1F26' : '#FFFFFF',
-                  borderColor: confirmPasswordFocused
-                    ? primaryOrange
-                    : isDark
-                    ? '#2D323E'
-                    : '#E5E7EB',
-                  borderWidth: confirmPasswordFocused ? 1.5 : 1,
-                },
-              ]}
-            >
-              <View style={styles.inputIconWrapper}>
-                <LockIcon
-                  size={19}
-                  color={confirmPasswordFocused ? primaryOrange : isDark ? '#8A909D' : '#9CA3AF'}
-                  strokeWidth={2}
-                />
-              </View>
-              <TextInput
-                style={[styles.textInput, { color: isDark ? '#FFFFFF' : '#111827' }]}
-                placeholder="Confirm Password"
-                placeholderTextColor={isDark ? '#6B7280' : '#9CA3AF'}
-                value={confirmPassword}
-                onChangeText={(val) => {
-                  setConfirmPassword(val);
-                  if (errorMsg) setErrorMsg('');
-                }}
-                onFocus={() => setConfirmPasswordFocused(true)}
-                onBlur={() => setConfirmPasswordFocused(false)}
-                secureTextEntry={!showConfirmPassword}
-                autoCapitalize="none"
-              />
-              <TouchableOpacity
-                onPress={() => setShowConfirmPassword(!showConfirmPassword)}
-                style={styles.eyeBtn}
-                hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
-                activeOpacity={0.7}
-              >
-                {showConfirmPassword ? (
-                  <EyeOffIcon
-                    size={20}
-                    color={isDark ? '#8A909D' : '#9CA3AF'}
-                    strokeWidth={1.8}
-                  />
-                ) : (
-                  <EyeIcon
-                    size={20}
-                    color={isDark ? '#8A909D' : '#9CA3AF'}
-                    strokeWidth={1.8}
-                  />
-                )}
-              </TouchableOpacity>
-            </View>
-
-            {/* ========================================================
-                7. TERMS & CONDITIONS CHECKBOX ROW
-                Exact visual match with colored hyperlinks
-                ======================================================== */}
+            {/* Terms & Conditions Checkbox Row */}
             <View style={styles.termsRow}>
               <TouchableOpacity
                 style={styles.checkboxTouchable}
@@ -633,21 +564,13 @@ export const RegisterScreen: React.FC = () => {
                         },
                   ]}
                 >
-                  {agreeTerms && <CheckIcon size={12} color="#FFFFFF" strokeWidth={2.5} />}
+                  {agreeTerms && <CheckIcon size={11} color="#FFFFFF" strokeWidth={2.5} />}
                 </View>
               </TouchableOpacity>
 
-              <Text
-                style={[
-                  styles.termsLabel,
-                  { color: isDark ? '#D1D5DB' : '#374151' },
-                ]}
-              >
+              <Text style={[styles.termsLabel, { color: isDark ? '#D1D5DB' : '#374151' }]}>
                 I agree to the{' '}
-                <Text
-                  style={[styles.termsLink, { color: primaryOrange }]}
-                  onPress={showTermsModal}
-                >
+                <Text style={[styles.termsLink, { color: primaryOrange }]} onPress={showTermsModal}>
                   Terms & Conditions
                 </Text>{' '}
                 and{' '}
@@ -661,9 +584,7 @@ export const RegisterScreen: React.FC = () => {
               </Text>
             </View>
 
-            {/* ========================================================
-                8. CREATE ACCOUNT BUTTON (ORANGE WITH RIGHT ARROW)
-                ======================================================== */}
+            {/* Create Account Button */}
             <TouchableOpacity
               style={[styles.createAccountBtn, { backgroundColor: primaryOrange }]}
               onPress={handleRegister}
@@ -675,88 +596,159 @@ export const RegisterScreen: React.FC = () => {
               ) : (
                 <View style={styles.createBtnContent}>
                   <Text style={styles.createBtnText}>Create Account</Text>
-                  <ArrowRightIcon size={18} color="#FFFFFF" strokeWidth={2.4} />
+                  <ArrowRightIcon size={17} color="#FFFFFF" strokeWidth={2.4} />
                 </View>
               )}
             </TouchableOpacity>
 
-            {/* ========================================================
-                9. DIVIDER: "or sign up with"
-                ======================================================== */}
-            <View style={styles.dividerRow}>
-              <View
-                style={[
-                  styles.dividerLine,
-                  { backgroundColor: isDark ? '#262A34' : '#E5E7EB' },
-                ]}
-              />
-              <Text
-                style={[
-                  styles.dividerText,
-                  { color: isDark ? '#6B7280' : '#9CA3AF' },
-                ]}
-              >
-                or sign up with
-              </Text>
-              <View
-                style={[
-                  styles.dividerLine,
-                  { backgroundColor: isDark ? '#262A34' : '#E5E7EB' },
-                ]}
-              />
-            </View>
-
-            {/* ========================================================
-                10. GOOGLE SIGN-UP BUTTON
-                ======================================================== */}
-            <TouchableOpacity
-              style={[
-                styles.googleBtn,
-                {
-                  backgroundColor: isDark ? '#1C1F26' : '#FFFFFF',
-                  borderColor: isDark ? '#2D323E' : '#E5E7EB',
-                },
-              ]}
-              onPress={handleGoogleSignUp}
-              activeOpacity={0.8}
-            >
-              <View style={styles.googleIconWrapper}>
-                <GoogleIcon size={20} />
-              </View>
-              <Text
-                style={[
-                  styles.googleBtnText,
-                  { color: isDark ? '#FFFFFF' : '#1F2937' },
-                ]}
-              >
-                Continue with Google
-              </Text>
-            </TouchableOpacity>
-
-            {/* ========================================================
-                11. BOTTOM PROMPT: "Already have an account? Login"
-                ======================================================== */}
+            {/* Bottom Prompt: Already have an account? Login */}
             <View style={styles.loginPromptRow}>
-              <Text
-                style={[
-                  styles.loginPromptText,
-                  { color: isDark ? '#9CA3AF' : '#6B7280' },
-                ]}
-              >
+              <Text style={[styles.loginPromptText, { color: isDark ? '#9CA3AF' : '#6B7280' }]}>
                 Already have an account?{' '}
               </Text>
-              <TouchableOpacity
-                onPress={() => navigation.navigate('Login')}
-                activeOpacity={0.7}
-              >
-                <Text style={[styles.loginLinkText, { color: primaryOrange }]}>
-                  Login
-                </Text>
+              <TouchableOpacity onPress={() => navigation.navigate('Login')} activeOpacity={0.7}>
+                <Text style={[styles.loginLinkText, { color: primaryOrange }]}>Login</Text>
               </TouchableOpacity>
             </View>
           </View>
         </ScrollView>
       </KeyboardAvoidingView>
+
+      {/* ========================================================
+          PREMIUM STORE TYPE SELECTOR MODAL
+          ======================================================== */}
+      <Modal
+        visible={showStoreTypeModal}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setShowStoreTypeModal(false)}
+      >
+        <TouchableOpacity
+          style={styles.modalOverlay}
+          activeOpacity={1}
+          onPress={() => setShowStoreTypeModal(false)}
+        >
+          <View
+            style={[
+              styles.modalSheet,
+              { backgroundColor: isDark ? '#1C1F26' : '#FFFFFF', borderColor: isDark ? '#2D323E' : '#E5E7EB' },
+            ]}
+            onStartShouldSetResponder={() => true}
+          >
+            <View style={styles.modalHeader}>
+              <View style={{ flex: 1 }}>
+                <Text style={[styles.modalTitle, { color: isDark ? '#FFFFFF' : '#111827' }]}>
+                  Select Store Type
+                </Text>
+                <Text style={[styles.modalSubtitle, { color: isDark ? '#9CA3AF' : '#6B7280' }]}>
+                  Choose the business category for your retail store
+                </Text>
+              </View>
+              <TouchableOpacity
+                style={[styles.modalCloseBtn, { backgroundColor: isDark ? '#262A34' : '#F3F4F6' }]}
+                onPress={() => setShowStoreTypeModal(false)}
+              >
+                <CloseIcon size={18} color={isDark ? '#FFFFFF' : '#111827'} />
+              </TouchableOpacity>
+            </View>
+
+            {loadingCategories && (
+              <ActivityIndicator
+                color={primaryOrange}
+                size="small"
+                style={{ marginVertical: 10 }}
+              />
+            )}
+
+            <FlatList
+              data={storeTypesList}
+              keyExtractor={(item) => String(item.id || item.code)}
+              showsVerticalScrollIndicator={false}
+              renderItem={({ item }) => {
+                const isSelected = item.id === selectedStoreTypeObj?.id || item.name === selectedStoreType;
+                return (
+                  <TouchableOpacity
+                    style={[
+                      styles.categoryItem,
+                      {
+                        backgroundColor: isSelected
+                          ? isDark
+                            ? 'rgba(255, 106, 26, 0.15)'
+                            : '#FFF7ED'
+                          : isDark
+                          ? '#181A20'
+                          : '#F9FAFB',
+                        borderColor: isSelected ? primaryOrange : isDark ? '#2D323E' : '#E5E7EB',
+                      },
+                    ]}
+                    onPress={() => {
+                      setSelectedStoreTypeObj(item);
+                      setSelectedStoreType(item.name);
+                      setShowStoreTypeModal(false);
+                      if (errorMsg) setErrorMsg('');
+                    }}
+                    activeOpacity={0.7}
+                  >
+                    <View style={styles.categoryItemLeft}>
+                      <View
+                        style={[
+                          styles.catIconPill,
+                          {
+                            backgroundColor: isSelected
+                              ? primaryOrange
+                              : isDark
+                              ? '#262A34'
+                              : '#EEF2F6',
+                          },
+                        ]}
+                      >
+                        <StoreIcon
+                          size={16}
+                          color={isSelected ? '#FFFFFF' : isDark ? '#9CA3AF' : '#6B7280'}
+                        />
+                      </View>
+                      <View style={{ flex: 1, paddingRight: 8 }}>
+                        <Text
+                          style={[
+                            styles.categoryItemText,
+                            {
+                              color: isSelected
+                                ? primaryOrange
+                                : isDark
+                                ? '#FFFFFF'
+                                : '#111827',
+                              fontWeight: isSelected ? '700' : '500',
+                            },
+                          ]}
+                        >
+                          {item.name}
+                        </Text>
+                        {item.description ? (
+                          <Text
+                            style={{
+                              fontSize: 11,
+                              color: isDark ? '#9CA3AF' : '#6B7280',
+                              marginTop: 2,
+                            }}
+                            numberOfLines={2}
+                          >
+                            {item.description}
+                          </Text>
+                        ) : null}
+                      </View>
+                    </View>
+                    {isSelected && (
+                      <View style={[styles.checkCircle, { backgroundColor: primaryOrange }]}>
+                        <CheckIcon size={12} color="#FFFFFF" strokeWidth={2.5} />
+                      </View>
+                    )}
+                  </TouchableOpacity>
+                );
+              }}
+            />
+          </View>
+        </TouchableOpacity>
+      </Modal>
     </View>
   );
 };
@@ -764,307 +756,306 @@ export const RegisterScreen: React.FC = () => {
 const styles = StyleSheet.create({
   root: {
     flex: 1,
-    overflow: 'hidden',
   },
   keyboardView: {
     flex: 1,
   },
   scrollContent: {
-    paddingHorizontal: 24,
-    paddingTop: Platform.OS === 'ios' ? 44 : (StatusBar.currentHeight || 24) + 6,
-    paddingBottom: 40,
+    flexGrow: 1,
+    paddingBottom: 14,
+    justifyContent: 'space-between',
   },
-
-  // 1. Organic Corner Wave Backgrounds
-  topLeftWave: {
-    position: 'absolute',
-    top: -160,
-    left: -130,
-    width: 380,
-    height: 380,
-    borderRadius: 190,
-    transform: [{ scaleX: 1.15 }],
-  },
-  topLeftWaveGlow: {
-    position: 'absolute',
-    top: -150,
-    left: -120,
-    width: 400,
-    height: 400,
-    borderRadius: 200,
-  },
-  bottomRightWave: {
-    position: 'absolute',
-    bottom: -180,
-    right: -140,
-    width: 360,
-    height: 360,
-    borderRadius: 180,
-    transform: [{ scaleY: 0.95 }],
-  },
-  bottomRightWaveGlow: {
-    position: 'absolute',
-    bottom: -190,
-    right: -150,
-    width: 380,
-    height: 380,
-    borderRadius: 190,
-  },
-
-  // 2. Top Navigation Bar
   topBar: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 6,
+    justifyContent: 'space-between',
+    paddingTop: Platform.OS === 'android' ? (StatusBar.currentHeight ? StatusBar.currentHeight + 6 : 28) : 44,
+    paddingHorizontal: 20,
+    marginBottom: 2,
     zIndex: 10,
   },
   navCircularBtn: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
+    width: 34,
+    height: 34,
+    borderRadius: 17,
+    borderWidth: 1,
     alignItems: 'center',
     justifyContent: 'center',
-    borderWidth: 1,
-    shadowColor: '#000000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.08,
-    shadowRadius: 4,
-    elevation: 2,
+    ...Platform.select({
+      ios: {
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.08,
+        shadowRadius: 3,
+      },
+      android: {
+        elevation: 2,
+      },
+    }),
   },
-
-  // 3. Brand Header
   brandHeader: {
     alignItems: 'center',
-    marginTop: 2,
-    marginBottom: 10,
+    marginTop: 0,
+    marginBottom: 4,
+    zIndex: 2,
   },
   logoRow: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: 8,
+    marginBottom: 4,
   },
-  speedLinesCol: {
-    alignItems: 'flex-end',
-    justifyContent: 'center',
-    marginRight: 9,
-    gap: 4.5,
-  },
-  speedLine: {
-    height: 3.2,
-    borderRadius: 2,
-  },
-  logoBadge: {
-    width: 44,
-    height: 44,
-    borderRadius: 13,
-    alignItems: 'center',
-    justifyContent: 'center',
-    shadowColor: '#FF6A1A',
-    shadowOffset: { width: 0, height: 3 },
-    shadowOpacity: 0.35,
-    shadowRadius: 6,
-    elevation: 4,
-  },
-  logoMText: {
-    color: '#FFFFFF',
-    fontSize: 27,
-    fontWeight: '900',
-    letterSpacing: -0.5,
-    marginTop: -1,
+  mLogo3d: {
+    width: 60,
+    height: 40,
   },
   wordmarkRow: {
     flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'center',
   },
   wordNexora: {
-    fontSize: 25,
+    fontSize: 22,
     fontWeight: '800',
-    letterSpacing: -0.3,
+    letterSpacing: -0.4,
   },
   wordMart: {
-    fontSize: 25,
+    fontSize: 22,
     fontWeight: '800',
-    letterSpacing: -0.3,
+    letterSpacing: -0.4,
   },
   tagline: {
-    fontSize: 12.5,
+    fontSize: 12,
     fontWeight: '500',
-    marginTop: 3,
-    letterSpacing: 0.2,
+    marginTop: 1,
+    letterSpacing: 0.1,
   },
-
-  // 4. Storefront Illustration
   storefrontContainer: {
     alignItems: 'center',
     justifyContent: 'center',
     marginVertical: 4,
+    zIndex: 2,
   },
-
-  // 5. Title & Subtitle Section
   titleSection: {
-    marginTop: 8,
-    marginBottom: 14,
+    paddingHorizontal: 22,
+    marginTop: 2,
+    marginBottom: 8,
+    zIndex: 2,
   },
   mainTitle: {
-    fontSize: 25,
-    fontWeight: '800',
-    letterSpacing: -0.5,
+    fontSize: 20,
+    fontWeight: '700',
+    letterSpacing: -0.3,
   },
   subtitle: {
-    fontSize: 13.5,
-    marginTop: 3,
-    letterSpacing: 0.1,
+    fontSize: 12.5,
+    fontWeight: '400',
+    marginTop: 2,
   },
-
-  // Error Banner
   errorBanner: {
-    paddingHorizontal: 14,
-    paddingVertical: 10,
-    borderRadius: 10,
-    marginBottom: 14,
+    marginHorizontal: 22,
+    marginBottom: 8,
+    paddingVertical: 6,
+    paddingHorizontal: 12,
+    borderRadius: 8,
+    backgroundColor: 'rgba(239, 68, 68, 0.12)',
+    borderColor: 'rgba(239, 68, 68, 0.3)',
+    borderWidth: 1,
   },
   errorText: {
-    fontSize: 13,
-    fontWeight: '600',
+    color: '#EF4444',
+    fontSize: 12,
+    fontWeight: '500',
   },
-
-  // 6. Input Cards
   formContainer: {
-    gap: 12,
+    paddingHorizontal: 22,
+    zIndex: 2,
   },
   inputCard: {
+    height: 46,
+    borderRadius: 12,
     flexDirection: 'row',
     alignItems: 'center',
-    height: 52,
-    borderRadius: 13,
     paddingHorizontal: 14,
+    marginBottom: 9,
   },
   inputIconWrapper: {
-    width: 28,
-    alignItems: 'flex-start',
+    marginRight: 10,
     justifyContent: 'center',
+    alignItems: 'center',
   },
   textInput: {
     flex: 1,
-    fontSize: 14.5,
     height: '100%',
+    fontSize: 14,
+    fontWeight: '400',
     paddingVertical: 0,
-    paddingLeft: 4,
+  },
+  storeTypeSelectedWrapper: {
+    flex: 1,
+    justifyContent: 'center',
+  },
+  storeTypeLabel: {
+    fontSize: 9.5,
+    fontWeight: '600',
+    textTransform: 'uppercase',
+    letterSpacing: 0.3,
+  },
+  storeTypeValue: {
+    fontSize: 13.5,
+  },
+  storeTypeBadge: {
+    width: 26,
+    height: 26,
+    borderRadius: 13,
+    backgroundColor: 'rgba(255, 106, 26, 0.12)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginLeft: 6,
   },
   eyeBtn: {
     padding: 6,
-    alignItems: 'center',
     justifyContent: 'center',
+    alignItems: 'center',
   },
-
-  // 7. Terms & Conditions Row
   termsRow: {
     flexDirection: 'row',
-    alignItems: 'flex-start',
-    marginTop: 2,
-    marginBottom: 4,
-    paddingHorizontal: 2,
+    alignItems: 'center',
+    marginTop: 4,
+    marginBottom: 10,
   },
   checkboxTouchable: {
-    paddingTop: 1,
-    paddingRight: 10,
+    marginRight: 8,
   },
   checkbox: {
-    width: 19,
-    height: 19,
-    borderRadius: 5,
+    width: 17,
+    height: 17,
+    borderRadius: 4,
     borderWidth: 1.5,
-    alignItems: 'center',
     justifyContent: 'center',
+    alignItems: 'center',
   },
   termsLabel: {
     flex: 1,
-    fontSize: 13,
-    lineHeight: 19,
-    letterSpacing: 0.1,
+    fontSize: 12,
+    lineHeight: 17,
   },
   termsLink: {
     fontWeight: '600',
   },
-
-  // 8. Create Account Button
   createAccountBtn: {
-    height: 52,
-    borderRadius: 14,
-    alignItems: 'center',
+    height: 46,
+    borderRadius: 12,
     justifyContent: 'center',
-    marginTop: 4,
-    shadowColor: '#FF6A1A',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.35,
-    shadowRadius: 8,
-    elevation: 4,
+    alignItems: 'center',
+    ...Platform.select({
+      ios: {
+        shadowColor: '#FF6A1A',
+        shadowOffset: { width: 0, height: 3 },
+        shadowOpacity: 0.3,
+        shadowRadius: 6,
+      },
+      android: {
+        elevation: 3,
+      },
+    }),
   },
   createBtnContent: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 8,
   },
   createBtnText: {
-    color: '#FFFFFF',
-    fontSize: 16,
+    fontSize: 15,
     fontWeight: '700',
-    letterSpacing: 0.2,
+    color: '#FFFFFF',
+    marginRight: 6,
   },
-
-  // 9. Divider
-  dividerRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginVertical: 4,
-  },
-  dividerLine: {
-    flex: 1,
-    height: 1,
-  },
-  dividerText: {
-    marginHorizontal: 14,
-    fontSize: 12.5,
-    fontWeight: '500',
-  },
-
-  // 10. Google Sign-Up Button
-  googleBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    height: 52,
-    borderRadius: 14,
-    borderWidth: 1,
-  },
-  googleIconWrapper: {
-    marginRight: 10,
-  },
-  googleBtnText: {
-    fontSize: 14.5,
-    fontWeight: '600',
-    letterSpacing: 0.1,
-  },
-
-  // 11. Bottom Prompt Row
   loginPromptRow: {
     flexDirection: 'row',
-    alignItems: 'center',
     justifyContent: 'center',
-    marginTop: 6,
-    marginBottom: 8,
+    alignItems: 'center',
+    marginTop: 10,
+    marginBottom: 4,
   },
   loginPromptText: {
-    fontSize: 13.5,
+    fontSize: 13,
   },
   loginLinkText: {
-    fontSize: 13.5,
+    fontSize: 13,
     fontWeight: '700',
+  },
+
+  // Modal styles for Store Type selector
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.55)',
+    justifyContent: 'flex-end',
+  },
+  modalSheet: {
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+    borderWidth: 1,
+    paddingHorizontal: 20,
+    paddingTop: 18,
+    paddingBottom: Platform.OS === 'ios' ? 36 : 24,
+    maxHeight: '65%',
+  },
+  modalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 14,
+  },
+  modalTitle: {
+    fontSize: 17,
+    fontWeight: '700',
+  },
+  modalSubtitle: {
+    fontSize: 12,
+    marginTop: 2,
+  },
+  modalCloseBtn: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  categoryItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingVertical: 10,
+    paddingHorizontal: 12,
+    borderRadius: 10,
+    borderWidth: 1,
+    marginBottom: 8,
+  },
+  categoryItemLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flex: 1,
+  },
+  catIconPill: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: 10,
+  },
+  categoryItemText: {
+    fontSize: 13.5,
+    flex: 1,
+  },
+  checkCircle: {
+    width: 20,
+    height: 20,
+    borderRadius: 10,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
 });
 
 export default RegisterScreen;
-

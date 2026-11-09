@@ -21,11 +21,23 @@ export interface User {
   created_at?: string;
 }
 
+export interface StoreType {
+  id: number;
+  code: string;
+  name: string;
+  description?: string | null;
+  icon?: string | null;
+  is_active: boolean;
+}
+
 export interface AuthResponse {
   token: string;
   access_token?: string;
+  refresh_token?: string;
   token_type?: string;
+  expires_in?: number;
   user: User;
+  store?: Store | null;
 }
 
 export interface LoginPayload {
@@ -34,11 +46,15 @@ export interface LoginPayload {
 }
 
 export interface RegisterPayload {
-  firstName: string;
-  surname: string;
+  name?: string;
+  firstName?: string;
+  surname?: string;
   email: string;
-  phone: string;
-  storeType: string;
+  phone?: string;
+  storeType?: string;
+  store_type_id?: number;
+  store_type_code?: string;
+  store_name?: string;
   password: string;
 }
 
@@ -51,6 +67,8 @@ export interface Store {
   name: string;
   category_id?: number | null;
   category?: Category | null;
+  store_type_id?: number | null;
+  store_type?: StoreType | null;
   phone?: string | null;
   email?: string | null;
   address?: string | null;

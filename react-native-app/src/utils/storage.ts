@@ -94,6 +94,55 @@ export const storage = {
     await this.removeItem(Config.STORAGE_KEYS.AUTH_TOKEN);
   },
 
+  async getRefreshToken(): Promise<string | null> {
+    return this.getItem(Config.STORAGE_KEYS.REFRESH_TOKEN);
+  },
+
+  async setRefreshToken(token: string): Promise<void> {
+    await this.setItem(Config.STORAGE_KEYS.REFRESH_TOKEN, token);
+  },
+
+  async removeRefreshToken(): Promise<void> {
+    await this.removeItem(Config.STORAGE_KEYS.REFRESH_TOKEN);
+  },
+
+  async getSessionExpiresAt(): Promise<number | null> {
+    const raw = await this.getItem(Config.STORAGE_KEYS.SESSION_EXPIRES_AT);
+    return raw ? parseInt(raw, 10) : null;
+  },
+
+  async setSessionExpiresAt(timestamp: number): Promise<void> {
+    await this.setItem(Config.STORAGE_KEYS.SESSION_EXPIRES_AT, timestamp.toString());
+  },
+
+  async getStore(): Promise<any | null> {
+    const raw = await this.getItem(Config.STORAGE_KEYS.STORE_DATA);
+    if (!raw) return null;
+    try {
+      return JSON.parse(raw);
+    } catch {
+      return null;
+    }
+  },
+
+  async setStore(store: any): Promise<void> {
+    await this.setItem(Config.STORAGE_KEYS.STORE_DATA, JSON.stringify(store));
+  },
+
+  async removeStore(): Promise<void> {
+    await this.removeItem(Config.STORAGE_KEYS.STORE_DATA);
+  },
+
+  async clearAuth(): Promise<void> {
+    await Promise.all([
+      this.removeAuthToken(),
+      this.removeRefreshToken(),
+      this.removeUser(),
+      this.removeStore(),
+      this.removeItem(Config.STORAGE_KEYS.SESSION_EXPIRES_AT),
+    ]);
+  },
+
   async getUser(): Promise<User | null> {
     const raw = await this.getItem(Config.STORAGE_KEYS.USER_DATA);
     if (!raw) return null;

@@ -14,6 +14,8 @@ import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../../navigation/types';
 import { useTheme } from '../../hooks/useTheme';
+import { useAuth } from '../../context/AuthContext';
+import { getStoreTypeConfig, StoreTypeField } from '../../storeTypes';
 import { productService, categoryService, unitService } from '../../services';
 import { Category, CategoryField } from '../../models/types';
 import Header from '../../components/common/Header';
@@ -29,11 +31,19 @@ export const AddProductScreen: React.FC = () => {
   const route = useRoute<AddProductRouteProp>();
   const { categoryId: initialCatId } = route.params || {};
   const { colors, brandColors } = useTheme();
+  const { user, store } = useAuth();
+
+  const storeTypeCode = store?.store_type?.code || (user as any)?.storeType || 'grocery';
+  const storeTypeConfig = getStoreTypeConfig(storeTypeCode);
 
   const [categories, setCategories] = useState<Category[]>([]);
   const [selectedCatId, setSelectedCatId] = useState<number | null>(initialCatId || null);
   const [dynamicFields, setDynamicFields] = useState<CategoryField[]>([]);
-  const [units, setUnits] = useState<string[]>(['pcs', 'kg', 'g', 'pack', 'box', 'meter', 'pair', 'bottle']);
+  const [units, setUnits] = useState<string[]>(
+    storeTypeConfig.defaultUnits && storeTypeConfig.defaultUnits.length > 0
+      ? storeTypeConfig.defaultUnits
+      : ['pcs', 'kg', 'g', 'pack', 'box', 'meter', 'pair', 'bottle']
+  );
 
   // Core Fields
   const [name, setName] = useState('');
@@ -117,6 +127,13 @@ export const AddProductScreen: React.FC = () => {
     }
     if (!selectedCatId) {
       Alert.alert('Required Field', 'Please select a store category.');
+      return;
+    }
+
+    // Validate store-type specific rules
+    const validation = storeTypeConfig.validate(attributes);
+    if (!validation.isValid) {
+      Alert.alert('Store Type Validation', validation.error || 'Please fill in required fields for your store type.');
       return;
     }
 
@@ -322,30 +339,124 @@ export const AddProductScreen: React.FC = () => {
           />
         </Card>
 
-        {/* 3. Category-Specific Dynamic Specifications */}
-        {dynamicFields.length > 0 && (
+        {/* 3. Store Type Specifications */}
+        {storeTypeConfig.fields && storeTypeConfig.fields.length > 0 && (
           <Card>
             <Text style={[styles.sectionTitle, { color: colors.textPrimary }]}>
-              ✨ Category Specifications
+              {storeTypeConfig.icon} {storeTypeConfig.name} Attributes
             </Text>
             <Text style={[styles.sectionSub, { color: colors.textSecondary }]}>
-              Custom attributes configured for this retail sector.
+              {storeTypeConfig.description}
             </Text>
 
-            {dynamicFields.map((field) => {
-              const val = attributes[field.field_name] || '';
+            {storeTypeConfig.fields.map((field: StoreTypeField) => {
+              const val = attributes[field.fieldName];
+
+              if (field.fieldType === 'boolean') {
+                return (
+                  <View key={field.fieldName} style={[styles.switchRow, { marginVertical: 8 }]}>
+                    <View style={{ flex: 1, marginRight: 8 }}>
+                      <Text style={[styles.inputLabel, { color: colors.textPrimary }]}>
+                        {field.fieldLabel} {field.isRequired ? '*' : ''}
+                      </Text>
+                      {field.helpText ? (
+                        <Text style={[styles.sectionSub, { color: colors.textSecondary }]}>
+                          {field.helpText}
+                        </Text>
+                      ) : null}
+                    </View>
+                    <Switch
+                      value={Boolean(val)}
+                      onValueChange={(checked) => handleAttributeChange(field.fieldName, String(checked))}
+                      trackColor={{ false: colors.border, true: brandColors.primaryLight }}
+                      thumbColor={val ? brandColors.primary : '#F4F3F4'}
+                    />
+                  </View>
+                );
+              }
+
+              if (field.fieldType === 'select' && field.options && field.options.length > 0) {
+                return (
+                  <View key={field.fieldName} style={{ marginBottom: 14 }}>
+                    <Text style={[styles.inputLabel, { color: colors.textPrimary }]}>
+                      {field.fieldLabel} {field.isRequired ? '*' : ''}
+                    </Text>
+                    <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginTop: 4 }}>
+                      {field.options.map((opt) => {
+                        const isSelected = val === opt;
+                        return (
+                          <TouchableOpacity
+                            key={opt}
+                            onPress={() => handleAttributeChange(field.fieldName, opt)}
+                            style={[
+                              styles.unitChip,
+                              {
+                                backgroundColor: isSelected ? brandColors.primary : colors.surfaceSubtle,
+                                borderColor: isSelected ? brandColors.primary : colors.border,
+                              },
+                            ]}
+                          >
+                            <Text
+                              style={[
+                                styles.unitText,
+                                {
+                                  color: isSelected ? '#FFFFFF' : colors.textPrimary,
+                                  fontWeight: isSelected ? '700' : '500',
+                                },
+                              ]}
+                            >
+                              {opt}
+                            </Text>
+                          </TouchableOpacity>
+                        );
+                      })}
+                    </ScrollView>
+                  </View>
+                );
+              }
+
               return (
-                <View key={field.id} style={{ marginBottom: 12 }}>
+                <View key={field.fieldName} style={{ marginBottom: 12 }}>
                   <Input
-                    label={`${field.label} ${field.is_required ? '*' : ''}`}
-                    placeholder={`Enter ${field.label.toLowerCase()}`}
-                    value={val}
-                    onChangeText={(text) => handleAttributeChange(field.field_name, text)}
-                    keyboardType={field.field_type === 'number' ? 'numeric' : 'default'}
+                    label={`${field.fieldLabel} ${field.isRequired ? '*' : ''}`}
+                    placeholder={field.placeholder || `Enter ${field.fieldLabel.toLowerCase()}`}
+                    value={val !== undefined && val !== null ? String(val) : ''}
+                    onChangeText={(text) => handleAttributeChange(field.fieldName, text)}
+                    keyboardType={field.fieldType === 'number' ? 'numeric' : 'default'}
                   />
+                  {field.helpText ? (
+                    <Text style={[styles.sectionSub, { color: colors.textSecondary, marginTop: -4, marginBottom: 8 }]}>
+                      {field.helpText}
+                    </Text>
+                  ) : null}
                 </View>
               );
             })}
+          </Card>
+        )}
+
+        {/* 3b. Additional Category-Specific Dynamic Specifications */}
+        {dynamicFields.length > 0 && (
+          <Card>
+            <Text style={[styles.sectionTitle, { color: colors.textPrimary }]}>
+              ✨ Extra Category Attributes
+            </Text>
+            {dynamicFields
+              .filter((f) => !storeTypeConfig.fields.some((stf) => stf.fieldName === f.field_name))
+              .map((field) => {
+                const val = attributes[field.field_name] || '';
+                return (
+                  <View key={field.id} style={{ marginBottom: 12 }}>
+                    <Input
+                      label={`${field.label} ${field.is_required ? '*' : ''}`}
+                      placeholder={`Enter ${field.label.toLowerCase()}`}
+                      value={val}
+                      onChangeText={(text) => handleAttributeChange(field.field_name, text)}
+                      keyboardType={field.field_type === 'number' ? 'numeric' : 'default'}
+                    />
+                  </View>
+                );
+              })}
           </Card>
         )}
 

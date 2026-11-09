@@ -3,6 +3,7 @@
  * Native Stack & Bottom Tab Navigation (NO WebView)
  */
 import React from 'react';
+import { Platform } from 'react-native';
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
@@ -13,9 +14,9 @@ import { useTheme } from '../hooks/useTheme';
 // Modern SVG Lucide Icons
 import {
   HomeIcon,
-  ShoppingCartIcon,
+  UsersIcon,
+  ReceiptIcon,
   PackageIcon,
-  BoxesIcon,
   GridIcon,
 } from '../components/branding/Icons';
 
@@ -62,12 +63,13 @@ const MainTabNavigator: React.FC = () => {
         headerShown: false,
         tabBarActiveTintColor: brandColors.primary,
         tabBarInactiveTintColor: colors.textMuted,
+        tabBarHideOnKeyboard: true,
         tabBarStyle: {
           backgroundColor: colors.surface,
           borderTopColor: colors.border,
-          height: 62,
-          paddingBottom: 8,
-          paddingTop: 6,
+          height: Platform.OS === 'android' ? 68 : 62,
+          paddingBottom: Platform.OS === 'android' ? 12 : 8,
+          paddingTop: 8,
         },
         tabBarLabelStyle: {
           fontSize: 11,
@@ -90,12 +92,26 @@ const MainTabNavigator: React.FC = () => {
         }}
       />
       <Tab.Screen
+        name="CustomerTab"
+        component={CustomerListScreen}
+        options={{
+          tabBarLabel: 'Customer',
+          tabBarIcon: ({ focused }) => (
+            <UsersIcon
+              size={22}
+              color={focused ? brandColors.primary : colors.textMuted}
+              strokeWidth={focused ? 2.5 : 2}
+            />
+          ),
+        }}
+      />
+      <Tab.Screen
         name="PosTab"
         component={PosBillingScreen}
         options={{
-          tabBarLabel: 'Sales',
+          tabBarLabel: "Make Bill's",
           tabBarIcon: ({ focused }) => (
-            <ShoppingCartIcon
+            <ReceiptIcon
               size={22}
               color={focused ? brandColors.primary : colors.textMuted}
               strokeWidth={focused ? 2.5 : 2}
@@ -107,23 +123,9 @@ const MainTabNavigator: React.FC = () => {
         name="ProductsTab"
         component={ProductListScreen}
         options={{
-          tabBarLabel: 'Products',
+          tabBarLabel: 'Product',
           tabBarIcon: ({ focused }) => (
             <PackageIcon
-              size={22}
-              color={focused ? brandColors.primary : colors.textMuted}
-              strokeWidth={focused ? 2.5 : 2}
-            />
-          ),
-        }}
-      />
-      <Tab.Screen
-        name="InventoryTab"
-        component={InventoryScreen}
-        options={{
-          tabBarLabel: 'Inventory',
-          tabBarIcon: ({ focused }) => (
-            <BoxesIcon
               size={22}
               color={focused ? brandColors.primary : colors.textMuted}
               strokeWidth={focused ? 2.5 : 2}

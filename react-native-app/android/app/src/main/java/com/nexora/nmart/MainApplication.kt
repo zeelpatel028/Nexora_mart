@@ -6,6 +6,10 @@ import com.facebook.react.ReactNativeHost
 import com.facebook.react.ReactPackage
 import com.facebook.react.shell.MainReactPackage
 import com.facebook.soloader.SoLoader
+import com.swmansion.rnscreens.RNScreensPackage
+import com.th3rdwave.safeareacontext.SafeAreaContextPackage
+import com.horcrux.svg.SvgPackage
+import com.reactnativecommunity.asyncstorage.AsyncStoragePackage
 
 class MainApplication : Application(), ReactApplication {
 
@@ -14,7 +18,11 @@ class MainApplication : Application(), ReactApplication {
 
         override fun getPackages(): List<ReactPackage> {
             return listOf(
-                MainReactPackage()
+                MainReactPackage(),
+                RNScreensPackage(),
+                SafeAreaContextPackage(),
+                SvgPackage(),
+                AsyncStoragePackage()
             )
         }
 

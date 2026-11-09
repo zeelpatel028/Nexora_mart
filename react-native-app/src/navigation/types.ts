@@ -51,9 +51,9 @@ export type RootStackParamList = {
 
 export type MainTabParamList = {
   DashboardTab: undefined;
-  ProductsTab: undefined;
+  CustomerTab: undefined;
   PosTab: undefined;
-  InventoryTab: undefined;
+  ProductsTab: undefined;
   MoreTab: undefined;
 };
 

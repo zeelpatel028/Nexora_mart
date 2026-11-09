@@ -7,6 +7,7 @@ export const Endpoints = {
   AUTH: {
     LOGIN: '/auth/login',
     REGISTER: '/auth/register',
+    REFRESH: '/auth/refresh',
     FORGOT_PASSWORD: '/auth/forgot-password',
     VERIFY_OTP: '/auth/verify-otp',
     RESET_PASSWORD: '/auth/reset-password',
@@ -15,9 +16,37 @@ export const Endpoints = {
     LOGOUT: '/auth/logout',
   },
 
+  // Store Types (Multi-Store System)
+  STORE_TYPES: {
+    LIST: '/store-types',
+    DETAIL: (id: number) => `/store-types/${id}`,
+  },
+
   // Merchant Store Profile
   STORES: {
     MY_STORE: '/stores/my-store',
+    CURRENT: '/stores/current',
+  },
+
+  // Bills (POS & Invoices)
+  BILLS: {
+    LIST: '/bills',
+    CREATE: '/bills',
+    DETAIL: (id: number) => `/bills/${id}`,
+  },
+
+  // Orders
+  ORDERS: {
+    LIST: '/orders',
+    CREATE: '/orders',
+    DETAIL: (id: number) => `/orders/${id}`,
+  },
+
+  // Account & Analytics
+  ACCOUNT: {
+    GET: '/account',
+    UPDATE: '/account',
+    SALES_ANALYTICS: '/analytics/sales',
   },
 
   // Store Categories & Dynamic Fields

@@ -56,9 +56,9 @@ export const LoginScreen: React.FC = () => {
   const [identifierFocused, setIdentifierFocused] = useState(false);
   const [passwordFocused, setPasswordFocused] = useState(false);
 
-  // Store illustration responsive sizing (matches ~1.96:1 natural aspect ratio)
-  const illustrationWidth = Math.min(width * 0.74, 290);
-  const illustrationHeight = illustrationWidth / 1.96;
+  // Store illustration responsive sizing (increased width)
+  const illustrationWidth = Math.min(width * 0.88, 350);
+  const illustrationHeight = illustrationWidth / 2.2;
 
   // Primary brand orange color
   const primaryOrange = '#FF6A1A';
@@ -118,43 +118,6 @@ export const LoginScreen: React.FC = () => {
         translucent
       />
 
-      {/* ========================================================
-          1. DECORATIVE TOP-LEFT & BOTTOM-RIGHT ORANGE CURVED WAVES
-          Exact visual match to the reference screenshot
-          ======================================================== */}
-      {/* Top-Left Curve */}
-      <View
-        pointerEvents="none"
-        style={[
-          styles.topLeftWave,
-          {
-            backgroundColor: primaryOrange,
-            opacity: isDark ? 0.95 : 0.9,
-          },
-        ]}
-      />
-      {isDark && (
-        <View
-          pointerEvents="none"
-          style={[
-            styles.topLeftWaveGlow,
-            { backgroundColor: 'rgba(255, 106, 26, 0.25)' },
-          ]}
-        />
-      )}
-
-      {/* Bottom-Right Curve */}
-      <View
-        pointerEvents="none"
-        style={[
-          styles.bottomRightWave,
-          {
-            backgroundColor: primaryOrange,
-            opacity: isDark ? 0.9 : 0.85,
-          },
-        ]}
-      />
-
       <KeyboardAvoidingView
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
         style={styles.keyboardView}
@@ -163,9 +126,11 @@ export const LoginScreen: React.FC = () => {
           contentContainerStyle={styles.scrollContent}
           showsVerticalScrollIndicator={false}
           keyboardShouldPersistTaps="handled"
+          scrollEnabled={false}
+          bounces={false}
         >
           {/* ========================================================
-              2. TOP BAR: THEME TOGGLE BUTTON (SUN / MOON)
+              1. TOP BAR: THEME TOGGLE BUTTON (SUN / MOON)
               Positioned on top-right below system status bar
               ======================================================== */}
           <View style={styles.topBar}>
@@ -190,22 +155,16 @@ export const LoginScreen: React.FC = () => {
           </View>
 
           {/* ========================================================
-              3. BRAND LOGO & WORDMARK HEADER
-              3 Horizontal Orange Speed Lines + Orange 'M' Badge
+              2. BRAND LOGO & WORDMARK HEADER
+              3D Glossy "M" Ribbon Logo + Wordmark
               ======================================================== */}
           <View style={styles.brandHeader}>
             <View style={styles.logoRow}>
-              {/* 3 Horizontal Speed Lines */}
-              <View style={styles.speedLinesCol}>
-                <View style={[styles.speedLine, { width: 14, backgroundColor: primaryOrange }]} />
-                <View style={[styles.speedLine, { width: 22, backgroundColor: primaryOrange }]} />
-                <View style={[styles.speedLine, { width: 14, backgroundColor: primaryOrange }]} />
-              </View>
-
-              {/* Orange Rounded Badge with Stylized "M" */}
-              <View style={[styles.logoBadge, { backgroundColor: primaryOrange }]}>
-                <Text style={styles.logoMText}>M</Text>
-              </View>
+              <Image
+                source={require('../../assets/m-logo-3d.png')}
+                style={styles.mLogo3d}
+                resizeMode="contain"
+              />
             </View>
 
             {/* Wordmark: Nexora Mart */}
@@ -517,49 +476,20 @@ const styles = StyleSheet.create({
   },
   scrollContent: {
     flexGrow: 1,
-    paddingBottom: 24,
-  },
-
-  // Decorative Corner Waves
-  topLeftWave: {
-    position: 'absolute',
-    top: -85,
-    left: -75,
-    width: 220,
-    height: 220,
-    borderRadius: 110,
-    zIndex: 1,
-  },
-  topLeftWaveGlow: {
-    position: 'absolute',
-    top: -110,
-    left: -100,
-    width: 280,
-    height: 280,
-    borderRadius: 140,
-    zIndex: 0,
-  },
-  bottomRightWave: {
-    position: 'absolute',
-    bottom: -65,
-    right: -55,
-    width: 170,
-    height: 170,
-    borderRadius: 85,
-    zIndex: 1,
+    paddingBottom: 12,
   },
 
   // Top Bar & Theme Toggle
   topBar: {
-    paddingTop: Platform.OS === 'ios' ? 52 : 36,
+    paddingTop: Platform.OS === 'android' ? (StatusBar.currentHeight ? StatusBar.currentHeight + 10 : 38) : 50,
     paddingHorizontal: 22,
     alignItems: 'flex-end',
     zIndex: 10,
   },
   themeToggleBtn: {
-    width: 38,
-    height: 38,
-    borderRadius: 19,
+    width: 36,
+    height: 36,
+    borderRadius: 18,
     borderWidth: 1,
     justifyContent: 'center',
     alignItems: 'center',
@@ -579,37 +509,19 @@ const styles = StyleSheet.create({
   // Brand Header
   brandHeader: {
     alignItems: 'center',
-    marginTop: 4,
-    marginBottom: 10,
+    marginTop: 2,
+    marginBottom: 6,
     zIndex: 2,
   },
   logoRow: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: 8,
+    marginBottom: 6,
   },
-  speedLinesCol: {
-    alignItems: 'flex-end',
-    marginRight: 6,
-    gap: 3.5,
-  },
-  speedLine: {
-    height: 3,
-    borderRadius: 2,
-  },
-  logoBadge: {
-    width: 42,
-    height: 42,
-    borderRadius: 13,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  logoMText: {
-    fontSize: 27,
-    fontWeight: '800',
-    color: '#FFFFFF',
-    lineHeight: 31,
+  mLogo3d: {
+    width: 66,
+    height: 44,
   },
   wordmarkRow: {
     flexDirection: 'row',
@@ -617,19 +529,19 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   wordNexora: {
-    fontSize: 25,
+    fontSize: 23,
     fontWeight: '800',
     letterSpacing: -0.4,
   },
   wordMart: {
-    fontSize: 25,
+    fontSize: 23,
     fontWeight: '800',
     letterSpacing: -0.4,
   },
   tagline: {
-    fontSize: 13,
+    fontSize: 12.5,
     fontWeight: '500',
-    marginTop: 3,
+    marginTop: 2,
     letterSpacing: 0.1,
   },
 
@@ -644,31 +556,31 @@ const styles = StyleSheet.create({
   // "Welcome Back" Section
   welcomeSection: {
     paddingHorizontal: 24,
-    marginTop: 10,
-    marginBottom: 14,
+    marginTop: 6,
+    marginBottom: 10,
     zIndex: 2,
   },
   welcomeTitle: {
-    fontSize: 23,
+    fontSize: 21,
     fontWeight: '700',
     letterSpacing: -0.3,
   },
   welcomeSubtitle: {
-    fontSize: 13.5,
+    fontSize: 13,
     fontWeight: '400',
-    marginTop: 3,
+    marginTop: 2,
   },
 
   // Error Banner
   errorBanner: {
     marginHorizontal: 24,
-    marginBottom: 14,
-    paddingVertical: 10,
-    paddingHorizontal: 14,
+    marginBottom: 10,
+    paddingVertical: 8,
+    paddingHorizontal: 12,
     borderRadius: 10,
   },
   errorText: {
-    fontSize: 13,
+    fontSize: 12.5,
     fontWeight: '500',
   },
 
@@ -678,12 +590,12 @@ const styles = StyleSheet.create({
     zIndex: 2,
   },
   inputCard: {
-    height: 52,
-    borderRadius: 14,
+    height: 48,
+    borderRadius: 12,
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: 14,
-    marginBottom: 13,
+    marginBottom: 10,
   },
   inputIconWrapper: {
     marginRight: 10,
@@ -693,7 +605,7 @@ const styles = StyleSheet.create({
   textInput: {
     flex: 1,
     height: '100%',
-    fontSize: 14.5,
+    fontSize: 14,
     fontWeight: '400',
     paddingVertical: 0,
   },
@@ -709,34 +621,34 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
     marginTop: 2,
-    marginBottom: 18,
+    marginBottom: 12,
   },
   rememberMeTouchable: {
     flexDirection: 'row',
     alignItems: 'center',
   },
   checkbox: {
-    width: 18,
-    height: 18,
+    width: 17,
+    height: 17,
     borderRadius: 4,
     borderWidth: 1.5,
     justifyContent: 'center',
     alignItems: 'center',
   },
   rememberMeLabel: {
-    fontSize: 13,
+    fontSize: 12.5,
     fontWeight: '500',
-    marginLeft: 8,
+    marginLeft: 7,
   },
   forgotPasswordText: {
-    fontSize: 13,
+    fontSize: 12.5,
     fontWeight: '600',
   },
 
   // Login Button
   loginBtn: {
-    height: 52,
-    borderRadius: 14,
+    height: 48,
+    borderRadius: 12,
     justifyContent: 'center',
     alignItems: 'center',
     ...Platform.select({
@@ -757,7 +669,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   loginBtnText: {
-    fontSize: 16,
+    fontSize: 15.5,
     fontWeight: '700',
     color: '#FFFFFF',
     marginRight: 8,
@@ -767,22 +679,22 @@ const styles = StyleSheet.create({
   dividerRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginVertical: 18,
+    marginVertical: 12,
   },
   dividerLine: {
     flex: 1,
     height: 1,
   },
   dividerText: {
-    fontSize: 12.5,
+    fontSize: 12,
     fontWeight: '500',
-    marginHorizontal: 12,
+    marginHorizontal: 10,
   },
 
   // Google Button
   googleBtn: {
-    height: 50,
-    borderRadius: 14,
+    height: 46,
+    borderRadius: 12,
     borderWidth: 1,
     flexDirection: 'row',
     alignItems: 'center',
@@ -794,7 +706,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   googleBtnText: {
-    fontSize: 14.5,
+    fontSize: 14,
     fontWeight: '600',
   },
 
@@ -803,8 +715,8 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'center',
     alignItems: 'center',
-    marginTop: 20,
-    marginBottom: 10,
+    marginTop: 14,
+    marginBottom: 6,
   },
   signupPromptText: {
     fontSize: 13.5,

@@ -142,8 +142,6 @@ export const CustomerListScreen: React.FC = () => {
       <Header
         title="Customer Directory"
         subtitle={`${customers.length} registered customers`}
-        showBack
-        onBack={() => navigation.goBack()}
         rightAction={{
           icon: '➕',
           onPress: () => setShowAddModal(true),

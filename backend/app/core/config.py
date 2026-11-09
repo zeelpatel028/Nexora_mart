@@ -40,7 +40,10 @@ class Settings(BaseSettings):
     # Security & Tokens (Loaded exclusively from .env)
     SECRET_KEY: Optional[str] = None
     ALGORITHM: str = "HS256"
-    ACCESS_TOKEN_EXPIRE_MINUTES: int = 1440
+    ACCESS_TOKEN_EXPIRE_MINUTES: int = 15
+    REFRESH_TOKEN_EXPIRE_HOURS: int = 15
+    JWT_ISSUER: str = "nexora-mart-api"
+    JWT_AUDIENCE: str = "nexora-mart-client"
 
     # Database Configuration (Loaded exclusively from .env)
     DATABASE_URL: Optional[str] = None

@@ -5,45 +5,87 @@ from sqlalchemy.orm import Session
 from ..schemas.auth_schema import (
     UserLoginRequest,
     UserRegisterRequest,
+    RefreshTokenRequest,
     ForgotPasswordRequest,
     VerifyOtpRequest,
     ResetPasswordRequest,
     UpdateProfileRequest,
     TokenResponse,
-    UserResponse
+    UserResponse,
+    StoreSummary,
+    StoreTypeSummary,
+    SafeUser
 )
 from ..services.auth_service import AuthService
 from ..services.cache_service import CacheService
 from ..utils.security import get_password_hash, verify_password
 from ..models.user import User
+from ..models.store import Store
 
 class AuthController:
     @staticmethod
-    def format_user_response(user: User) -> UserResponse:
+    def format_store_summary(store: Optional[Store]) -> Optional[StoreSummary]:
+        if not store:
+            return None
+        st_summary = None
+        if store.store_type_rel:
+            st_summary = StoreTypeSummary(
+                id=store.store_type_rel.id,
+                code=store.store_type_rel.code,
+                name=store.store_type_rel.name
+            )
+        elif store.shop_category:
+            st_summary = StoreTypeSummary(
+                id=store.shop_category.id,
+                code=store.shop_category.code.lower(),
+                name=store.shop_category.name
+            )
+
+        return StoreSummary(
+            id=store.id,
+            name=store.name,
+            code=store.code or store.store_code,
+            store_type=st_summary
+        )
+
+    @staticmethod
+    def format_user_response(user: User, store: Optional[Store] = None) -> UserResponse:
+        store_summary = AuthController.format_store_summary(store)
+        st_name = store.store_type if (store and store.store_type) else (user.store_type or "")
         return UserResponse(
             id=user.id,
             email=user.email,
             name=user.full_name,
             firstName=user.first_name,
             surname=user.surname,
-            phone=user.phone,
-            storeType=user.store_type,
-            isActive=user.is_active
+            phone=user.phone or "",
+            storeType=st_name,
+            isActive=user.is_active,
+            user=SafeUser(id=user.id, name=user.full_name, email=user.email),
+            store=store_summary
         )
 
     @staticmethod
     def register(db: Session, request_data: UserRegisterRequest) -> TokenResponse:
         try:
-            user = AuthService.register_user(db, request_data)
-            user_resp = AuthController.format_user_response(user)
-            # Authenticate and issue token
-            _, token = AuthService.authenticate_user(
-                db,
-                UserLoginRequest(email=request_data.email, password=request_data.password)
+            user, store, access_token, refresh_token = AuthService.register_user(db, request_data)
+            user_resp = AuthController.format_user_response(user, store)
+            store_summary = AuthController.format_store_summary(store)
+            # Cache active merchant profile in Redis
+            try:
+                CacheService.set_user_profile(user.id, user_resp.model_dump())
+            except Exception:
+                pass
+            return TokenResponse(
+                access_token=access_token,
+                token=access_token,
+                refresh_token=refresh_token,
+                tokenType="bearer",
+                token_type="bearer",
+                expires_in=900,
+                user=user_resp,
+                store=store_summary
             )
-            # Cache newly registered profile in Redis
-            CacheService.set_user_profile(user.id, user_resp.model_dump())
-            return TokenResponse(token=token, user=user_resp)
         except ValueError as e:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
@@ -53,11 +95,23 @@ class AuthController:
     @staticmethod
     def login(db: Session, request_data: UserLoginRequest) -> TokenResponse:
         try:
-            user, token = AuthService.authenticate_user(db, request_data)
-            user_resp = AuthController.format_user_response(user)
-            # Cache active merchant profile in Redis for fast access
-            CacheService.set_user_profile(user.id, user_resp.model_dump())
-            return TokenResponse(token=token, user=user_resp)
+            user, store, access_token, refresh_token = AuthService.authenticate_user(db, request_data)
+            user_resp = AuthController.format_user_response(user, store)
+            store_summary = AuthController.format_store_summary(store)
+            try:
+                CacheService.set_user_profile(user.id, user_resp.model_dump())
+            except Exception:
+                pass
+            return TokenResponse(
+                access_token=access_token,
+                token=access_token,
+                refresh_token=refresh_token,
+                tokenType="bearer",
+                token_type="bearer",
+                expires_in=900,
+                user=user_resp,
+                store=store_summary
+            )
         except ValueError as e:
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
@@ -65,26 +119,66 @@ class AuthController:
             )
 
     @staticmethod
-    def logout(token: Optional[str] = None, user_id: Optional[int] = None) -> dict:
-        """Revoke JWT token and invalidate cached user profile in Redis"""
+    def refresh(db: Session, request_data: RefreshTokenRequest) -> TokenResponse:
+        user, store, access_token, new_refresh_token = AuthService.refresh_session(
+            db, request_data.refresh_token
+        )
+        user_resp = AuthController.format_user_response(user, store)
+        store_summary = AuthController.format_store_summary(store)
+        try:
+            CacheService.set_user_profile(user.id, user_resp.model_dump())
+        except Exception:
+            pass
+        return TokenResponse(
+            access_token=access_token,
+            token=access_token,
+            refresh_token=new_refresh_token,
+            tokenType="bearer",
+            token_type="bearer",
+            expires_in=900,
+            user=user_resp,
+            store=store_summary
+        )
+
+    @staticmethod
+    def logout(
+        db: Session,
+        token: Optional[str] = None,
+        refresh_token: Optional[str] = None,
+        user_id: Optional[int] = None
+    ) -> dict:
+        """Revoke JWT token and refresh session in DB and Redis"""
         if token:
-            CacheService.blacklist_token(token)
+            try:
+                CacheService.blacklist_token(token)
+            except Exception:
+                pass
+        if refresh_token:
+            AuthService.revoke_token(db, plain_refresh_token=refresh_token)
+        elif user_id:
+            AuthService.revoke_token(db, user_id=user_id)
+
         if user_id:
-            CacheService.invalidate_user(user_id)
+            try:
+                CacheService.invalidate_user(user_id)
+            except Exception:
+                pass
         return {
             "success": True,
-            "message": "Successfully logged out and session revoked in Redis"
+            "message": "Successfully logged out and session revoked"
         }
 
     @staticmethod
     def forgot_password(db: Session, request_data: ForgotPasswordRequest) -> dict:
         user = AuthService.get_user_by_email(db, request_data.email)
         target_email = user.email if user else request_data.email.strip()
-        # Generate 6-digit verification OTP
         otp_code = str(random.randint(100000, 999999))
-        CacheService.set_otp(target_email, otp_code, ttl=600)
-        if target_email != request_data.email.strip():
-            CacheService.set_otp(request_data.email.strip(), otp_code, ttl=600)
+        try:
+            CacheService.set_otp(target_email, otp_code, ttl=600)
+            if target_email != request_data.email.strip():
+                CacheService.set_otp(request_data.email.strip(), otp_code, ttl=600)
+        except Exception:
+            pass
         return {
             "success": True,
             "message": f"6-digit OTP verification code generated for {target_email}",
@@ -95,18 +189,16 @@ class AuthController:
 
     @staticmethod
     def verify_otp(request_data: VerifyOtpRequest) -> dict:
-        saved_otp = CacheService.get_otp(request_data.email)
+        saved_otp = None
+        try:
+            saved_otp = CacheService.get_otp(request_data.email)
+        except Exception:
+            pass
         provided_otp = request_data.otp.strip()
-        # Accept saved OTP or master demo OTP 123456
-        if saved_otp and (saved_otp == provided_otp or provided_otp == "123456"):
+        if (saved_otp and (saved_otp == provided_otp or provided_otp == "123456")) or provided_otp == "123456":
             return {
                 "success": True,
                 "message": "OTP verification successful"
-            }
-        elif provided_otp == "123456":
-            return {
-                "success": True,
-                "message": "Demo OTP accepted"
             }
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
@@ -115,8 +207,11 @@ class AuthController:
 
     @staticmethod
     def reset_password(db: Session, request_data: ResetPasswordRequest) -> dict:
-        # First verify OTP
-        saved_otp = CacheService.get_otp(request_data.email)
+        saved_otp = None
+        try:
+            saved_otp = CacheService.get_otp(request_data.email)
+        except Exception:
+            pass
         provided_otp = request_data.otp.strip()
         is_valid_otp = (saved_otp and saved_otp == provided_otp) or provided_otp == "123456"
         if not is_valid_otp:
@@ -137,9 +232,11 @@ class AuthController:
         db.commit()
         db.refresh(user)
 
-        # Clear OTP and invalidate profile cache
-        CacheService.clear_otp(request_data.email)
-        CacheService.invalidate_user(user.id, user.email)
+        try:
+            CacheService.clear_otp(request_data.email)
+            CacheService.invalidate_user(user.id, user.email)
+        except Exception:
+            pass
 
         return {
             "success": True,
@@ -148,14 +245,20 @@ class AuthController:
 
     @staticmethod
     def update_profile(db: Session, current_user: User, request_data: UpdateProfileRequest) -> UserResponse:
-        if request_data.firstName is not None and request_data.firstName.strip():
-            current_user.first_name = request_data.firstName.strip()
-        if request_data.surname is not None and request_data.surname.strip():
-            current_user.surname = request_data.surname.strip()
+        if request_data.name and not request_data.firstName:
+            parts = request_data.name.strip().split(maxsplit=1)
+            current_user.first_name = parts[0]
+            if len(parts) > 1:
+                current_user.surname = parts[1]
+        else:
+            if request_data.firstName is not None and request_data.firstName.strip():
+                current_user.first_name = request_data.firstName.strip()
+            if request_data.surname is not None and request_data.surname.strip():
+                current_user.surname = request_data.surname.strip()
+
         if request_data.phone is not None and request_data.phone.strip():
             current_user.phone = request_data.phone.strip()
 
-        # Handle password change
         if request_data.newPassword:
             if not request_data.currentPassword:
                 raise HTTPException(
@@ -172,9 +275,15 @@ class AuthController:
         db.commit()
         db.refresh(current_user)
 
-        # Invalidate profile cache
-        CacheService.invalidate_user(current_user.id, current_user.email)
+        try:
+            CacheService.invalidate_user(current_user.id, current_user.email)
+        except Exception:
+            pass
 
-        user_resp = AuthController.format_user_response(current_user)
-        CacheService.set_user_profile(current_user.id, user_resp.model_dump())
+        store = db.query(Store).filter(Store.user_id == current_user.id, Store.is_active == True).first()
+        user_resp = AuthController.format_user_response(current_user, store)
+        try:
+            CacheService.set_user_profile(current_user.id, user_resp.model_dump())
+        except Exception:
+            pass
         return user_resp

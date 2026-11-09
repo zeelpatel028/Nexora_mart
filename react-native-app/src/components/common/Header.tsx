@@ -28,6 +28,7 @@ export const Header: React.FC<HeaderProps> = ({
       <StatusBar
         barStyle={isDark ? 'light-content' : 'dark-content'}
         backgroundColor={colors.surface}
+        translucent={false}
       />
       <View style={styles.content}>
         {showBack && (

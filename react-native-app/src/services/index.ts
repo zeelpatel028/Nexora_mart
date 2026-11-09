@@ -12,4 +12,5 @@ export * from './partnerService';
 export * from './financeService';
 export * from './reportService';
 export * from './unitService';
+export * from './storeTypeService';
 

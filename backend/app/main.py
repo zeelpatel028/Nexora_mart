@@ -28,15 +28,19 @@ try:
     from .services.seed_service import seed_categories_and_fields
     from .routes import (
         auth_router,
+        store_type_router,
         store_router,
         category_router,
         product_router,
         inventory_router,
         sale_router,
+        bill_router,
+        order_router,
         purchase_router,
         partner_router,
         finance_router,
         report_router,
+        account_router,
         unit_router,
         employee_router
     )
@@ -51,15 +55,19 @@ except (ImportError, ValueError):
     from app.services.seed_service import seed_categories_and_fields
     from app.routes import (
         auth_router,
+        store_type_router,
         store_router,
         category_router,
         product_router,
         inventory_router,
         sale_router,
+        bill_router,
+        order_router,
         purchase_router,
         partner_router,
         finance_router,
         report_router,
+        account_router,
         unit_router,
         employee_router
     )
@@ -215,19 +223,29 @@ def create_application() -> FastAPI:
             headers=cors_hdrs
         )
 
-    # Mount API routers under /api
-    app.include_router(auth_router, prefix=settings.API_V1_PREFIX)
-    app.include_router(store_router, prefix=settings.API_V1_PREFIX)
-    app.include_router(category_router, prefix=settings.API_V1_PREFIX)
-    app.include_router(product_router, prefix=settings.API_V1_PREFIX)
-    app.include_router(inventory_router, prefix=settings.API_V1_PREFIX)
-    app.include_router(sale_router, prefix=settings.API_V1_PREFIX)
-    app.include_router(purchase_router, prefix=settings.API_V1_PREFIX)
-    app.include_router(partner_router, prefix=settings.API_V1_PREFIX)
-    app.include_router(finance_router, prefix=settings.API_V1_PREFIX)
-    app.include_router(report_router, prefix=settings.API_V1_PREFIX)
-    app.include_router(unit_router, prefix=settings.API_V1_PREFIX)
-    app.include_router(employee_router, prefix=settings.API_V1_PREFIX)
+    # Mount API routers under /api and /api/v1
+    all_routers = [
+        auth_router,
+        store_type_router,
+        store_router,
+        category_router,
+        product_router,
+        inventory_router,
+        sale_router,
+        bill_router,
+        order_router,
+        purchase_router,
+        partner_router,
+        finance_router,
+        report_router,
+        account_router,
+        unit_router,
+        employee_router,
+    ]
+    for r in all_routers:
+        app.include_router(r, prefix=settings.API_V1_PREFIX)
+        if settings.API_V1_PREFIX != "/api/v1":
+            app.include_router(r, prefix="/api/v1")
 
     @app.get("/", tags=["Root"], operation_id="root_get")
     def root():

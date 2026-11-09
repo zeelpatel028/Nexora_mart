@@ -1,14 +1,16 @@
 /**
  * Authentication Context & Session Provider
+ * Manages access token (15 min), refresh session (15 hour), user profile, and active store context.
  */
 import React, { createContext, useContext, useEffect, useState, useCallback } from 'react';
-import { User, LoginPayload, RegisterPayload } from '../models/types';
+import { User, Store, LoginPayload, RegisterPayload } from '../models/types';
 import authService from '../services/authService';
 import storage from '../utils/storage';
 import apiClient from '../api/apiClient';
 
 interface AuthContextType {
   user: User | null;
+  store: Store | null;
   token: string | null;
   isAuthenticated: boolean;
   isLoading: boolean;
@@ -22,6 +24,7 @@ export const AuthContext = createContext<AuthContextType>({} as AuthContextType)
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
+  const [store, setStore] = useState<Store | null>(null);
   const [token, setToken] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(true);
 
@@ -29,13 +32,28 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const restoreSession = useCallback(async () => {
     try {
       setIsLoading(true);
+
+      // Check 15-hour absolute session validity
+      const sessionExpiresAt = await storage.getSessionExpiresAt();
+      if (sessionExpiresAt && Date.now() > sessionExpiresAt) {
+        await storage.clearAuth();
+        setToken(null);
+        setUser(null);
+        setStore(null);
+        return;
+      }
+
       const savedToken = await storage.getAuthToken();
       const savedUser = await storage.getUser();
+      const savedStore = await storage.getStore();
 
       if (savedToken) {
         setToken(savedToken);
         if (savedUser) {
           setUser(savedUser);
+        }
+        if (savedStore) {
+          setStore(savedStore);
         }
 
         // Verify token with backend /auth/me
@@ -43,14 +61,17 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           const freshUser = await authService.getMe();
           if (freshUser) {
             setUser(freshUser);
+            const freshStore = await storage.getStore();
+            if (freshStore) {
+              setStore(freshStore);
+            }
           }
         } catch (err: any) {
-          // If token expired or invalid (401), clean up
           if (err.status === 401) {
-            await storage.removeAuthToken();
-            await storage.removeUser();
+            await storage.clearAuth();
             setToken(null);
             setUser(null);
+            setStore(null);
           }
         }
       }
@@ -68,6 +89,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     apiClient.setOnUnauthorized(() => {
       setToken(null);
       setUser(null);
+      setStore(null);
     });
   }, [restoreSession]);
 
@@ -75,9 +97,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setIsLoading(true);
     try {
       const res = await authService.login(payload);
-      const jwtToken = res.token || res.access_token || null;
+      const jwtToken = res.access_token || res.token || null;
       setToken(jwtToken);
       setUser(res.user);
+      if (res.store) {
+        setStore(res.store);
+      }
     } finally {
       setIsLoading(false);
     }
@@ -87,9 +112,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setIsLoading(true);
     try {
       const res = await authService.register(payload);
-      const jwtToken = res.token || res.access_token || null;
+      const jwtToken = res.access_token || res.token || null;
       setToken(jwtToken);
       setUser(res.user);
+      if (res.store) {
+        setStore(res.store);
+      }
     } finally {
       setIsLoading(false);
     }
@@ -102,6 +130,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     } finally {
       setToken(null);
       setUser(null);
+      setStore(null);
       setIsLoading(false);
     }
   };
@@ -111,6 +140,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       const freshUser = await authService.getMe();
       if (freshUser) {
         setUser(freshUser);
+        const freshStore = await storage.getStore();
+        if (freshStore) {
+          setStore(freshStore);
+        }
       }
     } catch {
       // Ignore
@@ -121,6 +154,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     <AuthContext.Provider
       value={{
         user,
+        store,
         token,
         isAuthenticated: Boolean(token && user),
         isLoading,
@@ -137,4 +171,3 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
 export const useAuth = () => useContext(AuthContext);
 export default AuthContext;
-

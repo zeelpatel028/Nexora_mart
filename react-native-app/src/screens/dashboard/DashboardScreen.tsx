@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import {
   View,
   Text,
@@ -10,8 +10,14 @@ import {
   Modal,
   SafeAreaView,
   Platform,
+  Image,
+  Animated,
+  Easing,
+  Dimensions,
+  TouchableWithoutFeedback,
+  BackHandler,
 } from 'react-native';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../../navigation/types';
 import { useAuth } from '../../hooks/useAuth';
@@ -50,11 +56,94 @@ export const DashboardScreen: React.FC = () => {
   const [refreshing, setRefreshing] = useState(false);
   const [timeframe, setTimeframe] = useState<'This Week' | 'This Month'>('This Week');
 
-  // Modals
+  // Modals & Drawer Animation
   const [menuModalVisible, setMenuModalVisible] = useState(false);
   const [notificationsVisible, setNotificationsVisible] = useState(false);
   const [storeSetupPopupVisible, setStoreSetupPopupVisible] = useState(false);
   const [selectedDayInfo, setSelectedDayInfo] = useState<{ day: string; sales: number; orders: number } | null>(null);
+
+  // Left-to-Right Drawer Slide Animation
+  const DRAWER_WIDTH = Math.min(Dimensions.get('window').width * 0.78, 310);
+  const slideAnim = useRef(new Animated.Value(-DRAWER_WIDTH)).current;
+  const fadeAnim = useRef(new Animated.Value(0)).current;
+
+  const openSidebar = () => {
+    setMenuModalVisible(true);
+    Animated.parallel([
+      Animated.timing(slideAnim, {
+        toValue: 0,
+        duration: 250,
+        easing: Easing.out(Easing.cubic),
+        useNativeDriver: true,
+      }),
+      Animated.timing(fadeAnim, {
+        toValue: 1,
+        duration: 250,
+        useNativeDriver: true,
+      }),
+    ]).start();
+  };
+
+  const closeSidebar = (callback?: () => void) => {
+    Animated.parallel([
+      Animated.timing(slideAnim, {
+        toValue: -DRAWER_WIDTH,
+        duration: 220,
+        easing: Easing.in(Easing.cubic),
+        useNativeDriver: true,
+      }),
+      Animated.timing(fadeAnim, {
+        toValue: 0,
+        duration: 220,
+        useNativeDriver: true,
+      }),
+    ]).start(() => {
+      setMenuModalVisible(false);
+      if (callback) callback();
+    });
+  };
+
+  // Set orange status bar every time Dashboard comes into focus
+  useFocusEffect(
+    useCallback(() => {
+      StatusBar.setBarStyle('light-content');
+      if (Platform.OS === 'android') {
+        StatusBar.setBackgroundColor('#FF6A1A');
+        StatusBar.setTranslucent(true);
+      }
+    }, [])
+  );
+
+  // Close overlays on screen blur (e.g., navigating to another tab)
+  useEffect(() => {
+    const unsubscribe = navigation.addListener('blur', () => {
+      setMenuModalVisible(false);
+      setNotificationsVisible(false);
+      setStoreSetupPopupVisible(false);
+    });
+    return unsubscribe;
+  }, [navigation]);
+
+  // Handle hardware back button on Android
+  useEffect(() => {
+    const onBackPress = () => {
+      if (menuModalVisible) {
+        closeSidebar();
+        return true;
+      }
+      if (notificationsVisible) {
+        setNotificationsVisible(false);
+        return true;
+      }
+      if (storeSetupPopupVisible) {
+        setStoreSetupPopupVisible(false);
+        return true;
+      }
+      return false;
+    };
+    const sub = BackHandler.addEventListener('hardwareBackPress', onBackPress);
+    return () => sub.remove();
+  }, [menuModalVisible, notificationsVisible, storeSetupPopupVisible]);
 
   const merchantName = user?.first_name || 'Owner';
 
@@ -242,32 +331,37 @@ export const DashboardScreen: React.FC = () => {
     { id: 'ORD-STR001-000106', customer: 'Meera Verma', items: '12 Items', amount: '₹ 5,200', date: '09 Nov, 11:00 AM', status: 'Scheduled' },
   ];
 
-  // Sidebar Menu Items (11 Items)
+  // Sidebar Menu Items (11 Items) with animated close
   const sidebarMenuItems = [
-    { id: 'home', label: 'Home', icon: (c: string) => <HomeIcon size={20} color={c} />, action: () => setMenuModalVisible(false) },
-    { id: 'make_bill', label: 'Make Bill', icon: (c: string) => <ShoppingCartIcon size={20} color={c} />, action: () => { setMenuModalVisible(false); navigation.navigate('PosBilling'); } },
-    { id: 'view_bill', label: 'View Bill', icon: (c: string) => <ReceiptIcon size={20} color={c} />, action: () => { setMenuModalVisible(false); navigation.navigate('SalesList'); } },
-    { id: 'product', label: 'Product', icon: (c: string) => <PackageIcon size={20} color={c} />, action: () => { setMenuModalVisible(false); navigation.navigate('ProductList'); } },
-    { id: 'debit_customer', label: 'Debit Customer', icon: (c: string) => <UsersIcon size={20} color={c} />, action: () => { setMenuModalVisible(false); navigation.navigate('CustomerList'); } },
-    { id: 'supper', label: 'Supper', icon: (c: string) => <TruckIcon size={20} color={c} />, action: () => { setMenuModalVisible(false); navigation.navigate('SupplierList'); } },
-    { id: 'order', label: 'Order', icon: (c: string) => <ShoppingBagIcon size={20} color={c} />, action: () => { setMenuModalVisible(false); navigation.navigate('PurchaseList'); } },
-    { id: 'store_expense', label: 'Store Expense', icon: (c: string) => <IndianRupeeIcon size={20} color={c} />, action: () => { setMenuModalVisible(false); navigation.navigate('Finance'); } },
-    { id: 'employee', label: 'Employee', icon: (c: string) => <UserRoundIcon size={20} color={c} />, action: () => { setMenuModalVisible(false); navigation.navigate('CustomerList'); } },
-    { id: 'sales_analicis', label: 'Sales Analicis', icon: (c: string) => <ChartColumnIcon size={20} color={c} />, action: () => { setMenuModalVisible(false); navigation.navigate('Reports'); } },
-    { id: 'account', label: 'Account', icon: (c: string) => <StoreIcon size={20} color={c} />, action: () => { setMenuModalVisible(false); navigation.navigate('AccountDetail'); } },
+    { id: 'home', label: 'Home', icon: (c: string) => <HomeIcon size={20} color={c} />, action: () => closeSidebar() },
+    { id: 'make_bill', label: 'Make Bill', icon: (c: string) => <ShoppingCartIcon size={20} color={c} />, action: () => closeSidebar(() => navigation.navigate('PosBilling')) },
+    { id: 'view_bill', label: 'View Bill', icon: (c: string) => <ReceiptIcon size={20} color={c} />, action: () => closeSidebar(() => navigation.navigate('SalesList')) },
+    { id: 'product', label: 'Product', icon: (c: string) => <PackageIcon size={20} color={c} />, action: () => closeSidebar(() => navigation.navigate('ProductList')) },
+    { id: 'debit_customer', label: 'Debit Customer', icon: (c: string) => <UsersIcon size={20} color={c} />, action: () => closeSidebar(() => navigation.navigate('CustomerList')) },
+    { id: 'supper', label: 'Supper', icon: (c: string) => <TruckIcon size={20} color={c} />, action: () => closeSidebar(() => navigation.navigate('SupplierList')) },
+    { id: 'order', label: 'Order', icon: (c: string) => <ShoppingBagIcon size={20} color={c} />, action: () => closeSidebar(() => navigation.navigate('PurchaseList')) },
+    { id: 'store_expense', label: 'Store Expense', icon: (c: string) => <IndianRupeeIcon size={20} color={c} />, action: () => closeSidebar(() => navigation.navigate('Finance')) },
+    { id: 'employee', label: 'Employee', icon: (c: string) => <UserRoundIcon size={20} color={c} />, action: () => closeSidebar(() => navigation.navigate('CustomerList')) },
+    { id: 'sales_analicis', label: 'Sales Analicis', icon: (c: string) => <ChartColumnIcon size={20} color={c} />, action: () => closeSidebar(() => navigation.navigate('Reports')) },
+    { id: 'account', label: 'Account', icon: (c: string) => <StoreIcon size={20} color={c} />, action: () => closeSidebar(() => navigation.navigate('AccountDetail')) },
   ];
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
-      <StatusBar barStyle="light-content" backgroundColor="#FF6A1A" />
+      <StatusBar
+        barStyle="light-content"
+        backgroundColor="#FF6A1A"
+        translucent={Platform.OS === 'android'}
+      />
 
-      {/* 1. TOP HEADER WITH ORANGE BANNER */}
-      <SafeAreaView style={styles.headerSafeArea}>
-        <View style={styles.topHeader}>
+      {/* 1. TOP HEADER WITH ORANGE BANNER (EXTENDS SEAMLESSLY INTO TOP STATUS BAR AREA) */}
+      <View style={styles.headerTopContainer}>
+        <SafeAreaView style={styles.headerSafeArea}>
+          <View style={styles.topHeader}>
           {/* Hamburger Menu Button */}
           <TouchableOpacity
             style={styles.headerIconBtn}
-            onPress={() => setMenuModalVisible(true)}
+            onPress={openSidebar}
             activeOpacity={0.7}
             accessibilityLabel="Open Navigation Sidebar"
           >
@@ -278,10 +372,14 @@ export const DashboardScreen: React.FC = () => {
             </View>
           </TouchableOpacity>
 
-          {/* Centered Brand Title */}
+          {/* Centered Brand Title with White Circle 3D ribbon logo */}
           <View style={styles.brandTitleContainer}>
-            <View style={styles.cartIconBadge}>
-              <StoreIcon size={16} color="#FFFFFF" />
+            <View style={styles.headerLogoCircle}>
+              <Image
+                source={require('../../assets/m-logo-3d.png')}
+                style={styles.headerLogoImg}
+                resizeMode="contain"
+              />
             </View>
             <Text style={styles.headerBrandTitle}>NEXORA MART</Text>
           </View>
@@ -309,6 +407,7 @@ export const DashboardScreen: React.FC = () => {
           </View>
         </View>
       </SafeAreaView>
+    </View>
 
       {/* 2. SCROLLABLE SCREEN CONTENT */}
       <ScrollView
@@ -582,62 +681,77 @@ export const DashboardScreen: React.FC = () => {
       </ScrollView>
 
       {/* ==========================================
-          STORE SETUP MODAL POPUP
+          STORE SETUP MODAL POPUP (IN-SCREEN OVERLAY)
          ========================================== */}
-      <Modal
-        visible={storeSetupPopupVisible}
-        transparent
-        animationType="fade"
-        onRequestClose={handleDismissSetup}
-      >
-        <View style={styles.modalBackdrop}>
-          <View style={[styles.setupCard, { backgroundColor: isDark ? '#1C1E24' : '#FFFFFF' }]}>
-            <View style={styles.setupIconBox}>
-              <StoreIcon size={32} color="#FF6A1A" />
-            </View>
-            <Text style={[styles.setupTitle, { color: isDark ? '#FFFFFF' : '#111827' }]}>
-              Complete Your Store Setup
-            </Text>
-            <Text style={[styles.setupSubtitle, { color: isDark ? '#9CA3AF' : '#64748B' }]}>
-              Please add your store details, address, business tax numbers, and prefix configurations to enable multi-store invoice generation.
-            </Text>
-
-            <TouchableOpacity
-              style={[styles.setupActionBtn, { backgroundColor: brandColors.primary }]}
-              onPress={handleGoToAccountDetails}
-              activeOpacity={0.88}
-            >
-              <Text style={styles.setupActionText}>Add Store Details →</Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              style={styles.setupLaterBtn}
-              onPress={handleDismissSetup}
-              activeOpacity={0.7}
-            >
-              <Text style={{ color: isDark ? '#9CA3AF' : '#64748B', fontWeight: '600' }}>
-                Maybe Later
+      {storeSetupPopupVisible && (
+        <View style={styles.modalRoot} pointerEvents="box-none">
+          <View style={styles.modalBackdrop}>
+            <View style={[styles.setupCard, { backgroundColor: isDark ? '#1C1E24' : '#FFFFFF' }]}>
+              <View style={styles.setupIconBox}>
+                <StoreIcon size={32} color="#FF6A1A" />
+              </View>
+              <Text style={[styles.setupTitle, { color: isDark ? '#FFFFFF' : '#111827' }]}>
+                Complete Your Store Setup
               </Text>
-            </TouchableOpacity>
+              <Text style={[styles.setupSubtitle, { color: isDark ? '#9CA3AF' : '#64748B' }]}>
+                Please add your store details, address, business tax numbers, and prefix configurations to enable multi-store invoice generation.
+              </Text>
+
+              <TouchableOpacity
+                style={[styles.setupActionBtn, { backgroundColor: brandColors.primary }]}
+                onPress={handleGoToAccountDetails}
+                activeOpacity={0.88}
+              >
+                <Text style={styles.setupActionText}>Add Store Details →</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={styles.setupLaterBtn}
+                onPress={handleDismissSetup}
+                activeOpacity={0.7}
+              >
+                <Text style={{ color: isDark ? '#9CA3AF' : '#64748B', fontWeight: '600' }}>
+                  Maybe Later
+                </Text>
+              </TouchableOpacity>
+            </View>
           </View>
         </View>
-      </Modal>
+      )}
 
       {/* ==========================================
           STORE NAVIGATION SIDEBAR (11 ITEMS)
+          Left-to-Right Slide-in & Right-to-Left Slide-out
          ========================================== */}
-      <Modal
-        visible={menuModalVisible}
-        transparent
-        animationType="slide"
-        onRequestClose={() => setMenuModalVisible(false)}
-      >
-        <TouchableOpacity
-          style={styles.drawerBackdrop}
-          activeOpacity={1}
-          onPress={() => setMenuModalVisible(false)}
-        >
-          <View style={[styles.drawerCard, { backgroundColor: isDark ? '#1C1E24' : '#FFFFFF' }]}>
+      {/* ==========================================
+          STORE NAVIGATION SIDEBAR (11 ITEMS)
+          Left-to-Right Slide-in & Right-to-Left Slide-out
+         ========================================== */}
+      {menuModalVisible && (
+        <View style={styles.modalRoot} pointerEvents="box-none">
+          {/* Animated Backdrop */}
+          <TouchableWithoutFeedback onPress={() => closeSidebar()}>
+            <Animated.View
+              style={[
+                styles.drawerBackdrop,
+                {
+                  opacity: fadeAnim,
+                },
+              ]}
+            />
+          </TouchableWithoutFeedback>
+
+          {/* Animated Drawer Card */}
+          <Animated.View
+            style={[
+              styles.drawerCard,
+              {
+                width: DRAWER_WIDTH,
+                backgroundColor: isDark ? '#1C1E24' : '#FFFFFF',
+                transform: [{ translateX: slideAnim }],
+              },
+            ]}
+          >
             {/* Drawer Header */}
             <View style={styles.drawerHeader}>
               <View style={[styles.drawerAvatar, { backgroundColor: brandColors.primary }]}>
@@ -677,62 +791,60 @@ export const DashboardScreen: React.FC = () => {
             {/* Logout Button */}
             <TouchableOpacity
               style={styles.logoutBtn}
-              onPress={async () => {
-                setMenuModalVisible(false);
-                await logout();
+              onPress={() => {
+                closeSidebar(async () => {
+                  await logout();
+                });
               }}
               activeOpacity={0.8}
             >
               <LogOutIcon size={18} color="#EF4444" />
               <Text style={styles.logoutBtnText}>Sign Out</Text>
             </TouchableOpacity>
-          </View>
-        </TouchableOpacity>
-      </Modal>
+          </Animated.View>
+        </View>
+      )}
 
-      {/* NOTIFICATIONS MODAL */}
-      <Modal
-        visible={notificationsVisible}
-        transparent
-        animationType="fade"
-        onRequestClose={() => setNotificationsVisible(false)}
-      >
-        <TouchableOpacity
-          style={styles.modalBackdrop}
-          activeOpacity={1}
-          onPress={() => setNotificationsVisible(false)}
-        >
-          <View style={[styles.notificationsCard, { backgroundColor: isDark ? '#1C1E24' : '#FFFFFF' }]}>
-            <Text style={[styles.modalHeaderTitle, { color: isDark ? '#FFFFFF' : '#111827' }]}>
-              Notifications (3)
-            </Text>
-            <View style={styles.notifItem}>
-              <Text style={styles.notifAlertTitle}>⚠️ Low Stock Alert</Text>
-              <Text style={{ color: isDark ? '#9CA3AF' : '#64748B', fontSize: 13 }}>
-                Basmati Rice (5kg) is below minimum threshold (3 units left).
+      {/* NOTIFICATIONS MODAL (IN-SCREEN OVERLAY) */}
+      {notificationsVisible && (
+        <View style={styles.modalRoot} pointerEvents="box-none">
+          <TouchableOpacity
+            style={styles.modalBackdrop}
+            activeOpacity={1}
+            onPress={() => setNotificationsVisible(false)}
+          >
+            <View style={[styles.notificationsCard, { backgroundColor: isDark ? '#1C1E24' : '#FFFFFF' }]}>
+              <Text style={[styles.modalHeaderTitle, { color: isDark ? '#FFFFFF' : '#111827' }]}>
+                Notifications (3)
               </Text>
+              <View style={styles.notifItem}>
+                <Text style={styles.notifAlertTitle}>⚠️ Low Stock Alert</Text>
+                <Text style={{ color: isDark ? '#9CA3AF' : '#64748B', fontSize: 13 }}>
+                  Basmati Rice (5kg) is below minimum threshold (3 units left).
+                </Text>
+              </View>
+              <View style={styles.notifItem}>
+                <Text style={styles.notifSuccessTitle}>✅ New Bill Generated</Text>
+                <Text style={{ color: isDark ? '#9CA3AF' : '#64748B', fontSize: 13 }}>
+                  Invoice #INV-STR001-001025 completed for ₹ 1,450.
+                </Text>
+              </View>
+              <View style={styles.notifItem}>
+                <Text style={styles.notifInfoTitle}>📦 Upcoming Order</Text>
+                <Text style={{ color: isDark ? '#9CA3AF' : '#64748B', fontSize: 13 }}>
+                  Order #ORD-STR001-000104 scheduled for tomorrow morning.
+                </Text>
+              </View>
+              <TouchableOpacity
+                style={[styles.modalCloseBtn, { backgroundColor: brandColors.primary }]}
+                onPress={() => setNotificationsVisible(false)}
+              >
+                <Text style={{ color: '#FFFFFF', fontWeight: '700' }}>Close</Text>
+              </TouchableOpacity>
             </View>
-            <View style={styles.notifItem}>
-              <Text style={styles.notifSuccessTitle}>✅ New Bill Generated</Text>
-              <Text style={{ color: isDark ? '#9CA3AF' : '#64748B', fontSize: 13 }}>
-                Invoice #INV-STR001-001025 completed for ₹ 1,450.
-              </Text>
-            </View>
-            <View style={styles.notifItem}>
-              <Text style={styles.notifInfoTitle}>📦 Upcoming Order</Text>
-              <Text style={{ color: isDark ? '#9CA3AF' : '#64748B', fontSize: 13 }}>
-                Order #ORD-STR001-000104 scheduled for tomorrow morning.
-              </Text>
-            </View>
-            <TouchableOpacity
-              style={[styles.modalCloseBtn, { backgroundColor: brandColors.primary }]}
-              onPress={() => setNotificationsVisible(false)}
-            >
-              <Text style={{ color: '#FFFFFF', fontWeight: '700' }}>Close</Text>
-            </TouchableOpacity>
-          </View>
-        </TouchableOpacity>
-      </Modal>
+          </TouchableOpacity>
+        </View>
+      )}
     </View>
   );
 };
@@ -740,6 +852,10 @@ export const DashboardScreen: React.FC = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+  },
+  headerTopContainer: {
+    backgroundColor: '#FF6A1A',
+    paddingTop: Platform.OS === 'android' ? (StatusBar.currentHeight || 24) : 0,
   },
   headerSafeArea: {
     backgroundColor: '#FF6A1A',
@@ -769,14 +885,29 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
   },
-  cartIconBadge: {
-    width: 26,
-    height: 26,
-    borderRadius: 6,
-    backgroundColor: 'rgba(255,255,255,0.25)',
+  headerLogoCircle: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: '#FFFFFF',
     alignItems: 'center',
     justifyContent: 'center',
-    marginRight: 8,
+    marginRight: 9,
+    ...Platform.select({
+      ios: {
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.18,
+        shadowRadius: 3,
+      },
+      android: {
+        elevation: 3,
+      },
+    }),
+  },
+  headerLogoImg: {
+    width: 25,
+    height: 20,
   },
   headerBrandTitle: {
     color: '#FFFFFF',
@@ -1172,16 +1303,43 @@ const styles = StyleSheet.create({
   setupLaterBtn: {
     paddingVertical: 8,
   },
+  modalRoot: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    zIndex: 9999,
+    elevation: 20,
+  },
   drawerBackdrop: {
-    flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.5)',
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: 'rgba(0,0,0,0.55)',
   },
   drawerCard: {
-    width: '78%',
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    bottom: 0,
     height: '100%',
     paddingTop: Platform.OS === 'ios' ? 48 : 28,
     paddingHorizontal: 18,
     paddingBottom: 24,
+    ...Platform.select({
+      ios: {
+        shadowColor: '#000',
+        shadowOffset: { width: 4, height: 0 },
+        shadowOpacity: 0.35,
+        shadowRadius: 10,
+      },
+      android: {
+        elevation: 16,
+      },
+    }),
   },
   drawerHeader: {
     flexDirection: 'row',

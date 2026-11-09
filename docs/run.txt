@@ -15,3 +15,9 @@ npm start
 
 
 Set-Location d:\Nexora\Nmart\react-native-app\android; .\gradlew.bat assembleRelease
+
+
+
+
+& "C:\Users\zeel\AppData\Local\Android\Sdk\platform-tools\adb.exe" install -r --user 0 "d:\Nexora\Nmart\NexoraMart.apk"
+& "C:\Users\zeel\AppData\Local\Android\Sdk\platform-tools\adb.exe" shell am start --user 0 -n com.nexora.nmart/.MainActivity

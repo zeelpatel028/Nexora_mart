@@ -28,17 +28,23 @@ class StoreService:
     @staticmethod
     def get_user_store(db: Session, user: User, store_id: Optional[int] = None) -> Store:
         """
-        Retrieves active store for user. If store_id is provided, validates access.
+        Retrieves active store for user. If store_id is provided, strictly validates ownership/access.
         Otherwise returns the primary store owned by user.
+        Rejects cross-store access with 403 Forbidden.
         """
-        if store_id:
-            store = db.query(Store).filter(Store.id == store_id, Store.is_active == True).first()
-            if store and (store.user_id == user.id or store.user_id == getattr(user, 'id', None)):
-                return store
-            raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN,
-                detail="Access denied or store not found."
-            )
+        if store_id is not None:
+            store = db.query(Store).filter(Store.id == store_id).first()
+            if not store:
+                raise HTTPException(
+                    status_code=status.HTTP_404_NOT_FOUND,
+                    detail="Store not found."
+                )
+            if store.user_id != user.id and getattr(user, "role", None) != "admin":
+                raise HTTPException(
+                    status_code=status.HTTP_403_FORBIDDEN,
+                    detail="Access denied to requested store."
+                )
+            return store
 
         store = db.query(Store).filter(Store.user_id == user.id, Store.is_active == True).first()
 

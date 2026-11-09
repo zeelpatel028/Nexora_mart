@@ -1,4 +1,6 @@
 from .user import User, PasswordResetOtp
+from .store_type import StoreType
+from .refresh_token import RefreshToken
 from .store import (
     ShopCategory,
     Store,
@@ -67,6 +69,8 @@ from .category import (
 __all__ = [
     "User",
     "PasswordResetOtp",
+    "StoreType",
+    "RefreshToken",
     "ShopCategory",
     "Category",
     "CategoryField",

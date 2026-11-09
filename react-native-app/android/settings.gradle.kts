@@ -33,3 +33,15 @@ dependencyResolutionManagement {
 rootProject.name = "NexoraMart"
 include(":app")
 
+include(":react-native-screens")
+project(":react-native-screens").projectDir = file("$rootDir/../node_modules/react-native-screens/android")
+
+include(":react-native-safe-area-context")
+project(":react-native-safe-area-context").projectDir = file("$rootDir/../node_modules/react-native-safe-area-context/android")
+
+include(":react-native-svg")
+project(":react-native-svg").projectDir = file("$rootDir/../node_modules/react-native-svg/android")
+
+include(":@react-native-async-storage_async-storage")
+project(":@react-native-async-storage_async-storage").projectDir = file("$rootDir/../node_modules/@react-native-async-storage/async-storage/android")
+

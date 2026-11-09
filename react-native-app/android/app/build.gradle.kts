@@ -60,5 +60,10 @@ dependencies {
     implementation("com.facebook.react:hermes-android:0.75.4")
     implementation("androidx.appcompat:appcompat:1.7.0")
     implementation("androidx.swiperefreshlayout:swiperefreshlayout:1.1.0")
+
+    implementation(project(":react-native-screens"))
+    implementation(project(":react-native-safe-area-context"))
+    implementation(project(":react-native-svg"))
+    implementation(project(":@react-native-async-storage_async-storage"))
 }
 

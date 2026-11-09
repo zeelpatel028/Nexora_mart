@@ -29,7 +29,8 @@ class Store(Base):
 
     id = Column(Integer, primary_key=True, index=True, autoincrement=True)
     user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
-    shop_category_id = Column(Integer, ForeignKey("shop_categories.id"), nullable=False, index=True)
+    shop_category_id = Column(Integer, ForeignKey("shop_categories.id"), nullable=True, index=True)
+    store_type_id = Column(Integer, ForeignKey("store_types.id"), nullable=True, index=True)
     name = Column(String(150), nullable=False, index=True)
     code = Column(String(50), nullable=True, index=True)
     store_code = Column(String(50), nullable=True, index=True)
@@ -50,12 +51,14 @@ class Store(Base):
 
     # Backward compatibility properties
     store_id = synonym("id")
+    store_name = synonym("name")
     owner_id = synonym("user_id")
     category_id = synonym("shop_category_id")
 
     # Relationships
     owner = relationship("User", back_populates="stores", foreign_keys=[user_id])
     shop_category = relationship("ShopCategory", back_populates="stores")
+    store_type_rel = relationship("StoreType", back_populates="stores")
 
     @property
     def category(self):
@@ -167,6 +170,10 @@ class StoreConfiguration(Base):
     dark_mode_default = Column(Boolean, default=False, nullable=False)
     created_at = Column(DateTime, default=lambda: datetime.datetime.now(datetime.timezone.utc))
     updated_at = Column(DateTime, default=lambda: datetime.datetime.now(datetime.timezone.utc), onupdate=lambda: datetime.datetime.now(datetime.timezone.utc))
+
+    # Aliases
+    low_stock_threshold = synonym("low_stock_alert")
+    tax_rate = synonym("default_tax_rate")
 
     store = relationship("Store", back_populates="configuration")
 

@@ -3,9 +3,62 @@ from sqlalchemy.orm import Session
 from ..models.category import Category, CategoryField
 from ..models.unit import Unit
 from ..models.store import Store
+from ..models.store_type import StoreType
 from ..models.user import User
 
 logger = logging.getLogger("seed_service")
+
+# 8 Standardized Store Types with stable codes as specified in Multi-Store requirements
+STORE_TYPES_DATA = [
+    {
+        "code": "grocery",
+        "name": "Grocery Store",
+        "icon": "shopping-basket",
+        "description": "Daily essentials, packaged food items, groceries, and staples."
+    },
+    {
+        "code": "clothing",
+        "name": "Clothing Store",
+        "icon": "checkroom",
+        "description": "Men's, women's, and kids' apparel, textiles, and fashion garments."
+    },
+    {
+        "code": "medical",
+        "name": "Medical / Pharmacy Store",
+        "icon": "medical-services",
+        "description": "Pharmaceuticals, medicines, surgical supplies, and healthcare goods."
+    },
+    {
+        "code": "mobile_electronics",
+        "name": "Mobile & Electronics Store",
+        "icon": "devices",
+        "description": "Smartphones, consumer appliances, computing devices, audio, and gadgets."
+    },
+    {
+        "code": "plastic",
+        "name": "Plastic Store",
+        "icon": "inventory",
+        "description": "Plastic housewares, containers, storage boxes, kitchen utilities, and polymer goods."
+    },
+    {
+        "code": "handloom",
+        "name": "Handloom Store",
+        "icon": "style",
+        "description": "Handloom textiles, traditional fabrics, sarees, artisanal weaves, and home furnishings."
+    },
+    {
+        "code": "furniture",
+        "name": "Furniture Store",
+        "icon": "chair",
+        "description": "Home and office furniture, wooden decor, tables, chairs, and furnishings."
+    },
+    {
+        "code": "agro",
+        "name": "Agro Store",
+        "icon": "eco",
+        "description": "Seeds, fertilizers, agricultural implements, farming equipment, and pesticides."
+    }
+]
 
 # 8 Standardized Store Categories as specified by NMART requirements
 INITIAL_CATEGORIES = [
@@ -218,7 +271,33 @@ def seed_categories_and_fields(db: Session):
                     )
                     db.add(new_field)
 
-        # 3. Ensure existing users have valid shop_category, shop_category_id, and Store linked
+        # 3. Seed 8 Standardized Store Types
+        store_type_map = {}
+        for st_data in STORE_TYPES_DATA:
+            st = db.query(StoreType).filter(
+                (StoreType.code == st_data["code"]) | (StoreType.name == st_data["name"])
+            ).first()
+            if not st:
+                st = StoreType(
+                    code=st_data["code"],
+                    name=st_data["name"],
+                    icon=st_data["icon"],
+                    description=st_data["description"],
+                    is_active=True
+                )
+                db.add(st)
+                db.flush()
+            else:
+                st.code = st_data["code"]
+                st.name = st_data["name"]
+                st.icon = st_data["icon"]
+                st.description = st_data["description"]
+                st.is_active = True
+                db.flush()
+            store_type_map[st.code] = st
+            store_type_map[st.name.lower()] = st
+
+        # 4. Ensure existing users have valid shop_category, shop_category_id, and Store linked
         grocery_cat = db.query(Category).filter(Category.code == "GROCERY").first() or db.query(Category).first()
         users = db.query(User).all()
         for user in users:
@@ -232,6 +311,15 @@ def seed_categories_and_fields(db: Session):
                         break
             if not target_cat:
                 target_cat = grocery_cat
+
+            target_st = None
+            if cat_name:
+                for k, v in store_type_map.items():
+                    if k in cat_name.lower() or cat_name.lower() in k:
+                        target_st = v
+                        break
+            if not target_st:
+                target_st = store_type_map.get("grocery")
 
             if target_cat:
                 if not user.shop_category:
@@ -247,6 +335,7 @@ def seed_categories_and_fields(db: Session):
                     new_store = Store(
                         name=store_name,
                         shop_category_id=target_cat.id,
+                        store_type_id=target_st.id if target_st else None,
                         user_id=user.id,
                         code=f"STR-{user.id:03d}",
                         store_code=f"STR-{user.id:03d}",
@@ -259,9 +348,11 @@ def seed_categories_and_fields(db: Session):
                 else:
                     if not existing_store.shop_category_id:
                         existing_store.shop_category_id = target_cat.id
+                    if not existing_store.store_type_id and target_st:
+                        existing_store.store_type_id = target_st.id
 
         db.commit()
-        logger.info("Successfully seeded 8 standardized categories, units, and synced existing user stores.")
+        logger.info("Successfully seeded 8 standardized store types, categories, units, and synced existing user stores.")
     except Exception as e:
         db.rollback()
         logger.error(f"Error seeding categories: {e}", exc_info=True)
