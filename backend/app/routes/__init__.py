@@ -17,6 +17,16 @@ from .unit_routes import router as unit_router
 from .employee_routes import router as employee_router
 from .return_routes import router as return_router
 
+from .clothing_product_routes import router as clothing_product_router
+from .agro_product_routes import router as agro_product_router
+from .medical_product_routes import router as medical_product_router
+from .grocery_product_routes import router as grocery_product_router
+from .electronics_product_routes import router as electronics_product_router
+from .plastic_product_routes import router as plastic_product_router
+from .handloom_product_routes import router as handloom_product_router
+from .furniture_product_routes import router as furniture_product_router
+from .common_product_routes import router as common_product_router
+
 __all__ = [
     "auth_router",
     "store_type_router",
@@ -24,6 +34,15 @@ __all__ = [
     "category_router",
     "brand_router",
     "product_router",
+    "clothing_product_router",
+    "agro_product_router",
+    "medical_product_router",
+    "grocery_product_router",
+    "electronics_product_router",
+    "plastic_product_router",
+    "handloom_product_router",
+    "furniture_product_router",
+    "common_product_router",
     "inventory_router",
     "sale_router",
     "bill_router",
