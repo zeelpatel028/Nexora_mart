@@ -1,10 +1,15 @@
 import logging
 from sqlalchemy.orm import Session
 from ..models.category import Category, CategoryField
+from ..models.brand import Brand
 from ..models.unit import Unit
-from ..models.store import Store
+from ..models.store import Store, ShopCategory
 from ..models.store_type import StoreType
 from ..models.user import User
+from ..models.store_user import StoreUser
+from ..models.store_setting import StoreSetting
+from ..models.product import StoreTypeProductField, StoreTypeFieldOption
+from .product_service import STORE_TYPE_DETAIL_CONFIGS
 
 logger = logging.getLogger("seed_service")
 
@@ -211,18 +216,18 @@ def seed_categories_and_fields(db: Session):
         for cat_data in INITIAL_CATEGORIES:
             aliases = cat_data.get("legacy_aliases", [])
             query_filters = [
-                Category.code == cat_data["code"],
-                Category.name == cat_data["name"],
+                ShopCategory.code == cat_data["code"],
+                ShopCategory.name == cat_data["name"],
             ]
             for alias in aliases:
-                query_filters.append(Category.name == alias)
-                query_filters.append(Category.code == alias)
+                query_filters.append(ShopCategory.name == alias)
+                query_filters.append(ShopCategory.code == alias)
 
             from sqlalchemy import or_
-            category = db.query(Category).filter(or_(*query_filters)).first()
+            category = db.query(ShopCategory).filter(or_(*query_filters)).first()
 
             if not category:
-                category = Category(
+                category = ShopCategory(
                     name=cat_data["name"],
                     code=cat_data["code"],
                     description=cat_data["description"],
@@ -298,14 +303,14 @@ def seed_categories_and_fields(db: Session):
             store_type_map[st.name.lower()] = st
 
         # 4. Ensure existing users have valid shop_category, shop_category_id, and Store linked
-        grocery_cat = db.query(Category).filter(Category.code == "GROCERY").first() or db.query(Category).first()
+        grocery_cat = db.query(ShopCategory).filter(ShopCategory.code == "GROCERY").first() or db.query(ShopCategory).first()
         users = db.query(User).all()
         for user in users:
             target_cat = None
             cat_name = user.shop_category or user.store_type
             if cat_name:
                 cat_lower = cat_name.lower()
-                for cat in db.query(Category).all():
+                for cat in db.query(ShopCategory).all():
                     if cat.name.lower() in cat_lower or cat.code.lower() in cat_lower or cat_lower in cat.name.lower():
                         target_cat = cat
                         break
@@ -350,6 +355,68 @@ def seed_categories_and_fields(db: Session):
                         existing_store.shop_category_id = target_cat.id
                     if not existing_store.store_type_id and target_st:
                         existing_store.store_type_id = target_st.id
+
+        # 5. Seed StoreTypeProductField and StoreTypeFieldOption from STORE_TYPE_DETAIL_CONFIGS
+        for st_code, st_info in STORE_TYPE_DETAIL_CONFIGS.items():
+            for idx, f in enumerate(st_info["fields"]):
+                existing_f = db.query(StoreTypeProductField).filter(
+                    StoreTypeProductField.store_type_code == st_code,
+                    StoreTypeProductField.field_name == f["name"]
+                ).first()
+                if not existing_f:
+                    existing_f = StoreTypeProductField(
+                        store_type_code=st_code,
+                        field_name=f["name"],
+                        field_label=f["label"],
+                        field_type=f["type"],
+                        is_required=f.get("required", False),
+                        default_value=str(f["default"]) if f.get("default") is not None else None,
+                        placeholder=f.get("placeholder"),
+                        display_order=idx + 1,
+                        section="store_details"
+                    )
+                    db.add(existing_f)
+                    db.flush()
+
+                if f.get("options"):
+                    for o_idx, opt_str in enumerate(f["options"]):
+                        ex_opt = db.query(StoreTypeFieldOption).filter(
+                            StoreTypeFieldOption.field_id == existing_f.id,
+                            StoreTypeFieldOption.option_value == opt_str
+                        ).first()
+                        if not ex_opt:
+                            db.add(StoreTypeFieldOption(
+                                field_id=existing_f.id,
+                                option_label=opt_str,
+                                option_value=opt_str,
+                                display_order=o_idx + 1,
+                                is_default=(opt_str == f.get("default"))
+                            ))
+
+        # 6. Ensure all stores have StoreUser, StoreSetting, default categories, and default brand
+        all_stores = db.query(Store).all()
+        for s in all_stores:
+            # StoreUser
+            ex_su = db.query(StoreUser).filter(StoreUser.store_id == s.id, StoreUser.user_id == s.user_id).first()
+            if not ex_su:
+                db.add(StoreUser(store_id=s.id, user_id=s.user_id, role="OWNER", is_active=True))
+
+            # StoreSetting
+            ex_set = db.query(StoreSetting).filter(StoreSetting.store_id == s.id).first()
+            if not ex_set:
+                db.add(StoreSetting(store_id=s.id, allow_negative_stock=False, low_stock_threshold=5, enable_barcode_scanner=True, tax_inclusive_pricing=False))
+
+            # Store default categories
+            cat_count = db.query(Category).filter(Category.store_id == s.id).count()
+            if cat_count == 0:
+                default_cat_names = ["General", "Premium", "Special"]
+                for c_name in default_cat_names:
+                    db.add(Category(store_id=s.id, name=c_name, code=c_name.lower(), is_active=True))
+
+            # Store default brand
+            brand_count = db.query(Brand).filter(Brand.store_id == s.id).count()
+            if brand_count == 0:
+                db.add(Brand(store_id=s.id, name="General Brand", code="gen", is_active=True))
 
         db.commit()
         logger.info("Successfully seeded 8 standardized store types, categories, units, and synced existing user stores.")

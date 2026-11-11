@@ -72,12 +72,22 @@ export const API_ENDPOINTS = {
     UPDATE: (id) => `/categories/${id}`,
     DELETE: (id) => `/categories/${id}`
   },
+  BRANDS: {
+    LIST: '/brands',
+    CREATE: '/brands',
+    DETAILS: (id) => `/brands/${id}`,
+    UPDATE: (id) => `/brands/${id}`,
+    DELETE: (id) => `/brands/${id}`
+  },
   PRODUCTS: {
     LIST: '/products',
+    FORM_CONFIG: '/products/form-config',
     DETAILS: (id) => `/products/${id}`,
     CREATE: '/products',
     UPDATE: (id) => `/products/${id}`,
-    DELETE: (id) => `/products/${id}`
+    DELETE: (id) => `/products/${id}`,
+    BATCHES: (id) => `/products/${id}/batches`,
+    VARIANTS: (id) => `/products/${id}/variants`
   },
   INVENTORY: {
     LIST: '/inventory',

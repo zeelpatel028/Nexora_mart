@@ -1,94 +1,82 @@
-from typing import List
+from typing import List, Optional
 from fastapi import APIRouter, Depends, status
 from sqlalchemy.orm import Session
 from ..database.connection import get_db
-from ..middleware.auth_middleware import get_current_user
-from ..models.user import User
+from ..middleware.store_auth import get_current_store_context, StoreContext
 from ..schemas.category_schema import (
     CategoryResponse,
-    CategoryDetailResponse,
     CategoryCreate,
     CategoryUpdate,
-    CategoryFieldResponse,
-    CategoryFieldCreate,
-    CategoryFieldUpdate
 )
 from ..services.category_service import CategoryService
+
+from ..models.store import ShopCategory
+from ..models.product import ProductAttribute
 
 router = APIRouter(prefix="/categories", tags=["Categories"])
 
 @router.get("", response_model=List[CategoryResponse], include_in_schema=False)
 @router.get("/", response_model=List[CategoryResponse])
-def get_categories(active_only: bool = True, db: Session = Depends(get_db)):
-    """List all available store categories"""
-    return CategoryService.get_all_categories(db, active_only=active_only)
+def get_categories(
+    active_only: bool = True,
+    db: Session = Depends(get_db),
+    ctx: Optional[StoreContext] = Depends(lambda: None)
+):
+    """List all categories belonging to current merchant's store, or global shop categories if public."""
+    if isinstance(ctx, StoreContext) and ctx.store_id:
+        store_cats = CategoryService.get_all_categories(db, store_id=ctx.store_id, active_only=active_only)
+        if store_cats:
+            return store_cats
+    # Fallback to ShopCategory master list
+    query = db.query(ShopCategory)
+    if active_only:
+        query = query.filter(ShopCategory.is_active == True)
+    return query.order_by(ShopCategory.name.asc()).all()
 
-@router.post("", response_model=CategoryDetailResponse, status_code=status.HTTP_201_CREATED, include_in_schema=False)
-@router.post("/", response_model=CategoryDetailResponse, status_code=status.HTTP_201_CREATED)
+@router.get("/{id}/fields")
+def get_category_fields(id: int, db: Session = Depends(get_db)):
+    """Fetch field configuration for dynamic product form generation (legacy compatibility)."""
+    return db.query(ProductAttribute).filter(
+        ProductAttribute.shop_category_id == id
+    ).order_by(ProductAttribute.display_order.asc()).all()
+
+@router.post("", response_model=CategoryResponse, status_code=status.HTTP_201_CREATED, include_in_schema=False)
+@router.post("/", response_model=CategoryResponse, status_code=status.HTTP_201_CREATED)
 def create_category(
     request: CategoryCreate,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user)
+    ctx: StoreContext = Depends(get_current_store_context)
 ):
-    """Add a new store category with optional custom dynamic fields (Admin / Multi-tenant extensible)"""
-    return CategoryService.create_category(db, request)
+    """Add a new category scoped strictly to current merchant store."""
+    ctx.require_permission("create_product")
+    return CategoryService.create_category(db, ctx.store_id, request)
 
-@router.get("/{id}", response_model=CategoryDetailResponse)
-def get_category_detail(id: int, db: Session = Depends(get_db)):
-    """Get category information including all configured product fields"""
-    cat = CategoryService.get_category_by_id(db, id)
-    return cat
-
-@router.get("/{id}/fields", response_model=List[CategoryFieldResponse])
-def get_category_fields(id: int, db: Session = Depends(get_db)):
-    """Fetch field configuration for dynamic product form generation"""
-    return CategoryService.get_category_fields(db, id)
+@router.get("/{id}", response_model=CategoryResponse)
+def get_category_detail(
+    id: int,
+    db: Session = Depends(get_db),
+    ctx: StoreContext = Depends(get_current_store_context)
+):
+    """Get category information checking store ownership."""
+    return CategoryService.get_category_by_id(db, id, store_id=ctx.store_id)
 
 @router.put("/{id}", response_model=CategoryResponse)
 def update_category(
     id: int,
     request: CategoryUpdate,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user)
+    ctx: StoreContext = Depends(get_current_store_context)
 ):
-    """Update category metadata"""
-    return CategoryService.update_category(db, id, request)
+    """Update store category metadata."""
+    ctx.require_permission("edit_product")
+    return CategoryService.update_category(db, ctx.store_id, id, request)
 
 @router.delete("/{id}")
 def delete_category(
     id: int,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user)
+    ctx: StoreContext = Depends(get_current_store_context)
 ):
-    """Delete or deactivate custom category"""
-    return CategoryService.delete_category(db, id)
-
-@router.post("/{id}/fields", response_model=CategoryFieldResponse, status_code=status.HTTP_201_CREATED)
-def add_field_to_category(
-    id: int,
-    request: CategoryFieldCreate,
-    db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user)
-):
-    """Add a new dynamic field to a category"""
-    return CategoryService.add_category_field(db, id, request)
-
-@router.put("/fields/{field_id}", response_model=CategoryFieldResponse)
-def update_category_field(
-    field_id: int,
-    request: CategoryFieldUpdate,
-    db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user)
-):
-    """Update dynamic field configuration"""
-    return CategoryService.update_category_field(db, field_id, request)
-
-@router.delete("/fields/{field_id}")
-def delete_category_field(
-    field_id: int,
-    db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user)
-):
-    """Remove a field from a category"""
-    return CategoryService.delete_category_field(db, field_id)
-
+    """Deactivate category in store."""
+    ctx.require_permission("delete_product")
+    return CategoryService.delete_category(db, ctx.store_id, id)

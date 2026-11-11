@@ -23,18 +23,18 @@ export type RootStackParamList = {
 
   // Product Screens
   ProductList: undefined;
-  ProductDetail: { productId: number };
-  ProductDetails?: { productId: number };
+  ProductDetail: { productId: string | number };
+  ProductDetails?: { productId: string | number };
   AddProduct: { categoryId?: number };
-  EditProduct: { productId: number };
+  EditProduct: { productId: string | number };
 
   // Category Screens
   CategoryManager: undefined;
 
   // Inventory Screens
   Inventory: undefined;
-  StockInward: { productId?: number };
-  StockAdjustment: { productId?: number };
+  StockInward: { productId?: string | number };
+  StockAdjustment: { productId?: string | number };
   ExpiryAlerts: undefined;
 
   // Orders & POS Screens

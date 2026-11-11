@@ -25,6 +25,7 @@ export const categoryService = {
     code: string;
     description?: string;
     icon?: string;
+    is_active?: boolean;
   }): Promise<Category> {
     return apiClient.post<Category>(Endpoints.CATEGORIES.CREATE, payload);
   },

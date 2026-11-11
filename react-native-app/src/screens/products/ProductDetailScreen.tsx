@@ -94,12 +94,52 @@ export const ProductDetailScreen: React.FC = () => {
     );
   }
 
-  const isLowStock = product.current_stock <= (product.min_stock_level || 5);
+  const isLowStock =
+    (product.inventory_record?.current_stock ?? product.current_stock) <=
+    (product.inventory_record?.minimum_stock ?? product.min_stock_level ?? 5);
+
+  const productName = product.product_name || product.name;
+  const sellingPrice = product.pricing?.selling_price ?? product.selling_price ?? 0;
+  const purchasePrice = product.pricing?.purchase_price ?? product.purchase_price ?? 0;
+  const mrpVal = product.pricing?.mrp ?? product.mrp;
+  const currentStock = product.inventory_record?.current_stock ?? product.current_stock ?? 0;
+  const unitSymbol = product.unit || 'pcs';
+
+  // Helper to extract store-specific attributes
+  const getStoreAttributes = (): [string, any][] => {
+    const keys = [
+      'grocery_details',
+      'clothing_details',
+      'medicine_details',
+      'electronics_details',
+      'plastic_details',
+      'handloom_details',
+      'furniture_details',
+      'agro_details',
+      'store_details',
+      'attributes',
+    ];
+    for (const k of keys) {
+      const obj = (product as any)[k];
+      if (obj && typeof obj === 'object' && Object.keys(obj).length > 0) {
+        return Object.entries(obj).filter(
+          ([attrKey, v]) =>
+            v !== null &&
+            v !== undefined &&
+            v !== '' &&
+            !['id', 'store_id', 'product_id', 'created_at', 'updated_at'].includes(attrKey)
+        );
+      }
+    }
+    return [];
+  };
+
+  const storeAttributes = getStoreAttributes();
 
   return (
     <View style={{ flex: 1, backgroundColor: colors.background }}>
       <Header
-        title={product.name}
+        title={productName}
         showBack
         onBack={() => navigation.goBack()}
         rightAction={{
@@ -121,15 +161,16 @@ export const ProductDetailScreen: React.FC = () => {
 
           <View style={styles.headerInfo}>
             <View style={styles.badgeRow}>
-              <Badge label={product.category_name || 'Retail'} variant="primary" />
+              <Badge label={product.category?.name || product.category_name || 'Retail'} variant="primary" />
+              {product.brand && <Badge label={`🏷️ ${product.brand.name}`} variant="neutral" />}
               <Badge
                 label={product.is_active ? 'Active' : 'Inactive'}
                 variant={product.is_active ? 'success' : 'danger'}
               />
-              {product.has_variants && <Badge label="Has Variants" variant="info" />}
+              {product.is_featured && <Badge label="⭐ Featured" variant="warning" />}
             </View>
 
-            <Text style={[styles.productTitle, { color: colors.textPrimary }]}>{product.name}</Text>
+            <Text style={[styles.productTitle, { color: colors.textPrimary }]}>{productName}</Text>
             <Text style={[styles.skuCode, { color: colors.textMuted }]}>
               SKU: {product.sku} {product.barcode ? `• Barcode: ${product.barcode}` : ''}
             </Text>
@@ -143,21 +184,21 @@ export const ProductDetailScreen: React.FC = () => {
             <View style={styles.infoCol}>
               <Text style={[styles.infoLabel, { color: colors.textMuted }]}>Selling Price</Text>
               <Text style={[styles.infoValue, { color: brandColors.primary }]}>
-                {formatCurrency(product.selling_price)}
+                {formatCurrency(sellingPrice)}
               </Text>
             </View>
 
             <View style={styles.infoCol}>
               <Text style={[styles.infoLabel, { color: colors.textMuted }]}>Purchase Price</Text>
               <Text style={[styles.infoValue, { color: colors.textPrimary }]}>
-                {formatCurrency(product.purchase_price)}
+                {formatCurrency(purchasePrice)}
               </Text>
             </View>
 
             <View style={styles.infoCol}>
               <Text style={[styles.infoLabel, { color: colors.textMuted }]}>MRP</Text>
               <Text style={[styles.infoValue, { color: colors.textPrimary }]}>
-                {product.mrp ? formatCurrency(product.mrp) : '—'}
+                {mrpVal ? formatCurrency(mrpVal) : '—'}
               </Text>
             </View>
 
@@ -166,29 +207,29 @@ export const ProductDetailScreen: React.FC = () => {
               <Text
                 style={[
                   styles.infoValue,
-                  { color: product.current_stock <= 0 ? brandColors.error : isLowStock ? brandColors.warning : brandColors.success },
+                  { color: currentStock <= 0 ? brandColors.error : isLowStock ? brandColors.warning : brandColors.success },
                 ]}
               >
-                {formatQuantity(product.current_stock, product.unit)}
+                {formatQuantity(currentStock, unitSymbol)}
               </Text>
             </View>
           </View>
         </Card>
 
-        {/* Dynamic Category Specifications */}
-        {product.attributes && Object.keys(product.attributes).length > 0 && (
+        {/* Dynamic Store Specifications */}
+        {storeAttributes.length > 0 && (
           <Card>
             <Text style={[styles.cardHeading, { color: colors.textPrimary }]}>
-              Category Specifications ({product.category_name})
+              Store Specifications ({product.category?.name || product.category_name || 'Retail'})
             </Text>
             <View style={styles.attributesList}>
-              {Object.entries(product.attributes).map(([key, value]) => (
+              {storeAttributes.map(([key, value]) => (
                 <View key={key} style={[styles.attributeRow, { borderBottomColor: colors.borderLight }]}>
                   <Text style={[styles.attrKey, { color: colors.textSecondary }]}>
                     {key.replace(/_/g, ' ').toUpperCase()}
                   </Text>
                   <Text style={[styles.attrVal, { color: colors.textPrimary }]}>
-                    {String(value)}
+                    {typeof value === 'boolean' ? (value ? '✓ Yes' : '✕ No') : String(value)}
                   </Text>
                 </View>
               ))}
@@ -196,28 +237,49 @@ export const ProductDetailScreen: React.FC = () => {
           </Card>
         )}
 
+        {/* Batches if applicable */}
+        {product.batches && product.batches.length > 0 && (
+          <Card>
+            <Text style={[styles.cardHeading, { color: colors.textPrimary }]}>Active Batches</Text>
+            {product.batches.map((b, i) => (
+              <View key={i} style={[styles.attributeRow, { borderBottomColor: colors.borderLight }]}>
+                <View>
+                  <Text style={[styles.attrVal, { color: colors.textPrimary }]}>
+                    {b.batch_number}
+                  </Text>
+                  <Text style={{ fontSize: 11, color: colors.textMuted }}>
+                    Mfg: {b.manufacturing_date ? b.manufacturing_date.split('T')[0] : 'N/A'} • Exp:{' '}
+                    {b.expiry_date ? b.expiry_date.split('T')[0] : 'N/A'}
+                  </Text>
+                </View>
+                <Text style={[styles.attrVal, { color: brandColors.primary }]}>
+                  Qty: {b.current_quantity}
+                </Text>
+              </View>
+            ))}
+          </Card>
+        )}
+
         {/* Product Variants (if applicable) */}
-        {product.has_variants && product.variants && product.variants.length > 0 && (
+        {product.variants && product.variants.length > 0 && (
           <Card>
             <Text style={[styles.cardHeading, { color: colors.textPrimary }]}>Product Variants</Text>
             {product.variants.map((v, i) => (
               <View key={i} style={[styles.variantRow, { borderBottomColor: colors.borderLight }]}>
                 <View style={{ flex: 1 }}>
                   <Text style={[styles.variantSku, { color: colors.textPrimary }]}>
-                    {v.sku}
+                    {v.variant_name || v.sku}
                   </Text>
                   <Text style={[styles.variantAttr, { color: colors.textMuted }]}>
-                    {Object.entries(v.attributes || {})
-                      .map(([k, val]) => `${k}: ${val}`)
-                      .join(' • ')}
+                    SKU: {v.sku}
                   </Text>
                 </View>
                 <View style={{ alignItems: 'flex-end' }}>
                   <Text style={[styles.variantPrice, { color: brandColors.primary }]}>
-                    {formatCurrency(v.price)}
+                    {formatCurrency(v.selling_price ?? v.price ?? 0)}
                   </Text>
                   <Text style={[styles.variantStock, { color: colors.textSecondary }]}>
-                    Stock: {v.stock ?? v.inventory?.quantity ?? 0}
+                    Stock: {v.stock_quantity ?? v.stock ?? 0}
                   </Text>
                 </View>
               </View>

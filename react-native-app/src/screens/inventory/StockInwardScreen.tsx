@@ -28,7 +28,7 @@ export const StockInwardScreen: React.FC = () => {
   const { colors, brandColors } = useTheme();
 
   const [products, setProducts] = useState<Product[]>([]);
-  const [selectedProductId, setSelectedProductId] = useState<number | null>(initialProdId || null);
+  const [selectedProductId, setSelectedProductId] = useState<string | number | null>(initialProdId || null);
   const [quantity, setQuantity] = useState('');
   const [unitCost, setUnitCost] = useState('');
   const [batchNumber, setBatchNumber] = useState('');

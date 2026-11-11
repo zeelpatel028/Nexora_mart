@@ -25,7 +25,7 @@ import { formatCurrency } from '../../utils/formatters';
 type PosNavProp = NativeStackNavigationProp<RootStackParamList>;
 
 interface CartItem {
-  product_id: number;
+  product_id: string | number;
   name: string;
   sku: string;
   unit: string;
@@ -103,7 +103,7 @@ export const PosBillingScreen: React.FC = () => {
     });
   };
 
-  const updateQuantity = (productId: number, delta: number) => {
+  const updateQuantity = (productId: string | number, delta: number) => {
     setCart((prev) =>
       prev
         .map((item) => {
@@ -121,7 +121,7 @@ export const PosBillingScreen: React.FC = () => {
     );
   };
 
-  const removeFromCart = (productId: number) => {
+  const removeFromCart = (productId: string | number) => {
     setCart((prev) => prev.filter((item) => item.product_id !== productId));
   };
 

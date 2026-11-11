@@ -62,13 +62,25 @@ export const Endpoints = {
     DELETE_FIELD: (fieldId: number) => `/categories/fields/${fieldId}`,
   },
 
+  // Brands (Store-Isolated Brands)
+  BRANDS: {
+    LIST: '/brands',
+    CREATE: '/brands',
+    DETAIL: (id: number) => `/brands/${id}`,
+    UPDATE: (id: number) => `/brands/${id}`,
+    DELETE: (id: number) => `/brands/${id}`,
+  },
+
   // Products & Variants
   PRODUCTS: {
     LIST: '/products/',
+    FORM_CONFIG: '/products/form-config',
     CREATE: '/products/',
-    DETAIL: (id: number) => `/products/${id}`,
-    UPDATE: (id: number) => `/products/${id}`,
-    DELETE: (id: number) => `/products/${id}`,
+    DETAIL: (id: string | number) => `/products/${id}`,
+    UPDATE: (id: string | number) => `/products/${id}`,
+    DELETE: (id: string | number) => `/products/${id}`,
+    BATCHES: (id: string | number) => `/products/${id}/batches`,
+    VARIANTS: (id: string | number) => `/products/${id}/variants`,
   },
 
   // Inventory & Stock Movements

@@ -20,7 +20,7 @@ import Card from '../../components/common/Card';
 import { formatCurrency } from '../../utils/formatters';
 
 interface PurchaseLine {
-  product_id: number;
+  product_id: string | number;
   product_name: string;
   quantity: string;
   unit_cost: string;

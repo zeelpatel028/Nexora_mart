@@ -71,6 +71,10 @@ class Store(Base):
     sequences = relationship("DocumentSequence", back_populates="store", cascade="all, delete-orphan")
 
     products = relationship("Product", back_populates="store", cascade="all, delete-orphan")
+    brands = relationship("Brand", back_populates="store", cascade="all, delete-orphan")
+    categories = relationship("Category", back_populates="store", cascade="all, delete-orphan")
+    store_users = relationship("StoreUser", back_populates="store", cascade="all, delete-orphan")
+    store_settings = relationship("StoreSetting", back_populates="store", uselist=False, cascade="all, delete-orphan")
     product_categories = relationship("ProductCategory", back_populates="store", cascade="all, delete-orphan")
     product_stock = relationship("ProductStock", back_populates="store", cascade="all, delete-orphan")
     customers = relationship("Customer", back_populates="store", cascade="all, delete-orphan")

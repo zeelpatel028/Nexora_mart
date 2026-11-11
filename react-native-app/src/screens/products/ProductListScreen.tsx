@@ -67,7 +67,15 @@ export const ProductListScreen: React.FC = () => {
   };
 
   const renderProductItem = ({ item }: { item: Product }) => {
-    const isLowStock = item.current_stock <= (item.min_stock_level || 5);
+    const pName = item.product_name || item.name;
+    const sp = item.pricing?.selling_price ?? item.selling_price ?? 0;
+    const mrpVal = item.pricing?.mrp ?? item.mrp;
+    const curStock = item.inventory_record?.current_stock ?? item.current_stock ?? 0;
+    const minStock = item.inventory_record?.minimum_stock ?? item.min_stock_level ?? 5;
+    const isLowStock = curStock <= minStock && curStock > 0;
+    const isOut = curStock <= 0;
+    const catName = item.category?.name || item.category_name || 'Retail';
+    const unitSym = item.unit || 'pcs';
 
     return (
       <Card
@@ -86,10 +94,10 @@ export const ProductListScreen: React.FC = () => {
           <View style={styles.cardBody}>
             <View style={styles.titleRow}>
               <Text style={[styles.productName, { color: colors.textPrimary }]} numberOfLines={1}>
-                {item.name}
+                {pName}
               </Text>
               <Badge
-                label={item.category_name || 'Retail'}
+                label={catName}
                 variant="neutral"
                 style={{ marginLeft: 6 }}
               />
@@ -97,24 +105,25 @@ export const ProductListScreen: React.FC = () => {
 
             <Text style={[styles.skuText, { color: colors.textMuted }]}>
               SKU: {item.sku} {item.barcode ? `• Barcode: ${item.barcode}` : ''}
+              {item.brand ? ` • 🏷️ ${item.brand.name}` : ''}
             </Text>
 
             <View style={styles.footerRow}>
               <View>
                 <Text style={[styles.priceText, { color: brandColors.primary }]}>
-                  {formatCurrency(item.selling_price)}
+                  {formatCurrency(sp)}
                 </Text>
-                {item.mrp ? (
+                {mrpVal ? (
                   <Text style={[styles.mrpText, { color: colors.textMuted }]}>
-                    MRP: {formatCurrency(item.mrp)}
+                    MRP: {formatCurrency(mrpVal)}
                   </Text>
                 ) : null}
               </View>
 
               <View style={styles.stockBox}>
                 <Badge
-                  label={formatQuantity(item.current_stock, item.unit)}
-                  variant={item.current_stock <= 0 ? 'danger' : isLowStock ? 'warning' : 'success'}
+                  label={formatQuantity(curStock, unitSym)}
+                  variant={isOut ? 'danger' : isLowStock ? 'warning' : 'success'}
                 />
               </View>
             </View>

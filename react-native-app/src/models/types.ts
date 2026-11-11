@@ -117,26 +117,102 @@ export interface Category {
 // ========================
 // PRODUCT & VARIANTS
 // ========================
+// ========================
+// BRANDS
+// ========================
+export interface Brand {
+  id: number;
+  store_id: number;
+  name: string;
+  code?: string | null;
+  description?: string | null;
+  logo_url?: string | null;
+  is_active: boolean;
+}
+
+// ========================
+// PRODUCT & VARIANTS
+// ========================
+export interface ProductPricing {
+  id?: number;
+  purchase_price?: number;
+  selling_price: number;
+  mrp?: number | null;
+  wholesale_price?: number | null;
+  tax_type?: 'exclusive' | 'inclusive' | 'exempt';
+  gst_rate?: number;
+  cgst_rate?: number;
+  sgst_rate?: number;
+  igst_rate?: number;
+}
+
+export interface ProductInventory {
+  id?: number;
+  opening_stock?: number;
+  current_stock: number;
+  minimum_stock: number;
+  maximum_stock?: number;
+  reorder_level?: number;
+  warehouse_location?: string | null;
+}
+
+export interface ProductBatch {
+  id?: number;
+  batch_number: string;
+  manufacturing_date?: string | null;
+  expiry_date?: string | null;
+  initial_quantity?: number;
+  current_quantity: number;
+  purchase_price?: number;
+  selling_price?: number;
+  mrp?: number;
+  is_active?: boolean;
+}
+
+export interface ProductAlert {
+  id?: number;
+  alert_type: 'low_stock' | 'expiring_soon' | 'out_of_stock';
+  threshold_value?: number;
+  alert_days_before?: number;
+  is_enabled: boolean;
+  notify_email?: boolean;
+  notify_sms?: boolean;
+}
+
 export interface ProductVariant {
   id?: number;
-  product_id?: number;
+  product_id?: string | number;
+  variant_name?: string;
   sku: string;
   barcode?: string;
-  attributes: Record<string, any>;
-  price: number;
+  attributes?: Record<string, any>;
+  price?: number;
+  selling_price?: number;
+  purchase_price?: number;
+  mrp?: number;
   stock?: number;
+  stock_quantity?: number;
   inventory?: { quantity: number };
+  is_active?: boolean;
 }
 
 export interface Product {
-  id: number;
+  id: string | number;
   store_id: number;
-  category_id: number;
+  category_id?: number | null;
+  brand_id?: number | null;
+  unit_id?: number | null;
   category_name?: string | null;
   category_code?: string | null;
+  category?: Category | null;
+  brand?: Brand | null;
+  product_name?: string;
   name: string;
+  product_code?: string | null;
   sku: string;
   barcode?: string | null;
+  hsn_code?: string | null;
+  short_description?: string | null;
   description?: string | null;
   image_url?: string | null;
   purchase_price: number;
@@ -144,43 +220,159 @@ export interface Product {
   mrp?: number | null;
   unit: string;
   min_stock_level: number;
+  status?: string;
   is_active: boolean;
+  is_featured?: boolean;
   has_variants: boolean;
   attributes: Record<string, any>;
   current_stock: number;
+  pricing?: ProductPricing | null;
+  inventory_record?: ProductInventory | null;
   variants?: ProductVariant[];
+  batches?: ProductBatch[];
+  alerts?: ProductAlert[];
+  grocery_details?: Record<string, any>;
+  clothing_details?: Record<string, any>;
+  medicine_details?: Record<string, any>;
+  electronics_details?: Record<string, any>;
+  plastic_details?: Record<string, any>;
+  handloom_details?: Record<string, any>;
+  furniture_details?: Record<string, any>;
+  agro_details?: Record<string, any>;
+  store_details?: Record<string, any>;
   created_at?: string;
 }
 
-export interface ProductCreatePayload {
-  category_id: number;
+export interface FormFieldConfig {
   name: string;
+  label: string;
+  type: 'text' | 'number' | 'select' | 'boolean' | 'date' | 'textarea';
+  required?: boolean;
+  placeholder?: string;
+  default?: any;
+  options?: string[];
+}
+
+export interface FormConfigResponse {
+  store: {
+    id: number;
+    name: string;
+    code: string;
+    store_type: string;
+    store_type_code: string;
+  };
+  store_type: {
+    code: string;
+    name: string;
+    has_variants: boolean;
+    has_batches: boolean;
+    has_serials: boolean;
+  };
+  common_fields: Record<string, any>;
+  store_specific_fields: FormFieldConfig[];
+  categories: Array<{ id: number; name: string; code?: string; icon?: string }>;
+  brands: Array<{ id: number; name: string; code?: string }>;
+  units: Array<{ id: number; name: string; symbol: string }>;
+}
+
+export interface ProductCreatePayload {
+  product_name?: string;
+  name?: string;
+  product_code?: string;
+  category_id?: number;
+  brand_id?: number;
+  unit_id?: number;
   sku?: string;
   barcode?: string;
+  hsn_code?: string;
+  short_description?: string;
   description?: string;
   image_url?: string;
-  purchase_price: number;
+  purchase_price?: number;
   selling_price: number;
   mrp?: number;
-  unit: string;
+  unit?: string;
   min_stock_level?: number;
   initial_stock?: number;
+  current_stock?: number;
+  product_type?: string;
+  status?: string;
+  is_featured?: boolean;
   has_variants?: boolean;
+  pricing?: {
+    purchase_price?: number;
+    selling_price: number;
+    mrp?: number;
+    wholesale_price?: number;
+    tax_type?: string;
+    gst_rate?: number;
+  };
+  inventory?: {
+    opening_stock?: number;
+    current_stock?: number;
+    minimum_stock?: number;
+    maximum_stock?: number;
+    reorder_level?: number;
+    warehouse_location?: string;
+  };
+  store_details?: Record<string, any>;
+  grocery_details?: Record<string, any>;
+  clothing_details?: Record<string, any>;
+  medicine_details?: Record<string, any>;
+  electronics_details?: Record<string, any>;
+  plastic_details?: Record<string, any>;
+  handloom_details?: Record<string, any>;
+  furniture_details?: Record<string, any>;
+  agro_details?: Record<string, any>;
   attributes?: Record<string, any>;
   variants?: Array<{
+    variant_name?: string;
     sku: string;
     barcode?: string;
-    attributes: Record<string, any>;
-    price: number;
+    purchase_price?: number;
+    selling_price: number;
+    mrp?: number;
+    stock_quantity?: number;
     initial_stock?: number;
+    is_active?: boolean;
+    attributes?: Record<string, any>;
+  }>;
+  batches?: Array<{
+    batch_number: string;
+    manufacturing_date?: string;
+    expiry_date?: string;
+    purchase_price?: number;
+    selling_price?: number;
+    mrp?: number;
+    initial_quantity?: number;
+    current_quantity?: number;
+    is_active?: boolean;
+  }>;
+  alerts?: Array<{
+    alert_type: string;
+    threshold_value?: number;
+    alert_days_before?: number;
+    is_enabled: boolean;
+    notify_email?: boolean;
+    notify_sms?: boolean;
+  }>;
+  images?: Array<{
+    image_url: string;
+    is_primary?: boolean;
   }>;
 }
 
 export interface ProductUpdatePayload {
+  product_name?: string;
   name?: string;
+  product_code?: string;
   category_id?: number;
+  brand_id?: number;
+  unit_id?: number;
   sku?: string;
   barcode?: string;
+  hsn_code?: string;
+  short_description?: string;
   description?: string;
   image_url?: string;
   purchase_price?: number;
@@ -188,7 +380,34 @@ export interface ProductUpdatePayload {
   mrp?: number;
   unit?: string;
   min_stock_level?: number;
+  current_stock?: number;
+  status?: string;
   is_active?: boolean;
+  is_featured?: boolean;
+  pricing?: {
+    purchase_price?: number;
+    selling_price?: number;
+    mrp?: number;
+    wholesale_price?: number;
+    tax_type?: string;
+    gst_rate?: number;
+  };
+  inventory?: {
+    current_stock?: number;
+    minimum_stock?: number;
+    maximum_stock?: number;
+    reorder_level?: number;
+    warehouse_location?: string;
+  };
+  store_details?: Record<string, any>;
+  grocery_details?: Record<string, any>;
+  clothing_details?: Record<string, any>;
+  medicine_details?: Record<string, any>;
+  electronics_details?: Record<string, any>;
+  plastic_details?: Record<string, any>;
+  handloom_details?: Record<string, any>;
+  furniture_details?: Record<string, any>;
+  agro_details?: Record<string, any>;
   attributes?: Record<string, any>;
 }
 
@@ -224,7 +443,7 @@ export interface StockMovement {
 }
 
 export interface StockInPayload {
-  product_id: number;
+  product_id: string | number;
   quantity: number;
   unit_cost?: number;
   batch_number?: string;
@@ -233,14 +452,14 @@ export interface StockInPayload {
 }
 
 export interface StockOutPayload {
-  product_id: number;
+  product_id: string | number;
   quantity: number;
   reason: string;
   notes?: string;
 }
 
 export interface StockAdjustPayload {
-  product_id: number;
+  product_id: string | number;
   physical_count: number;
   reason: string;
   notes?: string;
@@ -252,7 +471,7 @@ export interface StockAdjustPayload {
 export interface SaleItem {
   id?: number;
   sale_id?: number;
-  product_id: number;
+  product_id: string | number;
   product_name?: string;
   sku?: string;
   unit?: string;
@@ -287,7 +506,7 @@ export interface SaleCreatePayload {
   tax_amount?: number;
   paid_amount?: number;
   items: Array<{
-    product_id: number;
+    product_id: string | number;
     quantity: number;
     unit_price: number;
     discount?: number;
@@ -300,7 +519,7 @@ export interface SaleCreatePayload {
 export interface PurchaseItem {
   id?: number;
   purchase_id?: number;
-  product_id: number;
+  product_id: string | number;
   product_name?: string;
   sku?: string;
   quantity: number;
@@ -330,7 +549,7 @@ export interface PurchaseCreatePayload {
   payment_method: string;
   paid_amount?: number;
   items: Array<{
-    product_id: number;
+    product_id: string | number;
     quantity: number;
     unit_cost: number;
     batch_number?: string;

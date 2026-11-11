@@ -28,7 +28,7 @@ export const StockAdjustmentScreen: React.FC = () => {
   const { colors, brandColors } = useTheme();
 
   const [products, setProducts] = useState<Product[]>([]);
-  const [selectedProductId, setSelectedProductId] = useState<number | null>(initialProdId || null);
+  const [selectedProductId, setSelectedProductId] = useState<string | number | null>(initialProdId || null);
   const [physicalCount, setPhysicalCount] = useState('');
   const [reason, setReason] = useState('Physical audit count reconciliation');
   const [notes, setNotes] = useState('');
