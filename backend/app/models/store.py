@@ -167,6 +167,9 @@ class StoreConfiguration(Base):
     invoice_prefix = Column(String(20), default="INV", nullable=False)
     invoice_starting_number = Column(Integer, default=1, nullable=False)
     low_stock_alert = Column(Integer, default=5, nullable=False)
+    low_stock_threshold = Column(Integer, default=5, nullable=False)
+    tax_rate = Column(Float, default=5.0, nullable=False)
+    invoice_footer_note = Column(Text, nullable=True)
     return_period = Column(String(50), default="7 Days", nullable=False)
     store_language = Column(String(50), default="English", nullable=False)
     enable_barcode_scanner = Column(Boolean, default=True, nullable=False)
@@ -174,10 +177,6 @@ class StoreConfiguration(Base):
     dark_mode_default = Column(Boolean, default=False, nullable=False)
     created_at = Column(DateTime, default=lambda: datetime.datetime.now(datetime.timezone.utc))
     updated_at = Column(DateTime, default=lambda: datetime.datetime.now(datetime.timezone.utc), onupdate=lambda: datetime.datetime.now(datetime.timezone.utc))
-
-    # Aliases
-    low_stock_threshold = synonym("low_stock_alert")
-    tax_rate = synonym("default_tax_rate")
 
     store = relationship("Store", back_populates="configuration")
 

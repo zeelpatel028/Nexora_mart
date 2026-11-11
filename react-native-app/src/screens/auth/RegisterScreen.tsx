@@ -200,6 +200,7 @@ export const RegisterScreen: React.FC = () => {
       } else {
         const msg = err.message || 'Registration failed. Please try again.';
         setErrorMsg(msg);
+        Alert.alert('Registration Failed', msg);
       }
     } finally {
       setLoading(false);

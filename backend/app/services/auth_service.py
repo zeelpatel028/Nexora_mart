@@ -174,9 +174,14 @@ class AuthService:
                 store_id=store.id,
                 currency="INR (₹)",
                 default_tax_rate=5.0,
+                tax_rate=5.0,
                 invoice_prefix="INV",
                 invoice_starting_number=1,
-                low_stock_alert=5
+                low_stock_alert=5,
+                low_stock_threshold=5,
+                enable_barcode_scanner=True,
+                allow_negative_stock=False,
+                dark_mode_default=False
             )
             db.add(cfg)
 
