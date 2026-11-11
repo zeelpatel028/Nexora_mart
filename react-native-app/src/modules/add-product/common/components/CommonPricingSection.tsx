@@ -42,11 +42,11 @@ export const CommonPricingSection: React.FC<CommonPricingSectionProps> = ({
             onChangeText={(val) => onChange({ purchasePrice: val })}
             keyboardType="numeric"
           />
-          {errors.purchasePrice && (
+          {errors.purchasePrice ? (
             <Text style={[styles.errorText, { color: brandColors.error }]}>
               {errors.purchasePrice}
             </Text>
-          )}
+          ) : null}
         </View>
 
         <View style={styles.col}>
@@ -68,16 +68,16 @@ export const CommonPricingSection: React.FC<CommonPricingSectionProps> = ({
             onChangeText={(val) => onChange({ sellingPrice: val })}
             keyboardType="numeric"
           />
-          {errors.sellingPrice && (
+          {errors.sellingPrice ? (
             <Text style={[styles.errorText, { color: brandColors.error }]}>
               {errors.sellingPrice}
             </Text>
-          )}
+          ) : null}
         </View>
       </View>
 
       {/* Live Profit Margin Badge */}
-      {parseFloat(data.sellingPrice) > 0 && (
+      {parseFloat(data.sellingPrice) > 0 ? (
         <View
           style={[
             styles.profitCard,
@@ -98,7 +98,7 @@ export const CommonPricingSection: React.FC<CommonPricingSectionProps> = ({
             ₹{Math.abs(marginInfo.profitAmount)} ({marginInfo.marginPercentage}%)
           </Text>
         </View>
-      )}
+      ) : null}
 
       {/* MRP & Wholesale Price Row */}
       <View style={styles.row}>

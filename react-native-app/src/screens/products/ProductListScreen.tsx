@@ -104,8 +104,8 @@ export const ProductListScreen: React.FC = () => {
             </View>
 
             <Text style={[styles.skuText, { color: colors.textMuted }]}>
-              SKU: {item.sku} {item.barcode ? `• Barcode: ${item.barcode}` : ''}
-              {item.brand ? ` • 🏷️ ${item.brand.name}` : ''}
+              SKU: {item.sku || 'N/A'}{item.barcode ? ` • Barcode: ${item.barcode}` : ''}
+              {typeof item.brand === 'object' && item.brand?.name ? ` • 🏷️ ${item.brand.name}` : typeof item.brand === 'string' && item.brand ? ` • 🏷️ ${item.brand}` : ''}
             </Text>
 
             <View style={styles.footerRow}>

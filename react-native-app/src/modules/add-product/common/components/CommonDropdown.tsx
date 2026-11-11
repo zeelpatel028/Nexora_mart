@@ -49,11 +49,11 @@ export const CommonDropdown: React.FC<CommonDropdownProps> = ({
 
   return (
     <View style={styles.container}>
-      {label && (
+      {label ? (
         <Text style={[styles.label, { color: colors.textSecondary }]}>
-          {label} {required && <Text style={{ color: brandColors.error }}>*</Text>}
+          {label} {required ? <Text style={{ color: brandColors.error }}>*</Text> : null}
         </Text>
-      )}
+      ) : null}
 
       <TouchableOpacity
         activeOpacity={0.8}

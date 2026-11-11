@@ -32,7 +32,7 @@ export const CommonDatePicker: React.FC<CommonDatePickerProps> = ({
   return (
     <View style={styles.container}>
       <Text style={[styles.label, { color: colors.textSecondary }]}>
-        {label} {required && <Text style={{ color: brandColors.error }}>*</Text>}
+        {label} {required ? <Text style={{ color: brandColors.error }}>*</Text> : null}
       </Text>
 
       <TouchableOpacity

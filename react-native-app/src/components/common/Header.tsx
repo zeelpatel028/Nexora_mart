@@ -43,7 +43,7 @@ export const Header: React.FC<HeaderProps> = ({
         translucent={Platform.OS === 'android'}
       />
       <View style={styles.content}>
-        {showBack && (
+        {showBack ? (
           <TouchableOpacity
             style={[styles.iconButton, { backgroundColor: isDark ? colors.surfaceSubtle : '#F1F5F9' }]}
             onPress={onBack}
@@ -51,17 +51,17 @@ export const Header: React.FC<HeaderProps> = ({
           >
             <ChevronLeftIcon size={20} color={colors.textPrimary} />
           </TouchableOpacity>
-        )}
+        ) : null}
 
         <View style={styles.titleContainer}>
           <Text style={[styles.title, { color: colors.textPrimary }]} numberOfLines={1}>
             {title}
           </Text>
-          {subtitle && (
+          {subtitle ? (
             <Text style={[styles.subtitle, { color: colors.textSecondary }]} numberOfLines={1}>
               {subtitle}
             </Text>
-          )}
+          ) : null}
         </View>
 
         {rightAction ? (
@@ -78,9 +78,9 @@ export const Header: React.FC<HeaderProps> = ({
               rightAction.icon
             )}
           </TouchableOpacity>
-        ) : (
-          showBack && <View style={styles.iconButtonPlaceholder} />
-        )}
+        ) : showBack ? (
+          <View style={styles.iconButtonPlaceholder} />
+        ) : null}
       </View>
     </View>
   );

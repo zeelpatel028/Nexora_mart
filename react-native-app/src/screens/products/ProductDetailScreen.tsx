@@ -162,12 +162,12 @@ export const ProductDetailScreen: React.FC = () => {
           <View style={styles.headerInfo}>
             <View style={styles.badgeRow}>
               <Badge label={product.category?.name || product.category_name || 'Retail'} variant="primary" />
-              {product.brand && <Badge label={`🏷️ ${product.brand.name}`} variant="neutral" />}
+              {product.brand ? <Badge label={`🏷️ ${product.brand.name}`} variant="neutral" /> : null}
               <Badge
                 label={product.is_active ? 'Active' : 'Inactive'}
                 variant={product.is_active ? 'success' : 'danger'}
               />
-              {product.is_featured && <Badge label="⭐ Featured" variant="warning" />}
+              {product.is_featured ? <Badge label="⭐ Featured" variant="warning" /> : null}
             </View>
 
             <Text style={[styles.productTitle, { color: colors.textPrimary }]}>{productName}</Text>

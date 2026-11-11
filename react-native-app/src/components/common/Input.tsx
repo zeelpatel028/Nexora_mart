@@ -33,11 +33,11 @@ export const Input: React.FC<InputProps> = ({
 
   return (
     <View style={[styles.container, containerStyle]}>
-      {label && (
+      {label ? (
         <Text style={[styles.label, { color: colors.textSecondary }]}>
           {label}
         </Text>
-      )}
+      ) : null}
 
       <View
         style={[
@@ -53,7 +53,7 @@ export const Input: React.FC<InputProps> = ({
           },
         ]}
       >
-        {icon && (
+        {icon ? (
           <View style={styles.iconWrap}>
             {typeof icon === 'string' ? (
               <Text style={styles.icon}>{icon}</Text>
@@ -61,7 +61,7 @@ export const Input: React.FC<InputProps> = ({
               icon
             )}
           </View>
-        )}
+        ) : null}
 
         <TextInput
           style={[
@@ -71,13 +71,13 @@ export const Input: React.FC<InputProps> = ({
             },
           ]}
           placeholderTextColor={colors.textPlaceholder}
-          secureTextEntry={isPassword && !showPassword}
+          secureTextEntry={Boolean(isPassword && !showPassword)}
           onFocus={() => setIsFocused(true)}
           onBlur={() => setIsFocused(false)}
           {...rest}
         />
 
-        {isPassword && (
+        {isPassword ? (
           <TouchableOpacity
             style={styles.eyeBtn}
             onPress={() => setShowPassword(!showPassword)}
@@ -89,7 +89,7 @@ export const Input: React.FC<InputProps> = ({
               <EyeIcon size={18} color={colors.textSecondary} />
             )}
           </TouchableOpacity>
-        )}
+        ) : null}
       </View>
 
       {error ? (

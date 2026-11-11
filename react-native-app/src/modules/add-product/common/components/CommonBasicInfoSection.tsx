@@ -59,11 +59,11 @@ export const CommonBasicInfoSection: React.FC<CommonBasicInfoSectionProps> = ({
           value={data.productName}
           onChangeText={(val) => onChange({ productName: val })}
         />
-        {errors.productName && (
+        {errors.productName ? (
           <Text style={[styles.errorText, { color: brandColors.error }]}>
             {errors.productName}
           </Text>
-        )}
+        ) : null}
       </View>
 
       {/* SKU & Auto Generate */}

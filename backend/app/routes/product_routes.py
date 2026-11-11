@@ -28,39 +28,39 @@ router = APIRouter(prefix="/products", tags=["Products"])
 
 
 def _serialize_product(p) -> ProductResponse:
-    stock_val = float(p.current_stock)
-    min_stock = float(p.min_stock_level)
-    cat_name = p.category.name if p.category else None
-    brand_name = p.brand.name if p.brand else None
-    tax_type = p.pricing.tax_type if p.pricing else "exclusive"
-    gst_rate = float(p.pricing.gst_rate) if p.pricing and p.pricing.gst_rate is not None else 0.0
+    stock_val = float(p.current_stock or 0.0)
+    min_stock = float(p.min_stock_level or 0.0)
+    cat_name = p.category.name if getattr(p, 'category', None) else None
+    brand_name = p.brand.name if getattr(p, 'brand', None) else None
+    tax_type = p.pricing.tax_type if getattr(p, 'pricing', None) else "exclusive"
+    gst_rate = float(p.pricing.gst_rate) if getattr(p, 'pricing', None) and p.pricing.gst_rate is not None else 0.0
 
     return ProductResponse(
-        id=p.id,
-        store_id=p.store_id,
-        product_name=p.product_name,
-        name=p.product_name,
+        id=str(p.id),
+        store_id=str(p.store_id),
+        product_name=p.product_name or "",
+        name=p.product_name or "",
         product_code=p.product_code,
-        sku=p.sku,
+        sku=p.sku or "",
         barcode=p.barcode,
         category_id=p.category_id,
         category_name=cat_name,
         brand_id=p.brand_id,
         brand_name=brand_name,
-        unit=p.unit,
-        selling_price=p.selling_price,
-        purchase_price=p.purchase_price,
-        mrp=p.mrp,
+        unit=p.unit or "pcs",
+        selling_price=float(p.selling_price or 0.0),
+        purchase_price=float(p.purchase_price or 0.0),
+        mrp=float(p.mrp) if p.mrp is not None else None,
         tax_type=tax_type,
         gst_rate=gst_rate,
         current_stock=stock_val,
         min_stock_level=min_stock,
         is_low_stock=(stock_val > 0 and stock_val <= min_stock),
         is_out_of_stock=(stock_val <= 0),
-        status=p.status,
-        is_active=p.is_active,
-        is_featured=p.is_featured or False,
-        has_variants=p.has_variants,
+        status=str(p.status or "ACTIVE"),
+        is_active=bool(p.is_active if p.is_active is not None else True),
+        is_featured=bool(p.is_featured or False),
+        has_variants=bool(p.has_variants or False),
         image_url=p.image_url,
         created_at=p.created_at,
         updated_at=p.updated_at,

@@ -43,12 +43,12 @@ export const EmptyState: React.FC<EmptyStateProps> = ({
       </View>
 
       <Text style={[styles.title, { color: colors.textPrimary }]}>{title}</Text>
-      {description && (
+      {description ? (
         <Text style={[styles.description, { color: colors.textSecondary }]}>
           {description}
         </Text>
-      )}
-      {actionTitle && onAction && (
+      ) : null}
+      {actionTitle && onAction ? (
         <Button
           title={actionTitle}
           onPress={onAction}
@@ -56,7 +56,7 @@ export const EmptyState: React.FC<EmptyStateProps> = ({
           size="sm"
           style={styles.actionBtn}
         />
-      )}
+      ) : null}
     </View>
   );
 };

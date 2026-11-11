@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
+import Ionicons from 'react-native-vector-icons/Ionicons';
 import { useTheme } from '../../../../hooks/useTheme';
 
 interface CommonFormCardProps {
@@ -9,7 +10,7 @@ interface CommonFormCardProps {
   children: React.ReactNode;
   collapsible?: boolean;
   defaultExpanded?: boolean;
-  icon?: React.ReactNode;
+  icon?: React.ReactNode | string;
 }
 
 export const CommonFormCard: React.FC<CommonFormCardProps> = ({
@@ -23,6 +24,17 @@ export const CommonFormCard: React.FC<CommonFormCardProps> = ({
 }) => {
   const { colors, brandColors } = useTheme();
   const [expanded, setExpanded] = useState(defaultExpanded);
+
+  const renderIcon = () => {
+    if (!icon) return null;
+    if (typeof icon === 'string') {
+      if (icon.length <= 4) {
+        return <Text style={{ fontSize: 18 }}>{icon}</Text>;
+      }
+      return <Ionicons name={icon as any} size={20} color={brandColors.primary} />;
+    }
+    return icon;
+  };
 
   return (
     <View
@@ -40,30 +52,30 @@ export const CommonFormCard: React.FC<CommonFormCardProps> = ({
         style={styles.header}
       >
         <View style={styles.headerLeft}>
-          {icon && <View style={styles.iconContainer}>{icon}</View>}
-          <View>
+          {icon ? <View style={styles.iconContainer}>{renderIcon()}</View> : null}
+          <View style={{ flex: 1 }}>
             <View style={styles.titleRow}>
               <Text style={[styles.title, { color: colors.textPrimary }]}>{title}</Text>
-              {badge && (
+              {badge ? (
                 <View style={[styles.badge, { backgroundColor: brandColors.primaryLight }]}>
                   <Text style={[styles.badgeText, { color: brandColors.primary }]}>{badge}</Text>
                 </View>
-              )}
+              ) : null}
             </View>
-            {subtitle && (
+            {subtitle ? (
               <Text style={[styles.subtitle, { color: colors.textSecondary }]}>{subtitle}</Text>
-            )}
+            ) : null}
           </View>
         </View>
 
-        {collapsible && (
+        {collapsible ? (
           <Text style={[styles.chevron, { color: brandColors.primary }]}>
             {expanded ? '▲' : '▼'}
           </Text>
-        )}
+        ) : null}
       </TouchableOpacity>
 
-      {expanded && <View style={styles.content}>{children}</View>}
+      {expanded ? <View style={styles.content}>{children}</View> : null}
     </View>
   );
 };

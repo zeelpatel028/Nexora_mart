@@ -37,11 +37,11 @@ export const CommonInventorySection: React.FC<CommonInventorySectionProps> = ({
             onChangeText={(val) => onChange({ openingStock: val, currentStock: val })}
             keyboardType="numeric"
           />
-          {errors.openingStock && (
+          {errors.openingStock ? (
             <Text style={[styles.errorText, { color: brandColors.error }]}>
               {errors.openingStock}
             </Text>
-          )}
+          ) : null}
         </View>
 
         <View style={styles.col}>
