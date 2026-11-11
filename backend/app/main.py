@@ -43,7 +43,8 @@ try:
         report_router,
         account_router,
         unit_router,
-        employee_router
+        employee_router,
+        return_router
     )
 except (ImportError, ValueError):
     from app.core.config import settings
@@ -71,7 +72,8 @@ except (ImportError, ValueError):
         report_router,
         account_router,
         unit_router,
-        employee_router
+        employee_router,
+        return_router
     )
 
 def run_db_migrations():
@@ -156,30 +158,73 @@ def create_application() -> FastAPI:
     # Setup Cross-Origin Resource Sharing
     setup_cors(app)
 
+    # Setup Helmet-equivalent Security Headers and Request Size Limit Protection
+    try:
+        from .middleware.security_headers_middleware import SecurityHeadersMiddleware
+        app.add_middleware(SecurityHeadersMiddleware)
+    except (ImportError, ValueError):
+        from app.middleware.security_headers_middleware import SecurityHeadersMiddleware
+        app.add_middleware(SecurityHeadersMiddleware)
+
     # Register centralized exception handlers for production error responses
     @app.exception_handler(StarletteHTTPException)
     async def http_exception_handler(request: Request, exc: StarletteHTTPException):
+        headers = dict(exc.headers) if exc.headers else {}
+        origin = request.headers.get("origin")
+        if origin:
+            headers["Access-Control-Allow-Origin"] = origin
+            headers["Access-Control-Allow-Credentials"] = "true"
+
+        content = {
+            "success": False,
+            "status_code": exc.status_code,
+            "statusCode": exc.status_code,
+            "detail": exc.detail,
+            "message": exc.detail if isinstance(exc.detail, str) else "Request error",
+            "path": request.url.path,
+        }
+
+        # If 429 Too Many Requests, extract and propagate retry-after duration
+        if exc.status_code == 429:
+            retry_header = headers.get("Retry-After") or headers.get("retry-after") or "300"
+            try:
+                content["retryAfter"] = int(retry_header)
+            except Exception:
+                content["retryAfter"] = 300
+
         return JSONResponse(
             status_code=exc.status_code,
-            content={
-                "success": False,
-                "status_code": exc.status_code,
-                "detail": exc.detail,
-                "path": request.url.path,
-            },
+            content=content,
+            headers=headers
         )
 
     @app.exception_handler(RequestValidationError)
     async def validation_exception_handler(request: Request, exc: RequestValidationError):
+        first_error_msg = "Request validation error"
+        if exc.errors():
+            first_err = exc.errors()[0]
+            loc = " -> ".join([str(l) for l in first_err.get("loc", []) if l != "body"])
+            msg = first_err.get("msg", "Invalid value")
+            first_error_msg = f"{loc}: {msg}" if loc else msg
+
+        origin = request.headers.get("origin")
+        cors_hdrs = {}
+        if origin:
+            cors_hdrs["Access-Control-Allow-Origin"] = origin
+            cors_hdrs["Access-Control-Allow-Credentials"] = "true"
+
         return JSONResponse(
             status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
             content={
                 "success": False,
                 "status_code": 422,
-                "detail": "Request validation error",
+                "statusCode": 422,
+                "detail": first_error_msg,
+                "message": first_error_msg,
                 "errors": exc.errors(),
                 "path": request.url.path,
             },
+            headers=cors_hdrs
         )
 
     @app.exception_handler(ResponseValidationError)
@@ -244,6 +289,7 @@ def create_application() -> FastAPI:
         account_router,
         unit_router,
         employee_router,
+        return_router,
     ]
     for r in all_routers:
         app.include_router(r, prefix=settings.API_V1_PREFIX)

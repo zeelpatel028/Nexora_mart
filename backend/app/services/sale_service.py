@@ -222,6 +222,15 @@ class SaleService:
                 )
                 db.add(adj)
 
+            # Synchronize multi-store product_inventory table
+            if hasattr(prod, 'inventory_record') and prod.inventory_record:
+                from decimal import Decimal
+                try:
+                    prod.inventory_record.current_stock -= Decimal(str(item_req.quantity))
+                    prod.inventory_record.last_stock_update = now
+                except Exception:
+                    pass
+
         # Record Payment if paid_amount > 0
         if paid_amount > 0:
             payment = Payment(

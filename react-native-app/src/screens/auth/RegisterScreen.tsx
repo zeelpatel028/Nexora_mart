@@ -186,8 +186,21 @@ export const RegisterScreen: React.FC = () => {
         routes: [{ name: 'MainTabs' }],
       });
     } catch (err: any) {
-      const msg = err.message || 'Registration failed. Please try again.';
-      setErrorMsg(msg);
+      if (err.status === 409 || err.statusCode === 409 || (err.message && err.message.toLowerCase().includes('already exists'))) {
+        const msg = 'An account with this email already exists. Please log in or use another email.';
+        setErrorMsg(msg);
+        Alert.alert(
+          'Account Already Exists',
+          msg,
+          [
+            { text: 'Log In', onPress: () => navigation.navigate('Login') },
+            { text: 'Cancel', style: 'cancel' },
+          ]
+        );
+      } else {
+        const msg = err.message || 'Registration failed. Please try again.';
+        setErrorMsg(msg);
+      }
     } finally {
       setLoading(false);
     }

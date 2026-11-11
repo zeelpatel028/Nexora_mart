@@ -15,6 +15,7 @@ from .report_routes import router as report_router
 from .account_routes import router as account_router
 from .unit_routes import router as unit_router
 from .employee_routes import router as employee_router
+from .return_routes import router as return_router
 
 __all__ = [
     "auth_router",
@@ -34,4 +35,5 @@ __all__ = [
     "account_router",
     "unit_router",
     "employee_router",
+    "return_router",
 ]

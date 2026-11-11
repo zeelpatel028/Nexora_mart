@@ -101,6 +101,13 @@ export const Endpoints = {
     DETAIL: (id: number) => `/sales/${id}`,
   },
 
+  // Sales Returns & Refunds
+  RETURNS: {
+    LIST: '/returns/',
+    CREATE: '/returns/',
+    DETAIL: (id: number) => `/returns/${id}`,
+  },
+
   // Purchases & Supplier Invoices
   PURCHASES: {
     LIST: '/purchases/',

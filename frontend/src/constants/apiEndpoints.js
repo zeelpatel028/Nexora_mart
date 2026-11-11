@@ -103,6 +103,11 @@ export const API_ENDPOINTS = {
     CREATE: '/sales',
     DETAILS: (id) => `/sales/${id}`
   },
+  RETURNS: {
+    LIST: '/returns',
+    CREATE: '/returns',
+    DETAILS: (id) => `/returns/${id}`
+  },
   INVOICES: {
     LIST: '/sales',
     CREATE: '/sales',

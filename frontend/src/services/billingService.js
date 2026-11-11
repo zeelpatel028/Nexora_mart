@@ -28,6 +28,15 @@ export const billingService = {
   },
   getPurchaseDetail: async (id) => {
     return await api.get(API_ENDPOINTS.PURCHASES.DETAILS(id));
+  },
+  getReturns: async ({ page = 1, limit = 50 } = {}) => {
+    return await api.get(`${API_ENDPOINTS.RETURNS.LIST}?page=${page}&limit=${limit}`);
+  },
+  createReturn: async (returnData) => {
+    return await api.post(API_ENDPOINTS.RETURNS.CREATE, returnData);
+  },
+  getReturnDetail: async (id) => {
+    return await api.get(API_ENDPOINTS.RETURNS.DETAILS(id));
   }
 };
 

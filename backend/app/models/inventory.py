@@ -8,7 +8,7 @@ class ProductStock(Base):
 
     id = Column(Integer, primary_key=True, index=True, autoincrement=True)
     store_id = Column(Integer, ForeignKey("stores.id", ondelete="CASCADE"), nullable=False, index=True)
-    product_id = Column(Integer, ForeignKey("products.id", ondelete="CASCADE"), nullable=False, index=True)
+    product_id = Column(String(50), ForeignKey("products.id", ondelete="CASCADE"), nullable=False, index=True)
     variant_id = Column(Integer, nullable=True, index=True)
     quantity = Column(Float, default=0.0, nullable=False, index=True)
     reorder_level = Column(Float, default=5.0, nullable=False)
@@ -26,7 +26,7 @@ class StockAdjustment(Base):
 
     id = Column(Integer, primary_key=True, index=True, autoincrement=True)
     store_id = Column(Integer, ForeignKey("stores.id", ondelete="CASCADE"), nullable=False, index=True)
-    product_id = Column(Integer, ForeignKey("products.id", ondelete="CASCADE"), nullable=False, index=True)
+    product_id = Column(String(50), ForeignKey("products.id", ondelete="CASCADE"), nullable=False, index=True)
     adjustment_type = Column(String(50), default="ADJUSTMENT", nullable=False, index=True)  # 'ADD', 'SUBTRACT', 'DAMAGE', 'EXPIRED', 'INVENTORY_COUNT'
     quantity = Column(Float, default=0.0, nullable=False)
     previous_quantity = Column(Float, default=0.0, nullable=False)

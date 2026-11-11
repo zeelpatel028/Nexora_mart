@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { productService, categoryService } from '../../services';
 import { ProductForm } from './ProductForm';
 import { Button } from '../common/Button';
+import { EmptyState, TableSkeleton } from '../common';
 
 export const ProductCatalog = ({ onSelectProductForSale }) => {
   const [products, setProducts] = useState([]);
@@ -254,30 +255,29 @@ export const ProductCatalog = ({ onSelectProductForSale }) => {
 
       {/* Products Table */}
       {loading ? (
-        <div className="text-center py-5 text-muted bg-white rounded-4 border shadow-sm">
-          <div className="spinner-border text-primary spinner-border-sm mb-2"></div>
-          <p className="small mb-0">Loading your store's products...</p>
-        </div>
+        <TableSkeleton rows={6} columns={6} />
       ) : products.length === 0 ? (
-        <div className="text-center py-5 bg-white rounded-4 border shadow-sm">
-          <div className="display-6 mb-2">📦</div>
-          <h5 className="fw-bold text-dark">No Products Found</h5>
-          <p className="text-muted small mb-3">
-            {search || selectedCategory || stockFilter
-              ? 'No products matched your search or filters.'
-              : 'Your store catalog is currently empty.'}
-          </p>
-          <Button
-            variant="primary"
-            size="sm"
-            onClick={() => {
+        search || selectedCategory || stockFilter ? (
+          <EmptyState
+            type="no-search-results"
+            onAction={() => {
+              setSearch('');
+              setSelectedCategory(null);
+              setSelectedBrand(null);
+              setStockFilter('');
+            }}
+            actionLabel="Reset Search & Filters"
+          />
+        ) : (
+          <EmptyState
+            type="no-products"
+            onAction={() => {
               setEditingProduct(null);
               setShowAddForm(true);
             }}
-          >
-            + Add Your First Product
-          </Button>
-        </div>
+            actionLabel="+ Add Your First Product"
+          />
+        )
       ) : (
         <div className="table-responsive bg-white rounded-4 border shadow-sm">
           <table className="table table-hover align-middle mb-0">

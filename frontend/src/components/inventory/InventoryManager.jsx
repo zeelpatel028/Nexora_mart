@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { inventoryService } from '../../services';
 import { Button } from '../common/Button';
+import { EmptyState, TableSkeleton } from '../common';
 
 export const InventoryManager = () => {
   const [inventory, setInventory] = useState([]);
@@ -183,10 +184,13 @@ export const InventoryManager = () => {
           </div>
 
           {loading ? (
-            <div className="text-center py-5 text-muted">
-              <div className="spinner-border spinner-border-sm text-primary mb-2"></div>
-              <p className="small mb-0">Loading stock entries...</p>
-            </div>
+            <TableSkeleton rows={5} columns={6} />
+          ) : inventory.length === 0 ? (
+            <EmptyState
+              type={search ? 'no-search-results' : 'no-inventory'}
+              onAction={search ? () => setSearch('') : () => setModalType('in')}
+              actionLabel={search ? 'Clear Filter' : '+ Record Stock Inward'}
+            />
           ) : (
             <div className="table-responsive bg-white rounded-3 border shadow-sm">
               <table className="table table-hover align-middle mb-0">

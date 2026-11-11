@@ -1,9 +1,9 @@
-from typing import List, Optional
+from typing import List, Optional, Union
 from pydantic import BaseModel, Field
 import datetime
 
 class SaleItemCreate(BaseModel):
-    product_id: int
+    product_id: Union[str, int]
     variant_id: Optional[int] = None
     batch_number: Optional[str] = None
     quantity: float = Field(..., gt=0)
@@ -12,7 +12,7 @@ class SaleItemCreate(BaseModel):
 
 class SaleItemResponse(BaseModel):
     id: int
-    product_id: int
+    product_id: Union[str, int]
     product_name: str
     variant_id: Optional[int] = None
     variant_name: Optional[str] = None

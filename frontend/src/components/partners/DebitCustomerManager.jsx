@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { partnerService } from '../../services';
 import { Button } from '../common/Button';
+import { EmptyState, CustomerListSkeleton } from '../common';
 
 export const DebitCustomerManager = () => {
   const [customers, setCustomers] = useState([]);
@@ -208,19 +209,13 @@ export const DebitCustomerManager = () => {
 
       {/* Customer List */}
       {loading ? (
-        <div className="text-center py-5 text-muted">
-          <div className="spinner-border spinner-border-sm text-primary mb-2"></div>
-          <p className="small mb-0">Loading customer credit records...</p>
-        </div>
+        <CustomerListSkeleton count={6} />
       ) : customers.length === 0 ? (
-        <div className="text-center py-5 bg-white rounded-3 border p-4">
-          <div style={{ fontSize: '42px' }}>👥</div>
-          <h5 className="fw-bold mt-2">No Customers Found</h5>
-          <p className="text-muted small mb-3">Add customers with credit limits to maintain their khata records.</p>
-          <Button variant="primary" onClick={() => setShowAddModal(true)}>
-            + Add First Customer
-          </Button>
-        </div>
+        <EmptyState
+          type="no-customers"
+          onAction={() => setShowAddModal(true)}
+          actionLabel="+ Add First Customer"
+        />
       ) : (
         <div className="row g-3">
           {customers.map((c) => {

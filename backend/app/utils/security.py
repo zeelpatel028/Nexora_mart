@@ -36,6 +36,7 @@ def create_access_token(data: dict, expires_delta: Optional[datetime.timedelta] 
         expire = now + datetime.timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
     
     to_encode.setdefault("iat", int(now.timestamp()))
+    to_encode.setdefault("jti", secrets.token_hex(16))
     to_encode.setdefault("iss", settings.JWT_ISSUER)
     to_encode.setdefault("aud", settings.JWT_AUDIENCE)
     to_encode.update({"exp": expire})

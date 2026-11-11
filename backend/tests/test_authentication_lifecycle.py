@@ -57,12 +57,17 @@ def test_registration_and_login_lifecycle():
         assert user.hashed_password != "SecurePassword123!"
         assert verify_password("SecurePassword123!", user.hashed_password) is True
 
-        # 3. Duplicate email rejection
+        # 3. Duplicate email rejection (HTTP 409 Conflict)
+        from fastapi import HTTPException
         try:
             AuthService.register_user(db, reg_data)
-            assert False, "Duplicate email registration did not raise ValueError"
-        except ValueError as e:
-            assert "already exists" in str(e).lower()
+            assert False, "Duplicate email registration did not raise HTTPException / ValueError"
+        except (ValueError, HTTPException) as e:
+            if isinstance(e, HTTPException):
+                assert e.status_code == 409
+                assert "already exists" in str(e.detail).lower()
+            else:
+                assert "already exists" in str(e).lower()
 
         # 4. Invalid store type rejection
         invalid_reg = UserRegisterRequest(

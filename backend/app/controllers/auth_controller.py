@@ -86,10 +86,18 @@ class AuthController:
                 user=user_resp,
                 store=store_summary
             )
+        except HTTPException:
+            raise
         except ValueError as e:
+            msg = str(e)
+            if "already exists" in msg.lower():
+                raise HTTPException(
+                    status_code=status.HTTP_409_CONFLICT,
+                    detail="An account with this email already exists. Please log in or use another email."
+                )
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
-                detail=str(e)
+                detail=msg
             )
 
     @staticmethod

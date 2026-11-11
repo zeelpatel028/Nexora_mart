@@ -111,6 +111,8 @@ export async function request(endpoint, options = {}) {
 
   if (!response.ok) {
     let message = response.statusText || 'Request failed';
+    let retryAfter = null;
+
     if (data) {
       if (typeof data.detail === 'string') {
         message = data.detail;
@@ -121,10 +123,38 @@ export async function request(endpoint, options = {}) {
       } else if (typeof data === 'string' && data.trim()) {
         message = data;
       }
+      if (data.retryAfter) {
+        retryAfter = parseInt(data.retryAfter, 10);
+      }
     }
+
+    // Check Retry-After response header
+    const retryHeader = response.headers.get('retry-after') || response.headers.get('Retry-After');
+    if (retryHeader) {
+      const parsed = parseInt(retryHeader, 10);
+      if (!isNaN(parsed)) retryAfter = parsed;
+    }
+
+    // Map standardized user-friendly fallbacks if message is generic
+    if (!message || message === 'Request failed' || message.includes('Internal Server Error')) {
+      if (response.status === 400) message = 'Validation error. Please check your inputs.';
+      else if (response.status === 401) message = 'Authentication required. Please log in.';
+      else if (response.status === 403) message = 'Access denied. You do not have permission to access this resource.';
+      else if (response.status === 404) message = 'The requested resource was not found.';
+      else if (response.status === 409) message = 'An account with this email already exists. Please log in or use another email.';
+      else if (response.status === 422) message = 'Validation error. Please verify the submitted information.';
+      else if (response.status === 429) message = 'Too many requests. Please try again in 5 minutes.';
+      else if (response.status === 502) message = 'Bad Gateway: Server communication error.';
+      else if (response.status === 503) message = 'Service Unavailable: Server is temporarily undergoing maintenance.';
+      else if (response.status === 504) message = 'Gateway Timeout: Request took too long to complete.';
+      else if (response.status >= 500) message = 'Something went wrong on the server. Please try again.';
+    }
+
     const error = new Error(message);
     error.status = response.status;
+    error.statusCode = response.status;
     error.data = data;
+    error.retryAfter = retryAfter || (response.status === 429 ? 300 : null);
     throw error;
   }
 

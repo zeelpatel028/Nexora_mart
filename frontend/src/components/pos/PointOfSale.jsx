@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { productService, billingService, partnerService, categoryService } from '../../services';
 import { Button } from '../common/Button';
+import { EmptyState } from '../common/EmptyState';
 
 export const PointOfSale = ({ initialView = 'terminal' }) => {
   const [products, setProducts] = useState([]);
@@ -19,6 +20,11 @@ export const PointOfSale = ({ initialView = 'terminal' }) => {
 
   const [submitting, setSubmitting] = useState(false);
   const [viewInvoice, setViewInvoice] = useState(null);
+  const [returnInvoice, setReturnInvoice] = useState(null);
+  const [returnItems, setReturnItems] = useState([]);
+  const [returnReason, setReturnReason] = useState('Customer Return');
+  const [refundMethod, setRefundMethod] = useState('CASH');
+  const [submittingReturn, setSubmittingReturn] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
   const [successMsg, setSuccessMsg] = useState('');
 
@@ -135,6 +141,63 @@ export const PointOfSale = ({ initialView = 'terminal' }) => {
 
   const handlePrint = () => {
     window.print();
+  };
+
+  const startReturn = async (sale) => {
+    try {
+      let detail = sale;
+      if (!sale.items || sale.items.length === 0) {
+        detail = await billingService.getSaleDetail(sale.id);
+      }
+      setReturnInvoice(detail);
+      setReturnItems(
+        (detail.items || []).map((it) => ({
+          product_id: String(it.product_id),
+          product_name: it.product_name || `Item #${it.product_id}`,
+          original_qty: Number(it.quantity || 1),
+          return_qty: 1,
+          unit_price: Number(it.unit_price || 0),
+          selected: true
+        }))
+      );
+      setReturnReason('Customer Return');
+      setRefundMethod(detail.payment_method || 'CASH');
+    } catch {
+      setErrorMsg('Failed to fetch invoice line items for return processing.');
+    }
+  };
+
+  const handleProcessReturn = async (e) => {
+    e.preventDefault();
+    const selected = returnItems.filter((i) => i.selected && Number(i.return_qty) > 0);
+    if (selected.length === 0) {
+      setErrorMsg('Please select at least one item to return.');
+      return;
+    }
+
+    setSubmittingReturn(true);
+    setErrorMsg('');
+    try {
+      await billingService.createReturn({
+        invoice_id: returnInvoice.id,
+        items: selected.map((i) => ({
+          product_id: i.product_id,
+          quantity: Number(i.return_qty),
+          unit_price: i.unit_price
+        })),
+        reason: returnReason,
+        refund_method: refundMethod
+      });
+      const refundTotal = selected.reduce((s, i) => s + (Number(i.return_qty) * i.unit_price), 0);
+      setSuccessMsg(`Return processed successfully! ₹${refundTotal.toLocaleString()} refunded and stock restored to inventory.`);
+      setReturnInvoice(null);
+      if (viewInvoice) setViewInvoice(null);
+      await loadData();
+    } catch (err) {
+      setErrorMsg(err.message || 'Failed to process return.');
+    } finally {
+      setSubmittingReturn(false);
+    }
   };
 
   const filteredProducts = products.filter((p) => {
@@ -475,8 +538,12 @@ export const PointOfSale = ({ initialView = 'terminal' }) => {
             <tbody>
               {recentSales.length === 0 ? (
                 <tr>
-                  <td colSpan="7" className="text-center py-5 text-muted small">
-                    No sales invoices generated yet.
+                  <td colSpan="7" className="p-0 border-0">
+                    <EmptyState
+                      type="no-sales"
+                      onAction={() => setActiveTab('terminal')}
+                      actionLabel="+ Make New Bill"
+                    />
                   </td>
                 </tr>
               ) : (
@@ -507,14 +574,24 @@ export const PointOfSale = ({ initialView = 'terminal' }) => {
                       </span>
                     </td>
                     <td style={{ textAlign: 'right' }}>
-                      <button
-                        type="button"
-                        className="btn btn-sm btn-outline-primary rounded-pill px-3"
-                        onClick={() => openInvoiceDetail(s)}
-                        style={{ color: '#FF6A1A', borderColor: '#FF6A1A' }}
-                      >
-                        🧾 View Receipt
-                      </button>
+                      <div className="d-flex justify-content-end gap-2">
+                        <button
+                          type="button"
+                          className="btn btn-sm btn-outline-primary rounded-pill px-3"
+                          onClick={() => openInvoiceDetail(s)}
+                          style={{ color: '#FF6A1A', borderColor: '#FF6A1A' }}
+                        >
+                          🧾 View Receipt
+                        </button>
+                        <button
+                          type="button"
+                          className="btn btn-sm btn-outline-danger rounded-pill px-3"
+                          onClick={() => startReturn(s)}
+                          title="Process Return & Refund"
+                        >
+                          ↩️ Return
+                        </button>
+                      </div>
                     </td>
                   </tr>
                 ))
@@ -601,6 +678,13 @@ export const PointOfSale = ({ initialView = 'terminal' }) => {
                 >
                   🖨️ Print Receipt
                 </button>
+                <button
+                  type="button"
+                  className="btn btn-outline-danger rounded-pill flex-grow-1"
+                  onClick={() => startReturn(viewInvoice)}
+                >
+                  ↩️ Return Items
+                </button>
                 <Button
                   variant="primary"
                   className="rounded-pill flex-grow-1 fw-bold"
@@ -610,6 +694,168 @@ export const PointOfSale = ({ initialView = 'terminal' }) => {
                   Done
                 </Button>
               </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Process Return Modal */}
+      {returnInvoice && (
+        <div
+          className="modal show d-block"
+          style={{ backgroundColor: 'rgba(0,0,0,0.5)', backdropFilter: 'blur(3px)', zIndex: 1080 }}
+        >
+          <div className="modal-dialog modal-dialog-centered modal-lg">
+            <div className="modal-content shadow border-0 p-3 rounded-4">
+              <div className="modal-header border-0 pb-0">
+                <div>
+                  <h5 className="fw-bold mb-1 text-danger">↩️ Process Sales Return</h5>
+                  <p className="text-muted small mb-0">
+                    Invoice #{returnInvoice.invoice_number} • Restores stock in real-time
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  className="btn-close"
+                  onClick={() => setReturnInvoice(null)}
+                />
+              </div>
+
+              <form onSubmit={handleProcessReturn}>
+                <div className="modal-body py-3">
+                  <div className="alert alert-light border small text-secondary mb-3">
+                    Select the line items being returned, adjust quantities, and specify the refund method.
+                    Nexora Mart will automatically increment active stock and record a return ledger entry.
+                  </div>
+
+                  <div className="table-responsive border rounded-3 mb-3 bg-white">
+                    <table className="table align-middle mb-0">
+                      <thead className="table-light small">
+                        <tr>
+                          <th style={{ width: '40px' }}></th>
+                          <th>Product</th>
+                          <th>Sold Qty</th>
+                          <th style={{ width: '130px' }}>Return Qty</th>
+                          <th>Unit Price</th>
+                          <th style={{ textAlign: 'right' }}>Refund Subtotal</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {returnItems.map((item, idx) => (
+                          <tr key={idx} className={item.selected ? '' : 'text-muted bg-light'}>
+                            <td>
+                              <input
+                                type="checkbox"
+                                className="form-check-input"
+                                checked={item.selected}
+                                onChange={(e) => {
+                                  const checked = e.target.checked;
+                                  setReturnItems((prev) =>
+                                    prev.map((it, i) => (i === idx ? { ...it, selected: checked } : it))
+                                  );
+                                }}
+                              />
+                            </td>
+                            <td className="fw-semibold text-dark">{item.product_name}</td>
+                            <td>{item.original_qty}</td>
+                            <td>
+                              <input
+                                type="number"
+                                className="form-control form-control-sm"
+                                min="1"
+                                max={item.original_qty}
+                                value={item.return_qty}
+                                disabled={!item.selected}
+                                onChange={(e) => {
+                                  const val = Math.max(1, Math.min(item.original_qty, Number(e.target.value) || 1));
+                                  setReturnItems((prev) =>
+                                    prev.map((it, i) => (i === idx ? { ...it, return_qty: val } : it))
+                                  );
+                                }}
+                                style={{ width: '90px', borderRadius: '8px' }}
+                              />
+                            </td>
+                            <td>₹{Number(item.unit_price).toLocaleString()}</td>
+                            <td style={{ textAlign: 'right' }} className="fw-bold text-danger">
+                              ₹{(item.selected ? (Number(item.return_qty) * item.unit_price) : 0).toLocaleString()}
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+
+                  <div className="row g-3">
+                    <div className="col-md-6">
+                      <label className="form-label small fw-semibold text-secondary">
+                        Return Reason *
+                      </label>
+                      <select
+                        className="form-select"
+                        value={returnReason}
+                        onChange={(e) => setReturnReason(e.target.value)}
+                        style={{ borderRadius: '12px' }}
+                      >
+                        <option value="Customer Return">Customer Return (Changed mind)</option>
+                        <option value="Defective / Damaged">Defective / Damaged Item</option>
+                        <option value="Wrong Item">Wrong Item Sold</option>
+                        <option value="Expired">Expired Product</option>
+                        <option value="Exchange Adjustment">Exchange Adjustment</option>
+                      </select>
+                    </div>
+
+                    <div className="col-md-6">
+                      <label className="form-label small fw-semibold text-secondary">
+                        Refund Method *
+                      </label>
+                      <select
+                        className="form-select"
+                        value={refundMethod}
+                        onChange={(e) => setRefundMethod(e.target.value)}
+                        style={{ borderRadius: '12px' }}
+                      >
+                        <option value="CASH">Cash Refund</option>
+                        <option value="UPI">UPI / Digital Transfer</option>
+                        <option value="CARD">Card Reversal</option>
+                        <option value="CREDIT_NOTE">Store Credit / Khata Adjustment</option>
+                      </select>
+                    </div>
+                  </div>
+
+                  <div className="mt-3 p-3 bg-danger-subtle text-danger rounded-3 d-flex justify-content-between align-items-center">
+                    <div>
+                      <div className="small fw-semibold">Total Refund Payable to Customer</div>
+                      <div className="small opacity-75">Inventory will be automatically restocked</div>
+                    </div>
+                    <div className="h4 fw-bold mb-0">
+                      ₹{returnItems
+                        .filter((i) => i.selected)
+                        .reduce((sum, i) => sum + (Number(i.return_qty) * i.unit_price), 0)
+                        .toLocaleString()}
+                    </div>
+                  </div>
+                </div>
+
+                <div className="modal-footer border-0 pt-0 d-flex gap-2">
+                  <button
+                    type="button"
+                    className="btn btn-outline-secondary rounded-pill px-4"
+                    onClick={() => setReturnInvoice(null)}
+                    disabled={submittingReturn}
+                  >
+                    Cancel
+                  </button>
+                  <Button
+                    type="submit"
+                    variant="danger"
+                    className="rounded-pill px-4 fw-bold text-white"
+                    disabled={submittingReturn}
+                    style={{ backgroundColor: '#EF4444', borderColor: '#EF4444' }}
+                  >
+                    {submittingReturn ? 'Processing Return...' : '↩️ Confirm Return & Refund'}
+                  </Button>
+                </div>
+              </form>
             </div>
           </div>
         </div>

@@ -42,6 +42,8 @@ import {
   ReceiptIcon,
   SunIcon,
   MoonIcon,
+  PlusIcon,
+  BoxesIcon,
 } from '../../components/branding/Icons';
 
 type DashNavProp = NativeStackNavigationProp<RootStackParamList>;
@@ -265,13 +267,13 @@ export const DashboardScreen: React.FC = () => {
     // Row 1
     { id: 'make_bill', name: 'Make Bill', icon: (c: string) => <ShoppingCartIcon size={22} color={c} />, nav: 'PosBilling' as const },
     { id: 'view_bill', name: 'View Bill', icon: (c: string) => <ReceiptIcon size={22} color={c} />, nav: 'SalesList' as const },
+    { id: 'add_product', name: 'Add Product', icon: (c: string) => <PlusIcon size={22} color={c} />, nav: 'AddProduct' as const },
     { id: 'product', name: 'Product', icon: (c: string) => <PackageIcon size={22} color={c} />, nav: 'ProductList' as const },
-    { id: 'debit_customer', name: 'Debit Customer', icon: (c: string) => <UsersIcon size={22} color={c} />, nav: 'CustomerList' as const },
     // Row 2
-    { id: 'supper', name: 'Supper', icon: (c: string) => <TruckIcon size={22} color={c} />, nav: 'SupplierList' as const },
-    { id: 'order', name: 'Order', icon: (c: string) => <ShoppingBagIcon size={22} color={c} />, nav: 'PurchaseList' as const },
-    { id: 'store_expense', name: 'Store Expense', icon: (c: string) => <IndianRupeeIcon size={22} color={c} />, nav: 'Finance' as const },
-    { id: 'employee', name: 'Employee', icon: (c: string) => <UserRoundIcon size={22} color={c} />, nav: 'CustomerList' as const },
+    { id: 'stock_inward', name: 'Stock In', icon: (c: string) => <BoxesIcon size={22} color={c} />, nav: 'StockInward' as const },
+    { id: 'debit_customer', name: 'Customer', icon: (c: string) => <UsersIcon size={22} color={c} />, nav: 'CustomerList' as const },
+    { id: 'supper', name: 'Supplier', icon: (c: string) => <TruckIcon size={22} color={c} />, nav: 'SupplierList' as const },
+    { id: 'store_expense', name: 'Expense', icon: (c: string) => <IndianRupeeIcon size={22} color={c} />, nav: 'Finance' as const },
   ];
 
   // Top 5 Recent Activities
@@ -334,17 +336,19 @@ export const DashboardScreen: React.FC = () => {
     { id: 'ORD-STR001-000106', customer: 'Meera Verma', items: '12 Items', amount: '₹ 5,200', date: '09 Nov, 11:00 AM', status: 'Scheduled' },
   ];
 
-  // Sidebar Menu Items (11 Items) with animated close
+  // Sidebar Menu Items with animated close
   const sidebarMenuItems = [
     { id: 'home', label: 'Home', icon: (c: string) => <HomeIcon size={20} color={c} />, action: () => closeSidebar() },
     { id: 'make_bill', label: 'Make Bill', icon: (c: string) => <ShoppingCartIcon size={20} color={c} />, action: () => closeSidebar(() => navigation.navigate('PosBilling')) },
     { id: 'view_bill', label: 'View Bill', icon: (c: string) => <ReceiptIcon size={20} color={c} />, action: () => closeSidebar(() => navigation.navigate('SalesList')) },
-    { id: 'product', label: 'Product', icon: (c: string) => <PackageIcon size={20} color={c} />, action: () => closeSidebar(() => navigation.navigate('ProductList')) },
+    { id: 'product', label: 'Product List', icon: (c: string) => <PackageIcon size={20} color={c} />, action: () => closeSidebar(() => navigation.navigate('ProductList')) },
+    { id: 'add_product', label: 'Add Product', icon: (c: string) => <PlusIcon size={20} color={c} />, action: () => closeSidebar(() => navigation.navigate('AddProduct', {})) },
+    { id: 'stock_inward', label: 'Stock Inward', icon: (c: string) => <BoxesIcon size={20} color={c} />, action: () => closeSidebar(() => navigation.navigate('StockInward', {})) },
     { id: 'debit_customer', label: 'Debit Customer', icon: (c: string) => <UsersIcon size={20} color={c} />, action: () => closeSidebar(() => navigation.navigate('CustomerList')) },
-    { id: 'supper', label: 'Supper', icon: (c: string) => <TruckIcon size={20} color={c} />, action: () => closeSidebar(() => navigation.navigate('SupplierList')) },
-    { id: 'order', label: 'Order', icon: (c: string) => <ShoppingBagIcon size={20} color={c} />, action: () => closeSidebar(() => navigation.navigate('PurchaseList')) },
+    { id: 'supper', label: 'Supplier', icon: (c: string) => <TruckIcon size={20} color={c} />, action: () => closeSidebar(() => navigation.navigate('SupplierList')) },
+    { id: 'order', label: 'Purchase Orders', icon: (c: string) => <ShoppingBagIcon size={20} color={c} />, action: () => closeSidebar(() => navigation.navigate('PurchaseList')) },
+    { id: 'create_purchase', label: 'Add Purchase', icon: (c: string) => <PlusIcon size={20} color={c} />, action: () => closeSidebar(() => navigation.navigate('CreatePurchase')) },
     { id: 'store_expense', label: 'Store Expense', icon: (c: string) => <IndianRupeeIcon size={20} color={c} />, action: () => closeSidebar(() => navigation.navigate('Finance')) },
-    { id: 'employee', label: 'Employee', icon: (c: string) => <UserRoundIcon size={20} color={c} />, action: () => closeSidebar(() => navigation.navigate('CustomerList')) },
     { id: 'sales_analicis', label: 'Sales Analicis', icon: (c: string) => <ChartColumnIcon size={20} color={c} />, action: () => closeSidebar(() => navigation.navigate('Reports')) },
     { id: 'account', label: 'Account', icon: (c: string) => <StoreIcon size={20} color={c} />, action: () => closeSidebar(() => navigation.navigate('AccountDetail')) },
   ];

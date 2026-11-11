@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { ArrowRightIcon } from '../../components/branding/Icons';
 import { LoginInput } from '../../components/auth/LoginInput';
 import { PasswordInput } from '../../components/auth/PasswordInput';
@@ -32,9 +32,34 @@ export const LoginForm = ({
   const [isLoading, setIsLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
   const [fieldErrors, setFieldErrors] = useState({});
+  const [retryCountdown, setRetryCountdown] = useState(0);
+
+  // Active rate-limit countdown effect
+  useEffect(() => {
+    if (retryCountdown <= 0) return;
+    const interval = setInterval(() => {
+      setRetryCountdown((prev) => {
+        if (prev <= 1) {
+          clearInterval(interval);
+          setErrorMsg('');
+          return 0;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+    return () => clearInterval(interval);
+  }, [retryCountdown]);
+
+  const formatCountdown = (secs) => {
+    const m = Math.floor(secs / 60);
+    const s = secs % 60;
+    return `${m}:${s < 10 ? '0' : ''}${s}`;
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    if (isLoading || retryCountdown > 0) return;
+
     setErrorMsg('');
     setFieldErrors({});
 
@@ -69,7 +94,13 @@ export const LoginForm = ({
       }
     } catch (err) {
       setIsLoading(false);
-      setErrorMsg(err.message || 'Login failed. Please check your credentials.');
+      if (err.status === 429) {
+        const waitTime = err.retryAfter || err.data?.retryAfter || 300;
+        setRetryCountdown(waitTime);
+        setErrorMsg('Too many login attempts. Please try again in 5 minutes.');
+      } else {
+        setErrorMsg(err.message || 'Login failed. Please check your credentials.');
+      }
     }
   };
 
@@ -105,10 +136,15 @@ export const LoginForm = ({
         )}
       </div>
 
-      {/* Global Error Message Alert */}
+      {/* Global Error Message Alert with Rate Limit Countdown */}
       {errorMsg && (
         <div className="nexora-form-error-banner" role="alert">
-          {errorMsg}
+          <div>{errorMsg}</div>
+          {retryCountdown > 0 && (
+            <div style={{ marginTop: '8px', fontSize: '13px', color: '#FF843D', fontWeight: 'bold' }}>
+              Remaining wait time: {formatCountdown(retryCountdown)}
+            </div>
+          )}
         </div>
       )}
 
@@ -120,7 +156,7 @@ export const LoginForm = ({
           value={email}
           onChange={(e) => {
             setEmail(e.target.value);
-            if (errorMsg) setErrorMsg('');
+            if (errorMsg && retryCountdown === 0) setErrorMsg('');
             if (fieldErrors.email) setFieldErrors((prev) => ({ ...prev, email: '' }));
           }}
           onClear={() => {
@@ -129,7 +165,7 @@ export const LoginForm = ({
           }}
           placeholder="Email address"
           error={fieldErrors.email}
-          disabled={isLoading}
+          disabled={isLoading || retryCountdown > 0}
         />
 
         {/* 3 & 4. Password Input with Show/Hide Toggle */}
@@ -138,12 +174,12 @@ export const LoginForm = ({
           value={password}
           onChange={(e) => {
             setPassword(e.target.value);
-            if (errorMsg) setErrorMsg('');
+            if (errorMsg && retryCountdown === 0) setErrorMsg('');
             if (fieldErrors.password) setFieldErrors((prev) => ({ ...prev, password: '' }));
           }}
           placeholder="Password"
           error={fieldErrors.password}
-          disabled={isLoading}
+          disabled={isLoading || retryCountdown > 0}
         />
 
         {/* 5 & 6. Keep me signed in & Forgot Password? */}
@@ -169,13 +205,15 @@ export const LoginForm = ({
         <button
           id="btn-sign-in"
           type="submit"
-          disabled={isLoading}
+          disabled={isLoading || retryCountdown > 0}
           className="nexora-btn-login"
         >
           {isLoading ? (
             <div className="spinner-border spinner-border-sm text-light" role="status">
               <span className="visually-hidden">Loading...</span>
             </div>
+          ) : retryCountdown > 0 ? (
+            <span>Retry in {formatCountdown(retryCountdown)}</span>
           ) : (
             <>
               <span>Log In</span>

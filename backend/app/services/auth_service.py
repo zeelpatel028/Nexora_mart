@@ -3,6 +3,7 @@ import uuid
 from typing import Optional, Tuple
 from fastapi import HTTPException, status
 from sqlalchemy.orm import Session
+from sqlalchemy.exc import IntegrityError
 from ..models.user import User
 from ..models.store import (
     Store,
@@ -77,7 +78,10 @@ class AuthService:
         normalized_email = request_data.email.lower().strip()
         existing = db.query(User).filter(User.email == normalized_email).first()
         if existing:
-            raise ValueError("An account with this email address already exists")
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail="An account with this email already exists. Please log in or use another email."
+            )
 
         # Validate Store Type from DB
         store_type = AuthService.resolve_store_type(db, request_data)
@@ -207,6 +211,15 @@ class AuthService:
 
             access_token = create_access_token(data={"sub": str(user.id), "sid": session_id, "email": user.email})
             return user, store, access_token, plain_refresh
+        except HTTPException:
+            db.rollback()
+            raise
+        except IntegrityError:
+            db.rollback()
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail="An account with this email already exists. Please log in or use another email."
+            )
         except Exception as e:
             db.rollback()
             raise e

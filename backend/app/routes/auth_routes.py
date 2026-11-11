@@ -1,5 +1,5 @@
 from typing import Optional
-from fastapi import APIRouter, Depends, status, Request
+from fastapi import APIRouter, Depends, status, Request, HTTPException
 from fastapi.security import HTTPAuthorizationCredentials
 from sqlalchemy.orm import Session
 from ..database.connection import get_db
@@ -18,6 +18,7 @@ from ..controllers.auth_controller import AuthController
 from ..middleware.auth_middleware import get_current_user, security_scheme
 from ..services.cache_service import CacheService
 from ..services.store_service import StoreService
+from ..services.rate_limiter_service import RateLimiterService
 from ..utils.security import decode_access_token
 from ..models.user import User
 
@@ -25,9 +26,20 @@ router = APIRouter(prefix="/auth", tags=["Authentication"])
 
 @router.post("/login", response_model=TokenResponse)
 @router.post("/login/", response_model=TokenResponse, include_in_schema=False)
-def login(request_data: UserLoginRequest, db: Session = Depends(get_db)):
+def login(request: Request, request_data: UserLoginRequest, db: Session = Depends(get_db)):
     """Authenticate merchant user and return short-lived access JWT and 15-hour refresh token"""
-    return AuthController.login(db, request_data)
+    client_ip = request.client.host if request.client else "127.0.0.1"
+    is_allowed, retry_after = RateLimiterService.check_login_rate_limit(request_data.email, client_ip)
+    if not is_allowed:
+        raise HTTPException(
+            status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+            detail="Too many login attempts. Please try again in 5 minutes.",
+            headers={"Retry-After": str(retry_after)}
+        )
+
+    response = AuthController.login(db, request_data)
+    RateLimiterService.clear_login_rate_limit(request_data.email, client_ip)
+    return response
 
 @router.post("/register", response_model=TokenResponse, status_code=status.HTTP_201_CREATED)
 @router.post("/register/", response_model=TokenResponse, status_code=status.HTTP_201_CREATED, include_in_schema=False)

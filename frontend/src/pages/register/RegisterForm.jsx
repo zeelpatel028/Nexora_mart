@@ -68,7 +68,11 @@ export const RegisterForm = ({
       }
     } catch (err) {
       setIsLoading(false);
-      setErrorMsg(err.message || 'Registration failed. Please try again.');
+      if (err.status === 409 || err.statusCode === 409 || (err.message && err.message.toLowerCase().includes('already exists'))) {
+        setErrorMsg('An account with this email already exists. Please log in or use another email.');
+      } else {
+        setErrorMsg(err.message || 'Registration failed. Please try again.');
+      }
     }
   };
 
@@ -127,8 +131,27 @@ export const RegisterForm = ({
 
       {/* Error Banner */}
       {errorMsg && (
-        <div className="nexora-form-error-banner" role="alert" style={{ padding: '6px 12px', fontSize: '12px', marginBottom: '8px' }}>
-          {errorMsg}
+        <div className="nexora-form-error-banner" role="alert" style={{ padding: '8px 12px', fontSize: '13px', marginBottom: '10px' }}>
+          <div>{errorMsg}</div>
+          {errorMsg.includes('already exists') && onNavigateToLogin && (
+            <button
+              type="button"
+              onClick={onNavigateToLogin}
+              style={{
+                marginTop: '6px',
+                background: 'none',
+                border: 'none',
+                color: '#FF843D',
+                fontWeight: 'bold',
+                textDecoration: 'underline',
+                cursor: 'pointer',
+                padding: 0,
+                fontSize: '12px'
+              }}
+            >
+              Click here to Log In
+            </button>
+          )}
         </div>
       )}
 

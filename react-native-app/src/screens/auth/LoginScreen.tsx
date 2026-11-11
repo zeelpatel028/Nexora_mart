@@ -3,7 +3,7 @@
  * Pixel-Perfect Implementation from Provided Reference Specification (Login Ui.png)
  * Supports full Light Mode & Dark Mode with exact layout, proportions, and orange branding.
  */
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -51,6 +51,29 @@ export const LoginScreen: React.FC = () => {
   const [rememberMe, setRememberMe] = useState(true);
   const [loading, setLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
+  const [retryCountdown, setRetryCountdown] = useState(0);
+
+  // Rate limiting 429 countdown timer
+  useEffect(() => {
+    if (retryCountdown <= 0) return;
+    const timer = setInterval(() => {
+      setRetryCountdown((prev) => {
+        if (prev <= 1) {
+          clearInterval(timer);
+          setErrorMsg('');
+          return 0;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+    return () => clearInterval(timer);
+  }, [retryCountdown]);
+
+  const formatCountdown = (secs: number) => {
+    const m = Math.floor(secs / 60);
+    const s = secs % 60;
+    return `${m}:${s < 10 ? '0' : ''}${s}`;
+  };
 
   // Focus States
   const [identifierFocused, setIdentifierFocused] = useState(false);
@@ -64,6 +87,7 @@ export const LoginScreen: React.FC = () => {
   const primaryOrange = '#FF6A1A';
 
   const handleLogin = async () => {
+    if (loading || retryCountdown > 0) return;
     setErrorMsg('');
     const trimmed = identifier.trim();
     if (!trimmed) {
@@ -83,8 +107,14 @@ export const LoginScreen: React.FC = () => {
         routes: [{ name: 'MainTabs' }],
       });
     } catch (err: any) {
-      const msg = err.message || 'Login failed. Please verify your credentials.';
-      setErrorMsg(msg);
+      if (err.status === 429 || (err.message && err.message.toLowerCase().includes('too many'))) {
+        const wait = err.retryAfter || 300;
+        setRetryCountdown(wait);
+        setErrorMsg('Too many login attempts. Please try again in 5 minutes.');
+      } else {
+        const msg = err.message || 'Login failed. Please verify your credentials.';
+        setErrorMsg(msg);
+      }
     } finally {
       setLoading(false);
     }
@@ -371,13 +401,19 @@ export const LoginScreen: React.FC = () => {
                 7. LOGIN BUTTON (ORANGE WITH RIGHT ARROW)
                 ======================================================== */}
             <TouchableOpacity
-              style={[styles.loginBtn, { backgroundColor: primaryOrange }]}
+              style={[
+                styles.loginBtn,
+                { backgroundColor: retryCountdown > 0 ? '#9CA3AF' : primaryOrange },
+                (loading || retryCountdown > 0) && { opacity: 0.8 }
+              ]}
               onPress={handleLogin}
-              disabled={loading}
+              disabled={loading || retryCountdown > 0}
               activeOpacity={0.88}
             >
               {loading ? (
                 <ActivityIndicator color="#FFFFFF" size="small" />
+              ) : retryCountdown > 0 ? (
+                <Text style={styles.loginBtnText}>Retry in {formatCountdown(retryCountdown)}</Text>
               ) : (
                 <View style={styles.loginBtnContent}>
                   <Text style={styles.loginBtnText}>Login</Text>

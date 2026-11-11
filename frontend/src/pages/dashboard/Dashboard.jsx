@@ -14,6 +14,7 @@ import { ReportDashboard } from '../../components/reports/ReportDashboard';
 import { CategoryManager } from '../../components/categories/CategoryManager';
 import { ProfileView } from './ProfileView';
 import { SettingsView } from './SettingsView';
+import { DashboardSkeleton } from '../../components/common';
 import './Dashboard.css';
 
 export const Dashboard = ({ user, onLogout, initialTab = 'overview' }) => {
@@ -490,11 +491,15 @@ export const Dashboard = ({ user, onLogout, initialTab = 'overview' }) => {
 
           {/* 1. Home Dashboard */}
           {activeTab === 'overview' && (
-            <AnalyticsDashboardView
-              analyticsData={analyticsOverview}
-              userName={userName}
-              onNavigateTab={handleSelectTab}
-            />
+            loading ? (
+              <DashboardSkeleton />
+            ) : (
+              <AnalyticsDashboardView
+                analyticsData={analyticsOverview}
+                userName={userName}
+                onNavigateTab={handleSelectTab}
+              />
+            )
           )}
 
           {/* 2. Make Bill */}

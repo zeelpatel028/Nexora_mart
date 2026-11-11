@@ -724,4 +724,43 @@ export interface AnalyticsOverview {
   low_stock_products: LowStockProduct[];
 }
 
+export interface ReturnItemPayload {
+  product_id: string;
+  quantity: number;
+  unit_price?: number;
+  condition_note?: string;
+}
+
+export interface ReturnCreatePayload {
+  invoice_id: number;
+  items: ReturnItemPayload[];
+  reason?: string;
+  refund_method?: string;
+}
+
+export interface ReturnItem {
+  id: number;
+  return_id: number;
+  product_id: string;
+  quantity: number;
+  unit_price: number;
+  subtotal: number;
+  condition_note?: string;
+  product?: Product;
+}
+
+export interface SalesReturn {
+  id: number;
+  return_number: string;
+  invoice_id: number;
+  store_id: number;
+  total_refund_amount: number;
+  refund_method: string;
+  reason?: string;
+  status: string;
+  created_at: string;
+  items: ReturnItem[];
+}
+
+
 

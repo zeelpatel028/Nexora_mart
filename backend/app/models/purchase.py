@@ -29,7 +29,7 @@ class PurchaseItem(Base):
     id = Column(Integer, primary_key=True, index=True, autoincrement=True)
     store_id = Column(Integer, ForeignKey("stores.id", ondelete="CASCADE"), nullable=False, index=True)
     purchase_id = Column(Integer, ForeignKey("purchases.id", ondelete="CASCADE"), nullable=False, index=True)
-    product_id = Column(Integer, ForeignKey("products.id"), nullable=False, index=True)
+    product_id = Column(String(50), ForeignKey("products.id"), nullable=False, index=True)
     variant_id = Column(Integer, nullable=True)
     batch_number = Column(String(100), nullable=True)
     expiry_date = Column(DateTime, nullable=True)

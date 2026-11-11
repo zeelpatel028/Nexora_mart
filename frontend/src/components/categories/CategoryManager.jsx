@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { categoryService, storeService } from '../../services';
 import { Button } from '../common/Button';
+import { EmptyState, ProductListSkeleton } from '../common';
 
 export const CategoryManager = ({ currentStore, onCategoryChanged, onClose }) => {
   const [categories, setCategories] = useState([]);
@@ -105,10 +106,13 @@ export const CategoryManager = ({ currentStore, onCategoryChanged, onClose }) =>
       )}
 
       {loading ? (
-        <div className="text-center py-4 text-muted">
-          <div className="spinner-border spinner-border-sm text-primary mb-2"></div>
-          <p className="small mb-0">Loading categories...</p>
-        </div>
+        <ProductListSkeleton count={6} />
+      ) : categories.length === 0 ? (
+        <EmptyState
+          type="no-categories"
+          onAction={() => setShowNewCatForm(true)}
+          actionLabel="+ Create New Category"
+        />
       ) : (
         <>
           <div className="row g-3 mb-4">
