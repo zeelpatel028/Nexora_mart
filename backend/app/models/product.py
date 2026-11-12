@@ -162,7 +162,7 @@ class ProductPricing(Base):
 
     id = Column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()), index=True)
     store_id = Column(Integer, ForeignKey("stores.id", ondelete="CASCADE"), nullable=False, index=True)
-    product_id = Column(String(36), ForeignKey("products.id", ondelete="CASCADE"), unique=True, nullable=False, index=True)
+    product_id = Column(Integer, ForeignKey("products.id", ondelete="CASCADE"), unique=True, nullable=False, index=True)
     purchase_price = Column(Numeric(12, 2), default=Decimal("0.00"), nullable=False)
     selling_price = Column(Numeric(12, 2), default=Decimal("0.00"), nullable=False)
     mrp = Column(Numeric(12, 2), nullable=True)
@@ -186,7 +186,7 @@ class ProductInventory(Base):
 
     id = Column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()), index=True)
     store_id = Column(Integer, ForeignKey("stores.id", ondelete="CASCADE"), nullable=False, index=True)
-    product_id = Column(String(36), ForeignKey("products.id", ondelete="CASCADE"), unique=True, nullable=False, index=True)
+    product_id = Column(Integer, ForeignKey("products.id", ondelete="CASCADE"), unique=True, nullable=False, index=True)
     opening_stock = Column(Numeric(12, 3), default=Decimal("0.000"), nullable=False)
     current_stock = Column(Numeric(12, 3), default=Decimal("0.000"), nullable=False)
     reserved_stock = Column(Numeric(12, 3), default=Decimal("0.000"), nullable=False)
@@ -205,7 +205,7 @@ class ProductAlert(Base):
 
     id = Column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()), index=True)
     store_id = Column(Integer, ForeignKey("stores.id", ondelete="CASCADE"), nullable=False, index=True)
-    product_id = Column(String(36), ForeignKey("products.id", ondelete="CASCADE"), nullable=False, index=True)
+    product_id = Column(Integer, ForeignKey("products.id", ondelete="CASCADE"), nullable=False, index=True)
     alert_type = Column(String(50), nullable=False)  # LOW_STOCK, EXPIRY_WARNING, OUT_OF_STOCK
     threshold_value = Column(Numeric(12, 3), nullable=True)
     alert_days_before = Column(Integer, nullable=True)
@@ -223,7 +223,7 @@ class ProductImage(Base):
 
     id = Column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()), index=True)
     store_id = Column(Integer, ForeignKey("stores.id", ondelete="CASCADE"), nullable=False, index=True)
-    product_id = Column(String(36), ForeignKey("products.id", ondelete="CASCADE"), nullable=False, index=True)
+    product_id = Column(Integer, ForeignKey("products.id", ondelete="CASCADE"), nullable=False, index=True)
     image_url = Column(String(500), nullable=False)
     alt_text = Column(String(255), nullable=True)
     is_primary = Column(Boolean, default=False)
@@ -241,7 +241,7 @@ class ProductVariant(Base):
 
     id = Column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()), index=True)
     store_id = Column(Integer, ForeignKey("stores.id", ondelete="CASCADE"), nullable=False, index=True)
-    product_id = Column(String(36), ForeignKey("products.id", ondelete="CASCADE"), nullable=False, index=True)
+    product_id = Column(Integer, ForeignKey("products.id", ondelete="CASCADE"), nullable=False, index=True)
     variant_name = Column(String(200), nullable=False)
     sku = Column(String(100), nullable=True, index=True)
     barcode = Column(String(100), nullable=True, index=True)
@@ -262,7 +262,7 @@ class ProductBatch(Base):
 
     id = Column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()), index=True)
     store_id = Column(Integer, ForeignKey("stores.id", ondelete="CASCADE"), nullable=False, index=True)
-    product_id = Column(String(36), ForeignKey("products.id", ondelete="CASCADE"), nullable=False, index=True)
+    product_id = Column(Integer, ForeignKey("products.id", ondelete="CASCADE"), nullable=False, index=True)
     batch_number = Column(String(100), nullable=False, index=True)
     manufacturing_date = Column(DateTime, nullable=True)
     expiry_date = Column(DateTime, nullable=True, index=True)
@@ -284,7 +284,7 @@ class ProductSerialNumber(Base):
 
     id = Column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()), index=True)
     store_id = Column(Integer, ForeignKey("stores.id", ondelete="CASCADE"), nullable=False, index=True)
-    product_id = Column(String(36), ForeignKey("products.id", ondelete="CASCADE"), nullable=False, index=True)
+    product_id = Column(Integer, ForeignKey("products.id", ondelete="CASCADE"), nullable=False, index=True)
     serial_number = Column(String(100), nullable=False, index=True)
     imei_number = Column(String(100), nullable=True, index=True)
     status = Column(String(50), default="available")  # available, sold, defective, returned
@@ -304,7 +304,7 @@ class ProductGroceryDetail(Base):
 
     id = Column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()), index=True)
     store_id = Column(Integer, ForeignKey("stores.id", ondelete="CASCADE"), nullable=False, index=True)
-    product_id = Column(String(36), ForeignKey("products.id", ondelete="CASCADE"), unique=True, nullable=False, index=True)
+    product_id = Column(Integer, ForeignKey("products.id", ondelete="CASCADE"), unique=True, nullable=False, index=True)
     food_type = Column(String(50), nullable=True)
     item_type = Column(String(100), nullable=True)
     net_weight = Column(String(50), nullable=True)
@@ -331,7 +331,7 @@ class ProductClothingDetail(Base):
 
     id = Column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()), index=True)
     store_id = Column(Integer, ForeignKey("stores.id", ondelete="CASCADE"), nullable=False, index=True)
-    product_id = Column(String(36), ForeignKey("products.id", ondelete="CASCADE"), unique=True, nullable=False, index=True)
+    product_id = Column(Integer, ForeignKey("products.id", ondelete="CASCADE"), unique=True, nullable=False, index=True)
     gender = Column(String(50), nullable=True)
     clothing_type = Column(String(100), nullable=True)
     fabric_type = Column(String(100), nullable=True)
@@ -357,7 +357,7 @@ class ProductMedicineDetail(Base):
 
     id = Column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()), index=True)
     store_id = Column(Integer, ForeignKey("stores.id", ondelete="CASCADE"), nullable=False, index=True)
-    product_id = Column(String(36), ForeignKey("products.id", ondelete="CASCADE"), unique=True, nullable=False, index=True)
+    product_id = Column(Integer, ForeignKey("products.id", ondelete="CASCADE"), unique=True, nullable=False, index=True)
     medicine_type = Column(String(100), nullable=True)
     salt_composition = Column(Text, nullable=True)
     generic_name = Column(String(255), nullable=True)
@@ -383,7 +383,7 @@ class ProductElectronicsDetail(Base):
 
     id = Column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()), index=True)
     store_id = Column(Integer, ForeignKey("stores.id", ondelete="CASCADE"), nullable=False, index=True)
-    product_id = Column(String(36), ForeignKey("products.id", ondelete="CASCADE"), unique=True, nullable=False, index=True)
+    product_id = Column(Integer, ForeignKey("products.id", ondelete="CASCADE"), unique=True, nullable=False, index=True)
     device_type = Column(String(100), nullable=True)
     model_number = Column(String(100), nullable=True)
     model_name = Column(String(150), nullable=True)
@@ -411,7 +411,7 @@ class ProductPlasticDetail(Base):
 
     id = Column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()), index=True)
     store_id = Column(Integer, ForeignKey("stores.id", ondelete="CASCADE"), nullable=False, index=True)
-    product_id = Column(String(36), ForeignKey("products.id", ondelete="CASCADE"), unique=True, nullable=False, index=True)
+    product_id = Column(Integer, ForeignKey("products.id", ondelete="CASCADE"), unique=True, nullable=False, index=True)
     plastic_type = Column(String(100), nullable=True)
     material_grade = Column(String(100), nullable=True)
     material_type = Column(String(100), nullable=True)
@@ -437,7 +437,7 @@ class ProductHandloomDetail(Base):
 
     id = Column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()), index=True)
     store_id = Column(Integer, ForeignKey("stores.id", ondelete="CASCADE"), nullable=False, index=True)
-    product_id = Column(String(36), ForeignKey("products.id", ondelete="CASCADE"), unique=True, nullable=False, index=True)
+    product_id = Column(Integer, ForeignKey("products.id", ondelete="CASCADE"), unique=True, nullable=False, index=True)
     fabric_type = Column(String(100), nullable=True)
     weaving_type = Column(String(100), nullable=True)
     craft_type = Column(String(100), nullable=True)
@@ -463,7 +463,7 @@ class ProductFurnitureDetail(Base):
 
     id = Column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()), index=True)
     store_id = Column(Integer, ForeignKey("stores.id", ondelete="CASCADE"), nullable=False, index=True)
-    product_id = Column(String(36), ForeignKey("products.id", ondelete="CASCADE"), unique=True, nullable=False, index=True)
+    product_id = Column(Integer, ForeignKey("products.id", ondelete="CASCADE"), unique=True, nullable=False, index=True)
     furniture_type = Column(String(100), nullable=True)
     material = Column(String(100), nullable=True)
     frame_material = Column(String(100), nullable=True)
@@ -488,7 +488,7 @@ class ProductAgroDetail(Base):
 
     id = Column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()), index=True)
     store_id = Column(Integer, ForeignKey("stores.id", ondelete="CASCADE"), nullable=False, index=True)
-    product_id = Column(String(36), ForeignKey("products.id", ondelete="CASCADE"), unique=True, nullable=False, index=True)
+    product_id = Column(Integer, ForeignKey("products.id", ondelete="CASCADE"), unique=True, nullable=False, index=True)
     agro_category = Column(String(100), nullable=True)
     product_type = Column(String(100), nullable=True)
     crop_name = Column(String(150), nullable=True)
@@ -581,7 +581,7 @@ class ProductAttributeValue(Base):
     __tablename__ = "product_attribute_values"
     id = Column(Integer, primary_key=True, index=True, autoincrement=True)
     store_id = Column(Integer, ForeignKey("stores.id", ondelete="CASCADE"), nullable=False, index=True)
-    product_id = Column(String(36), ForeignKey("products.id", ondelete="CASCADE"), nullable=False, index=True)
+    product_id = Column(Integer, ForeignKey("products.id", ondelete="CASCADE"), nullable=False, index=True)
     attribute_id = Column(Integer, ForeignKey("product_attributes.id", ondelete="CASCADE"), nullable=False, index=True)
     attribute_value = Column(Text, nullable=True)
     created_at = Column(DateTime, default=lambda: datetime.datetime.now(datetime.timezone.utc))
@@ -593,7 +593,7 @@ class ProductExtraDetail(Base):
     __tablename__ = "product_extra_details"
     id = Column(Integer, primary_key=True, index=True, autoincrement=True)
     store_id = Column(Integer, ForeignKey("stores.id", ondelete="CASCADE"), nullable=False, index=True)
-    product_id = Column(String(36), ForeignKey("products.id", ondelete="CASCADE"), nullable=False, index=True)
+    product_id = Column(Integer, ForeignKey("products.id", ondelete="CASCADE"), nullable=False, index=True)
     field_name = Column(String(100), nullable=False, index=True)
     field_value = Column(Text, nullable=True)
     created_at = Column(DateTime, default=lambda: datetime.datetime.now(datetime.timezone.utc))

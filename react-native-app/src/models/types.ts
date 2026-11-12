@@ -199,6 +199,7 @@ export interface ProductVariant {
 export interface Product {
   id: string | number;
   store_id: number;
+  store_type?: string;
   category_id?: number | null;
   brand_id?: number | null;
   unit_id?: number | null;
@@ -478,7 +479,9 @@ export interface SaleItem {
   quantity: number;
   unit_price: number;
   discount?: number;
+  discount_amount?: number;
   subtotal: number;
+  total_price?: number;
 }
 
 export interface Sale {
@@ -493,18 +496,25 @@ export interface Sale {
   tax_amount: number;
   total_amount: number;
   paid_amount: number;
+  balance_amount?: number;
   payment_method: string;
   payment_status: string;
+  notes?: string | null;
   items?: SaleItem[];
+  items_count?: number;
+  sale_date?: string;
   created_at: string;
 }
 
 export interface SaleCreatePayload {
   customer_id?: number | null;
+  customer_name?: string | null;
+  customer_phone?: string | null;
   payment_method: string;
   discount_amount?: number;
   tax_amount?: number;
   paid_amount?: number;
+  notes?: string | null;
   items: Array<{
     product_id: string | number;
     quantity: number;

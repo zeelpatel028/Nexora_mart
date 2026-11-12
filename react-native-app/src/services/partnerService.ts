@@ -20,6 +20,7 @@ export const partnerService = {
     address?: string;
     gst_number?: string;
     credit_limit?: number;
+    balance?: number;
   }): Promise<Customer> {
     return apiClient.post<Customer>(Endpoints.PARTNERS.CUSTOMERS, payload);
   },

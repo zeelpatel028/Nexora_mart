@@ -157,14 +157,15 @@ def seed_initial_data():
 
 def initialize_database():
     try:
-        run_db_migrations()
+        # Run schema creation and seed data
         Base.metadata.create_all(bind=engine)
         seed_initial_data()
     except Exception as e:
         logger.warning(f"Notice: Database initialization ({e})")
         print(f"Notice: Database initialization ({e})")
 
-initialize_database()
+import threading
+threading.Thread(target=initialize_database, daemon=True, name="db_init").start()
 
 def create_application() -> FastAPI:
     app = FastAPI(

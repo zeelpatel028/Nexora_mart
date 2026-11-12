@@ -401,10 +401,13 @@ def seed_categories_and_fields(db: Session):
             if not ex_su:
                 db.add(StoreUser(store_id=s.id, user_id=s.user_id, role="OWNER", is_active=True))
 
-            # StoreSetting
-            ex_set = db.query(StoreSetting).filter(StoreSetting.store_id == s.id).first()
-            if not ex_set:
-                db.add(StoreSetting(store_id=s.id, allow_negative_stock=False, low_stock_threshold=5, enable_barcode_scanner=True, tax_inclusive_pricing=False))
+            # StoreSetting (safe legacy check)
+            try:
+                ex_set = db.query(StoreSetting).filter(StoreSetting.store_id == s.id).first()
+                if not ex_set:
+                    db.add(StoreSetting(store_id=s.id, allow_negative_stock=False, low_stock_threshold=5, enable_barcode_scanner=True, tax_inclusive_pricing=False))
+            except Exception:
+                db.rollback()
 
             # Store default categories
             cat_count = db.query(Category).filter(Category.store_id == s.id).count()

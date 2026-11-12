@@ -7,15 +7,25 @@ import { Sale, SaleCreatePayload, SalesReturn, ReturnCreatePayload } from '../mo
 
 export const salesService = {
   async getSales(params?: {
+    date?: string;
+    startDate?: string;
+    endDate?: string;
+    search?: string;
     customerId?: number;
     paymentStatus?: string;
+    paymentMethod?: string;
     page?: number;
     limit?: number;
   }): Promise<Sale[]> {
     return apiClient.get<Sale[]>(Endpoints.SALES.LIST, {
       params: {
+        date: params?.date,
+        start_date: params?.startDate,
+        end_date: params?.endDate,
+        search: params?.search,
         customer_id: params?.customerId,
         payment_status: params?.paymentStatus,
+        payment_method: params?.paymentMethod,
         page: params?.page || 1,
         limit: params?.limit || 50,
       },

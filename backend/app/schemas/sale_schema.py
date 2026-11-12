@@ -27,11 +27,13 @@ class SaleItemResponse(BaseModel):
 
 class SaleCreate(BaseModel):
     customer_id: Optional[int] = None
+    customer_name: Optional[str] = None
+    customer_phone: Optional[str] = None
     invoice_number: Optional[str] = None  # Auto-generated if omitted
     tax_amount: float = 0.0
     discount_amount: float = 0.0
     paid_amount: float = 0.0
-    payment_method: str = "CASH"  # 'CASH', 'CARD', 'UPI', 'CREDIT'
+    payment_method: str = "CASH"  # 'CASH', 'UPI', 'BANK_TRANSFER', 'DEBIT_CUSTOMER', 'CARD'
     notes: Optional[str] = None
     items: List[SaleItemCreate]
 
@@ -40,6 +42,7 @@ class SaleResponse(BaseModel):
     store_id: int
     customer_id: Optional[int] = None
     customer_name: Optional[str] = None
+    customer_phone: Optional[str] = None
     invoice_number: str
     sale_date: datetime.datetime
     subtotal: float
@@ -47,6 +50,7 @@ class SaleResponse(BaseModel):
     discount_amount: float
     total_amount: float
     paid_amount: float
+    balance_amount: float = 0.0
     payment_status: str
     payment_method: str
     notes: Optional[str] = None

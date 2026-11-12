@@ -17,20 +17,30 @@ router = APIRouter(prefix="/sales", tags=["Sales & Billing"])
 @router.get("", response_model=List[SaleResponse], include_in_schema=False)
 @router.get("/", response_model=List[SaleResponse])
 def list_sales(
+    date: Optional[str] = Query(None, description="Filter bills for a specific date (YYYY-MM-DD)"),
+    start_date: Optional[str] = Query(None, description="Start date (YYYY-MM-DD)"),
+    end_date: Optional[str] = Query(None, description="End date (YYYY-MM-DD)"),
+    search: Optional[str] = Query(None, description="Search by invoice number or customer name/phone"),
     customer_id: Optional[int] = None,
     payment_status: Optional[str] = None,
+    payment_method: Optional[str] = None,
     page: int = Query(1, ge=1),
     limit: int = Query(50, ge=1, le=200),
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):
-    """List store sales orders and invoices"""
+    """List store sales orders and invoices with date filtering and search"""
     store = StoreService.get_user_store(db, current_user)
     sales, _ = SaleService.list_sales(
         db=db,
         store_id=store.id,
+        date_str=date,
+        start_date_str=start_date,
+        end_date_str=end_date,
+        search=search,
         customer_id=customer_id,
         payment_status=payment_status,
+        payment_method=payment_method,
         page=page,
         limit=limit
     )

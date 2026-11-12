@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import {
   View,
   Text,
@@ -7,7 +7,8 @@ import {
   TextInput,
   TouchableOpacity,
   Alert,
-  Modal,
+  ActivityIndicator,
+  FlatList,
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
@@ -17,680 +18,855 @@ import { productService, salesService, partnerService } from '../../services';
 import { Product, Customer, Sale } from '../../models/types';
 import Header from '../../components/common/Header';
 import Card from '../../components/common/Card';
-import Button from '../../components/common/Button';
 import Badge from '../../components/common/Badge';
-import { ReceiptIcon } from '../../components/branding/Icons';
+import { ReceiptIcon, ShoppingCartIcon } from '../../components/branding/Icons';
 import { formatCurrency } from '../../utils/formatters';
 
+// Billing Module Components & Hooks
+import {
+  useBillingCart,
+  BillingCartItem,
+  BillCartItem,
+  CustomerSelectorModal,
+  PaymentMethodPicker,
+  EditCartItemModal,
+  BillReceiptModal,
+  PaymentMode,
+  SelectedCustomer,
+} from '../../modules/billing';
+
 type PosNavProp = NativeStackNavigationProp<RootStackParamList>;
-
-interface CartItem {
-  product_id: string | number;
-  name: string;
-  sku: string;
-  unit: string;
-  unit_price: number;
-  quantity: number;
-  total: number;
-}
-
-const PAYMENT_METHODS = [
-  { id: 'CASH', label: '💵 Cash' },
-  { id: 'CARD', label: '💳 Card' },
-  { id: 'UPI', label: '📱 UPI' },
-  { id: 'BANK_TRANSFER', label: '🏦 Bank' },
-];
 
 export const PosBillingScreen: React.FC = () => {
   const navigation = useNavigation<PosNavProp>();
   const { colors, brandColors } = useTheme();
 
+  // Cart Hook
+  const {
+    cart,
+    addToCart,
+    updateQuantity,
+    updateUnitPrice,
+    updateItemDiscount,
+    removeFromCart,
+    clearCart,
+    subtotal,
+    billDiscount,
+    setBillDiscount,
+    taxPercent,
+    setTaxPercent,
+    taxAmount,
+    grandTotal,
+    totalItemsCount,
+  } = useBillingCart();
+
+  // Catalog State
   const [products, setProducts] = useState<Product[]>([]);
   const [customers, setCustomers] = useState<Customer[]>([]);
+  const [loadingCatalog, setLoadingCatalog] = useState(true);
   const [search, setSearch] = useState('');
-  const [cart, setCart] = useState<CartItem[]>([]);
-  const [selectedCustomerId, setSelectedCustomerId] = useState<number | null>(null);
-  const [paymentMethod, setPaymentMethod] = useState('CASH');
-  const [discountAmount, setDiscountAmount] = useState('');
-  const [taxAmount, setTaxAmount] = useState('');
+  const [selectedCategory, setSelectedCategory] = useState<string>('ALL');
 
+  // Customer State
+  const [selectedCustomer, setSelectedCustomer] = useState<SelectedCustomer>({
+    type: 'walk_in',
+    name: 'Walk-in Customer',
+  });
+  const [customerModalVisible, setCustomerModalVisible] = useState(false);
+
+  // Payment Method
+  const [paymentMethod, setPaymentMethod] = useState<PaymentMode>('CASH');
+
+  // Edit Item Modal State
+  const [editingItem, setEditingItem] = useState<BillingCartItem | null>(null);
+
+  // Bill Receipt Modal State
+  const [receiptModalVisible, setReceiptModalVisible] = useState(false);
+  const [completedSale, setCompletedSale] = useState<Sale | null>(null);
   const [submitting, setSubmitting] = useState(false);
-  const [checkoutModalVisible, setCheckoutModalVisible] = useState(false);
-  const [lastCompletedSale, setLastCompletedSale] = useState<Sale | null>(null);
 
-  const loadData = useCallback(async () => {
+  // Quick inputs
+  const [discountInput, setDiscountInput] = useState('');
+  const [taxPercentInput, setTaxPercentInput] = useState('');
+
+  // Load Products & Customers
+  const loadInitialData = useCallback(async () => {
+    setLoadingCatalog(true);
     try {
       const [prods, custs] = await Promise.all([
-        productService.getProducts({ isActive: true, limit: 100 }),
+        productService.getProducts({ isActive: true, limit: 200 }).catch(() => []),
         partnerService.getCustomers().catch(() => []),
       ]);
       setProducts(prods);
       setCustomers(custs);
     } catch (err) {
-      console.warn('Failed to load POS catalog:', err);
+      console.warn('POS Catalog load error:', err);
+    } finally {
+      setLoadingCatalog(false);
     }
   }, []);
 
   useEffect(() => {
-    loadData();
-  }, [loadData]);
+    loadInitialData();
+  }, [loadInitialData]);
 
-  const addToCart = (product: Product) => {
-    setCart((prev) => {
-      const idx = prev.findIndex((item) => item.product_id === product.id);
-      if (idx >= 0) {
-        const copy = [...prev];
-        const newQty = copy[idx].quantity + 1;
-        copy[idx] = {
-          ...copy[idx],
-          quantity: newQty,
-          total: newQty * copy[idx].unit_price,
-        };
-        return copy;
-      }
-      return [
-        ...prev,
-        {
-          product_id: product.id,
-          name: product.name,
-          sku: product.sku,
-          unit: product.unit,
-          unit_price: Number(product.selling_price),
-          quantity: 1,
-          total: Number(product.selling_price),
-        },
-      ];
+  // Extract Categories
+  const categories = useMemo(() => {
+    const set = new Set<string>();
+    products.forEach((p) => {
+      const cat = p.category?.name || (typeof p.category === 'string' ? p.category : null) || p.store_type;
+      if (cat) set.add(cat);
     });
+    return ['ALL', ...Array.from(set)];
+  }, [products]);
+
+  // Filtered Catalog
+  const filteredProducts = useMemo(() => {
+    const q = search.trim().toLowerCase();
+    return products.filter((p) => {
+      const matchesSearch =
+        !q ||
+        (p.name && p.name.toLowerCase().includes(q)) ||
+        (p.product_name && p.product_name.toLowerCase().includes(q)) ||
+        (p.sku && p.sku.toLowerCase().includes(q)) ||
+        (p.barcode && p.barcode.includes(q));
+
+      if (!matchesSearch) return false;
+
+      if (selectedCategory === 'ALL') return true;
+      const cat = p.category?.name || (typeof p.category === 'string' ? p.category : null) || p.store_type;
+      return cat === selectedCategory;
+    });
+  }, [products, search, selectedCategory]);
+
+  // Quick-Add Customer Handler
+  const handleQuickAddCustomer = async (name: string, phone: string): Promise<Customer | null> => {
+    try {
+      const created = await partnerService.createCustomer({
+        name,
+        phone,
+        credit_limit: 10000,
+        balance: 0,
+      });
+      setCustomers((prev) => [created, ...prev]);
+      return created;
+    } catch (err: any) {
+      Alert.alert('Customer Error', err.message || 'Could not register customer.');
+      return null;
+    }
   };
 
-  const updateQuantity = (productId: string | number, delta: number) => {
-    setCart((prev) =>
-      prev
-        .map((item) => {
-          if (item.product_id === productId) {
-            const newQty = item.quantity + delta;
-            return {
-              ...item,
-              quantity: newQty,
-              total: newQty * item.unit_price,
-            };
-          }
-          return item;
-        })
-        .filter((item) => item.quantity > 0)
-    );
+  // Edit Item Handler
+  const handleSaveItemEdit = (
+    productId: string | number,
+    newPrice: number,
+    newQty: number,
+    discount: number
+  ) => {
+    updateUnitPrice(productId, newPrice);
+    updateQuantity(productId, newQty);
+    updateItemDiscount(productId, discount);
   };
 
-  const removeFromCart = (productId: string | number) => {
-    setCart((prev) => prev.filter((item) => item.product_id !== productId));
+  // Discount & Tax Sync
+  const handleDiscountChange = (text: string) => {
+    setDiscountInput(text);
+    const num = parseFloat(text) || 0;
+    setBillDiscount(num);
   };
 
-  const subtotal = cart.reduce((sum, item) => sum + item.total, 0);
-  const discount = Number(discountAmount || 0);
-  const tax = Number(taxAmount || 0);
-  const grandTotal = Math.max(0, subtotal - discount + tax);
+  const handleTaxPercentChange = (text: string) => {
+    setTaxPercentInput(text);
+    const num = parseFloat(text) || 0;
+    setTaxPercent(num);
+  };
 
-  const handleCheckout = async () => {
+  // Handle Make Bill (Checkout)
+  const handleMakeBill = async () => {
     if (cart.length === 0) {
-      Alert.alert('Empty Cart', 'Please add items to cart before checkout.');
+      Alert.alert('Empty Cart', 'Please add at least one product to make a bill.');
+      return;
+    }
+
+    if (paymentMethod === 'DEBIT_CUSTOMER' && selectedCustomer.type === 'walk_in') {
+      Alert.alert(
+        'Debit Customer Required',
+        'You selected Debit (Khata) payment. Please select a registered Debit Customer to attach this outstanding balance.',
+        [
+          { text: 'Cancel', style: 'cancel' },
+          { text: 'Select Customer', onPress: () => setCustomerModalVisible(true) },
+        ]
+      );
       return;
     }
 
     setSubmitting(true);
     try {
-      const sale = await salesService.createSale({
-        customer_id: selectedCustomerId,
+      const isDebit = paymentMethod === 'DEBIT_CUSTOMER';
+      const paidAmount = isDebit ? 0 : grandTotal;
+      const paymentStatus = isDebit ? 'PENDING' : 'PAID';
+
+      const salePayload = {
+        customer_id: selectedCustomer.type === 'debit_customer' ? selectedCustomer.id : null,
+        customer_name: selectedCustomer.name || 'Walk-in Customer',
+        customer_phone: selectedCustomer.phone,
         payment_method: paymentMethod,
-        discount_amount: discount,
-        tax_amount: tax,
-        paid_amount: grandTotal,
+        payment_status: paymentStatus,
+        discount_amount: billDiscount,
+        tax_amount: taxAmount,
+        paid_amount: paidAmount,
+        notes: isDebit ? `Debited to Khata of ${selectedCustomer.name}` : undefined,
         items: cart.map((item) => ({
           product_id: item.product_id,
           quantity: item.quantity,
           unit_price: item.unit_price,
+          discount_amount: item.discount,
+          total_price: item.total,
         })),
-      });
+      };
 
-      setLastCompletedSale(sale);
-      setCart([]);
-      setDiscountAmount('');
-      setTaxAmount('');
-      setCheckoutModalVisible(true);
+      const created = await salesService.createSale(salePayload);
+
+      // Present Receipt Modal
+      setCompletedSale(created);
+      setReceiptModalVisible(true);
+
+      // Reset Form for next bill
+      clearCart();
+      setDiscountInput('');
+      setTaxPercentInput('');
+      setSelectedCustomer({ type: 'walk_in', name: 'Walk-in Customer' });
+      setPaymentMethod('CASH');
+
+      // Refresh customers so balance is up to date
+      partnerService.getCustomers().then(setCustomers).catch(() => {});
     } catch (err: any) {
-      Alert.alert('Checkout Failed', err.message || 'Error creating sales order.');
+      Alert.alert('Billing Failed', err.message || 'Could not generate invoice. Please try again.');
     } finally {
       setSubmitting(false);
     }
   };
 
-  const filteredProducts = products.filter(
-    (p) =>
-      p.name.toLowerCase().includes(search.toLowerCase()) ||
-      p.sku.toLowerCase().includes(search.toLowerCase()) ||
-      (p.barcode && p.barcode.includes(search))
-  );
-
   return (
     <View style={{ flex: 1, backgroundColor: colors.background }}>
+      {/* Top Header */}
       <Header
-        title="POS Billing Terminal"
-        subtitle="Fast multi-category checkout"
+        title="Make Bill (POS)"
+        subtitle="Fast retail billing & invoice generation"
         rightAction={{
           icon: <ReceiptIcon size={20} color={brandColors.primary} />,
           onPress: () => navigation.navigate('SalesList'),
         }}
       />
 
-      {/* Cart Summary Bar at Top if items exist */}
-      {cart.length > 0 && (
-        <View style={[styles.cartBanner, { backgroundColor: brandColors.primary }]}>
-          <Text style={styles.cartBannerText}>
-            Cart: {cart.length} item(s) • Total: {formatCurrency(grandTotal)}
-          </Text>
-          <TouchableOpacity
-            style={styles.payNowBtn}
-            onPress={handleCheckout}
-            disabled={submitting}
-          >
-            <Text style={styles.payNowText}>
-              {submitting ? 'Processing...' : '⚡ CHECKOUT'}
-            </Text>
-          </TouchableOpacity>
-        </View>
-      )}
+      <ScrollView contentContainerStyle={styles.scrollContent} keyboardShouldPersistTaps="handled">
+        {/* 1. Customer Selection Card */}
+        <Card style={styles.cardSection}>
+          <View style={styles.cardHeaderRow}>
+            <View style={{ flex: 1 }}>
+              <Text style={[styles.sectionTitle, { color: colors.textPrimary }]}>Customer</Text>
+              <Text style={[styles.sectionSub, { color: colors.textMuted }]}>
+                Counter walk-in or debit account
+              </Text>
+            </View>
 
-      <ScrollView contentContainerStyle={styles.scrollContent}>
-        {/* Customer & Payment Bar */}
-        <Card>
-          <Text style={[styles.sectionTitle, { color: colors.textPrimary }]}>Customer & Payment</Text>
-          
-          <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: 12 }}>
             <TouchableOpacity
-              onPress={() => setSelectedCustomerId(null)}
               style={[
-                styles.custChip,
+                styles.changeCustomerBtn,
                 {
-                  backgroundColor: selectedCustomerId === null ? brandColors.primary : colors.surfaceSubtle,
-                  borderColor: selectedCustomerId === null ? brandColors.primary : colors.border,
+                  backgroundColor:
+                    selectedCustomer.type === 'debit_customer'
+                      ? brandColors.warningLight
+                      : brandColors.primaryLight,
                 },
               ]}
+              onPress={() => setCustomerModalVisible(true)}
             >
               <Text
                 style={[
-                  styles.custText,
-                  { color: selectedCustomerId === null ? '#FFFFFF' : colors.textPrimary, fontWeight: selectedCustomerId === null ? '700' : '500' },
+                  styles.changeCustomerText,
+                  {
+                    color:
+                      selectedCustomer.type === 'debit_customer'
+                        ? brandColors.warning
+                        : brandColors.primary,
+                  },
                 ]}
               >
-                Walk-in Customer
+                {selectedCustomer.type === 'debit_customer' ? '📒 Khata Account' : '👤 Walk-in'} ▾
               </Text>
             </TouchableOpacity>
+          </View>
 
-            {customers.map((c) => {
-              const active = selectedCustomerId === c.id;
-              return (
-                <TouchableOpacity
-                  key={c.id}
-                  onPress={() => setSelectedCustomerId(c.id)}
-                  style={[
-                    styles.custChip,
-                    {
-                      backgroundColor: active ? brandColors.primary : colors.surfaceSubtle,
-                      borderColor: active ? brandColors.primary : colors.border,
-                    },
-                  ]}
-                >
-                  <Text
-                    style={[
-                      styles.custText,
-                      { color: active ? '#FFFFFF' : colors.textPrimary, fontWeight: active ? '700' : '500' },
-                    ]}
-                  >
-                    👤 {c.name}
-                  </Text>
-                </TouchableOpacity>
-              );
-            })}
-          </ScrollView>
+          {/* Active Customer Information Display */}
+          <View
+            style={[
+              styles.customerInfoBar,
+              {
+                backgroundColor:
+                  selectedCustomer.type === 'debit_customer'
+                    ? brandColors.warningLight + '40'
+                    : colors.surfaceSubtle,
+                borderColor:
+                  selectedCustomer.type === 'debit_customer' ? brandColors.warning : colors.border,
+              },
+            ]}
+          >
+            <View style={{ flex: 1 }}>
+              <Text style={[styles.activeCustName, { color: colors.textPrimary }]}>
+                {selectedCustomer.name}
+              </Text>
+              {selectedCustomer.phone ? (
+                <Text style={[styles.activeCustMeta, { color: colors.textMuted }]}>
+                  📞 {selectedCustomer.phone}
+                </Text>
+              ) : null}
+            </View>
 
-          {/* Payment Method Selector */}
-          <View style={styles.paymentRow}>
-            {PAYMENT_METHODS.map((pm) => {
-              const isSelected = paymentMethod === pm.id;
-              return (
-                <TouchableOpacity
-                  key={pm.id}
-                  onPress={() => setPaymentMethod(pm.id)}
-                  style={[
-                    styles.payChip,
-                    {
-                      backgroundColor: isSelected ? brandColors.primaryLight : colors.surfaceSubtle,
-                      borderColor: isSelected ? brandColors.primary : colors.border,
-                    },
-                  ]}
-                >
-                  <Text
-                    style={[
-                      styles.payChipText,
-                      { color: isSelected ? brandColors.primary : colors.textPrimary, fontWeight: isSelected ? '700' : '500' },
-                    ]}
-                  >
-                    {pm.label}
-                  </Text>
-                </TouchableOpacity>
-              );
-            })}
+            {selectedCustomer.type === 'debit_customer' ? (
+              <View style={{ alignItems: 'flex-end' }}>
+                <Text style={{ fontSize: 11, color: colors.textMuted }}>Current Balance</Text>
+                <Text style={{ fontSize: 14, fontWeight: '800', color: brandColors.error }}>
+                  {formatCurrency(selectedCustomer.balance || 0)}
+                </Text>
+              </View>
+            ) : null}
           </View>
         </Card>
 
-        {/* Current Cart Items */}
-        {cart.length > 0 && (
-          <Card>
-            <View style={styles.cartHeaderRow}>
-              <Text style={[styles.sectionTitle, { color: colors.textPrimary, marginBottom: 0 }]}>
-                Items in Cart ({cart.length})
-              </Text>
-              <TouchableOpacity onPress={() => setCart([])}>
+        {/* 2. Payment Method Picker */}
+        <Card style={styles.cardSection}>
+          <PaymentMethodPicker
+            selectedMethod={paymentMethod}
+            onSelectMethod={setPaymentMethod}
+            selectedCustomer={selectedCustomer}
+            onOpenCustomerSelector={() => setCustomerModalVisible(true)}
+          />
+        </Card>
+
+        {/* 3. Items In Cart (if any) */}
+        {cart.length > 0 ? (
+          <Card style={styles.cardSection}>
+            <View style={styles.cardHeaderRow}>
+              <View>
+                <Text style={[styles.sectionTitle, { color: colors.textPrimary }]}>
+                  Billing Cart ({totalItemsCount} items)
+                </Text>
+                <Text style={[styles.sectionSub, { color: colors.textMuted }]}>
+                  Tap price to override rate or discount
+                </Text>
+              </View>
+              <TouchableOpacity onPress={clearCart}>
                 <Text style={{ color: brandColors.error, fontSize: 12, fontWeight: '700' }}>
-                  Clear All
+                  Clear Cart
                 </Text>
               </TouchableOpacity>
             </View>
 
+            {/* Cart Line Items */}
             {cart.map((item) => (
-              <View key={item.product_id} style={[styles.cartItemRow, { borderBottomColor: colors.borderLight }]}>
-                <View style={{ flex: 1 }}>
-                  <Text style={[styles.cartItemName, { color: colors.textPrimary }]} numberOfLines={1}>
-                    {item.name}
-                  </Text>
-                  <Text style={[styles.cartItemSub, { color: colors.textMuted }]}>
-                    {formatCurrency(item.unit_price)} / {item.unit}
-                  </Text>
-                </View>
-
-                {/* Quantity Controls */}
-                <View style={styles.qtyControl}>
-                  <TouchableOpacity
-                    style={[styles.qtyBtn, { backgroundColor: colors.surfaceSubtle }]}
-                    onPress={() => updateQuantity(item.product_id, -1)}
-                  >
-                    <Text style={{ fontSize: 16, color: colors.textPrimary }}>-</Text>
-                  </TouchableOpacity>
-
-                  <Text style={[styles.qtyVal, { color: colors.textPrimary }]}>{item.quantity}</Text>
-
-                  <TouchableOpacity
-                    style={[styles.qtyBtn, { backgroundColor: brandColors.primaryLight }]}
-                    onPress={() => updateQuantity(item.product_id, 1)}
-                  >
-                    <Text style={{ fontSize: 16, color: brandColors.primary, fontWeight: 'bold' }}>+</Text>
-                  </TouchableOpacity>
-                </View>
-
-                <Text style={[styles.itemTotal, { color: brandColors.primary }]}>
-                  {formatCurrency(item.total)}
-                </Text>
-
-                <TouchableOpacity
-                  onPress={() => removeFromCart(item.product_id)}
-                  style={{ marginLeft: 8 }}
-                >
-                  <Text style={{ color: colors.textMuted, fontSize: 16 }}>✕</Text>
-                </TouchableOpacity>
-              </View>
+              <BillCartItem
+                key={String(item.product_id)}
+                item={item}
+                onUpdateQty={updateQuantity}
+                onEditItem={setEditingItem}
+                onRemove={removeFromCart}
+              />
             ))}
 
-            {/* Calculations */}
-            <View style={[styles.calcBox, { borderTopColor: colors.borderLight }]}>
-              <View style={styles.calcRow}>
-                <Text style={{ color: colors.textSecondary, fontSize: 13 }}>Subtotal</Text>
-                <Text style={{ color: colors.textPrimary, fontWeight: '600' }}>{formatCurrency(subtotal)}</Text>
+            {/* Calculations & Discounts */}
+            <View style={[styles.summaryCard, { backgroundColor: colors.background, borderColor: colors.borderLight }]}>
+              {/* Subtotal */}
+              <View style={styles.calcLine}>
+                <Text style={[styles.calcLineLabel, { color: colors.textSecondary }]}>Subtotal</Text>
+                <Text style={[styles.calcLineVal, { color: colors.textPrimary }]}>
+                  {formatCurrency(subtotal)}
+                </Text>
               </View>
 
-              <View style={styles.discountRow}>
-                <TextInput
-                  style={[styles.smallInput, { borderColor: colors.border, color: colors.textPrimary }]}
-                  placeholder="Discount ($)"
-                  placeholderTextColor={colors.textPlaceholder}
-                  keyboardType="numeric"
-                  value={discountAmount}
-                  onChangeText={setDiscountAmount}
-                />
-                <TextInput
-                  style={[styles.smallInput, { borderColor: colors.border, color: colors.textPrimary }]}
-                  placeholder="Tax ($)"
-                  placeholderTextColor={colors.textPlaceholder}
-                  keyboardType="numeric"
-                  value={taxAmount}
-                  onChangeText={setTaxAmount}
-                />
+              {/* Discount and GST Inputs */}
+              <View style={styles.extraInputsRow}>
+                <View style={{ flex: 1 }}>
+                  <Text style={[styles.inputTinyLabel, { color: colors.textMuted }]}>Discount (₹)</Text>
+                  <TextInput
+                    style={[styles.smallInput, { borderColor: colors.border, color: colors.textPrimary }]}
+                    placeholder="₹0"
+                    placeholderTextColor={colors.textMuted}
+                    keyboardType="numeric"
+                    value={discountInput}
+                    onChangeText={handleDiscountChange}
+                  />
+                </View>
+
+                <View style={{ flex: 1 }}>
+                  <Text style={[styles.inputTinyLabel, { color: colors.textMuted }]}>GST / Tax (%)</Text>
+                  <TextInput
+                    style={[styles.smallInput, { borderColor: colors.border, color: colors.textPrimary }]}
+                    placeholder="0%"
+                    placeholderTextColor={colors.textMuted}
+                    keyboardType="numeric"
+                    value={taxPercentInput}
+                    onChangeText={handleTaxPercentChange}
+                  />
+                </View>
               </View>
 
-              <View style={[styles.calcRow, { marginTop: 8 }]}>
-                <Text style={[styles.grandLabel, { color: colors.textPrimary }]}>Grand Total</Text>
-                <Text style={[styles.grandValue, { color: brandColors.primary }]}>
+              {/* Tax Line if applicable */}
+              {taxAmount > 0 ? (
+                <View style={styles.calcLine}>
+                  <Text style={[styles.calcLineLabel, { color: colors.textSecondary }]}>
+                    Tax ({taxPercent}%)
+                  </Text>
+                  <Text style={[styles.calcLineVal, { color: colors.textPrimary }]}>
+                    +{formatCurrency(taxAmount)}
+                  </Text>
+                </View>
+              ) : null}
+
+              {/* Bill Discount Line if applicable */}
+              {billDiscount > 0 ? (
+                <View style={styles.calcLine}>
+                  <Text style={[styles.calcLineLabel, { color: brandColors.success }]}>
+                    Bill Discount
+                  </Text>
+                  <Text style={[styles.calcLineVal, { color: brandColors.success }]}>
+                    -{formatCurrency(billDiscount)}
+                  </Text>
+                </View>
+              ) : null}
+
+              <View style={[styles.divider, { backgroundColor: colors.borderLight }]} />
+
+              {/* Grand Total */}
+              <View style={styles.calcLine}>
+                <Text style={[styles.grandTotalLabel, { color: colors.textPrimary }]}>Grand Total</Text>
+                <Text style={[styles.grandTotalVal, { color: brandColors.primary }]}>
                   {formatCurrency(grandTotal)}
                 </Text>
               </View>
             </View>
           </Card>
-        )}
+        ) : null}
 
-        {/* Catalog Browser to Add Items */}
-        <Card>
-          <Text style={[styles.sectionTitle, { color: colors.textPrimary }]}>Add From Catalog</Text>
-          
-          <View style={[styles.searchBox, { borderColor: colors.border, backgroundColor: colors.surfaceSubtle }]}>
-            <Text style={{ marginRight: 6 }}>🔍</Text>
+        {/* 4. Product Catalog Selection */}
+        <Card style={styles.cardSection}>
+          <View style={styles.cardHeaderRow}>
+            <Text style={[styles.sectionTitle, { color: colors.textPrimary }]}>Add Products</Text>
+            <Text style={[styles.catalogCount, { color: colors.textMuted }]}>
+              {filteredProducts.length} available
+            </Text>
+          </View>
+
+          {/* Search Box */}
+          <View
+            style={[
+              styles.searchBar,
+              { backgroundColor: colors.surfaceSubtle, borderColor: colors.border },
+            ]}
+          >
+            <Text style={{ fontSize: 16 }}>🔍</Text>
             <TextInput
-              style={[styles.searchTextInput, { color: colors.textPrimary }]}
-              placeholder="Search product to add..."
-              placeholderTextColor={colors.textPlaceholder}
+              style={[styles.searchInput, { color: colors.textPrimary }]}
+              placeholder="Search product name, SKU, or barcode..."
+              placeholderTextColor={colors.textMuted}
               value={search}
               onChangeText={setSearch}
             />
+            {search ? (
+              <TouchableOpacity onPress={() => setSearch('')}>
+                <Text style={{ color: colors.textMuted, fontSize: 14 }}>✕</Text>
+              </TouchableOpacity>
+            ) : null}
           </View>
 
-          <View style={styles.prodGrid}>
-            {filteredProducts.slice(0, 24).map((p) => {
-              const inCart = cart.find((item) => item.product_id === p.id);
-              return (
-                <TouchableOpacity
-                  key={p.id}
-                  style={[
-                    styles.prodTile,
-                    {
-                      backgroundColor: inCart ? brandColors.primaryLight + '50' : colors.surfaceSubtle,
-                      borderColor: inCart ? brandColors.primary : colors.border,
-                    },
-                  ]}
-                  onPress={() => addToCart(p)}
-                  activeOpacity={0.7}
-                >
-                  <Text style={[styles.tileName, { color: colors.textPrimary }]} numberOfLines={2}>
-                    {p.name}
-                  </Text>
-                  <View style={styles.tileFooter}>
-                    <Text style={[styles.tilePrice, { color: brandColors.primary }]}>
-                      {formatCurrency(p.selling_price)}
+          {/* Category Filter Pills */}
+          {categories.length > 2 ? (
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={styles.categoryScroll}
+            >
+              {categories.map((cat) => {
+                const active = selectedCategory === cat;
+                return (
+                  <TouchableOpacity
+                    key={cat}
+                    style={[
+                      styles.categoryPill,
+                      {
+                        backgroundColor: active ? brandColors.primary : colors.surfaceSubtle,
+                        borderColor: active ? brandColors.primary : colors.border,
+                      },
+                    ]}
+                    onPress={() => setSelectedCategory(cat)}
+                  >
+                    <Text
+                      style={[
+                        styles.categoryPillText,
+                        { color: active ? '#FFFFFF' : colors.textPrimary },
+                      ]}
+                    >
+                      {cat}
                     </Text>
-                    {inCart && (
-                      <Badge label={`x${inCart.quantity}`} variant="primary" style={{ paddingHorizontal: 5 }} />
-                    )}
-                  </View>
-                </TouchableOpacity>
-              );
-            })}
-          </View>
+                  </TouchableOpacity>
+                );
+              })}
+            </ScrollView>
+          ) : null}
+
+          {/* Catalog Grid / List */}
+          {loadingCatalog ? (
+            <View style={{ padding: 24, alignItems: 'center' }}>
+              <ActivityIndicator color={brandColors.primary} size="small" />
+              <Text style={{ color: colors.textMuted, fontSize: 12, marginTop: 8 }}>
+                Loading product catalog...
+              </Text>
+            </View>
+          ) : filteredProducts.length === 0 ? (
+            <View style={{ padding: 24, alignItems: 'center' }}>
+              <Text style={{ fontSize: 24, marginBottom: 6 }}>📦</Text>
+              <Text style={{ color: colors.textPrimary, fontWeight: '700', fontSize: 14 }}>
+                No Products Found
+              </Text>
+              <Text style={{ color: colors.textMuted, fontSize: 12, textAlign: 'center' }}>
+                Try another search keyword or add a new product from the Products tab.
+              </Text>
+            </View>
+          ) : (
+            <View style={styles.catalogGrid}>
+              {filteredProducts.slice(0, 30).map((prod) => {
+                const inCart = cart.find((item) => String(item.product_id) === String(prod.id));
+                const price = Number(prod.selling_price || prod.pricing?.selling_price || 0);
+
+                return (
+                  <TouchableOpacity
+                    key={String(prod.id)}
+                    style={[
+                      styles.productTile,
+                      {
+                        backgroundColor: inCart ? brandColors.primaryLight + '40' : colors.surfaceSubtle,
+                        borderColor: inCart ? brandColors.primary : colors.border,
+                      },
+                    ]}
+                    onPress={() => addToCart(prod, 1)}
+                    activeOpacity={0.7}
+                  >
+                    <View style={styles.tileHeader}>
+                      <Text style={[styles.tileName, { color: colors.textPrimary }]} numberOfLines={2}>
+                        {prod.product_name || prod.name}
+                      </Text>
+                      {inCart ? (
+                        <View style={[styles.inCartBadge, { backgroundColor: brandColors.primary }]}>
+                          <Text style={styles.inCartBadgeText}>{inCart.quantity}</Text>
+                        </View>
+                      ) : null}
+                    </View>
+
+                    <Text style={[styles.tileSku, { color: colors.textMuted }]}>
+                      SKU: {prod.sku || 'N/A'} • {prod.unit || 'pcs'}
+                    </Text>
+
+                    <View style={styles.tileFooter}>
+                      <Text style={[styles.tilePrice, { color: brandColors.primary }]}>
+                        {formatCurrency(price)}
+                      </Text>
+                      <View style={[styles.addBtn, { backgroundColor: brandColors.primaryLight }]}>
+                        <Text style={[styles.addBtnText, { color: brandColors.primary }]}>+ Add</Text>
+                      </View>
+                    </View>
+                  </TouchableOpacity>
+                );
+              })}
+            </View>
+          )}
         </Card>
       </ScrollView>
 
-      {/* Checkout Success Modal / Receipt */}
-      <Modal
-        visible={checkoutModalVisible}
-        transparent
-        animationType="fade"
-        onRequestClose={() => setCheckoutModalVisible(false)}
-      >
-        <View style={styles.modalOverlay}>
-          <View style={[styles.receiptCard, { backgroundColor: colors.surface }]}>
-            <Text style={styles.receiptIcon}>🎉</Text>
-            <Text style={[styles.receiptTitle, { color: colors.textPrimary }]}>Sale Completed!</Text>
-            <Text style={[styles.receiptInvoice, { color: brandColors.primary }]}>
-              Invoice #{lastCompletedSale?.invoice_number}
+      {/* Floating Bottom Checkout Bar */}
+      {cart.length > 0 ? (
+        <View style={[styles.checkoutBar, { backgroundColor: colors.surface, borderTopColor: colors.borderLight }]}>
+          <View style={styles.checkoutBarInfo}>
+            <Text style={[styles.checkoutBarLabel, { color: colors.textMuted }]}>
+              {totalItemsCount} {totalItemsCount === 1 ? 'item' : 'items'} • {paymentMethod}
             </Text>
-
-            <View style={[styles.receiptDivider, { backgroundColor: colors.border }]} />
-
-            <View style={styles.receiptRow}>
-              <Text style={{ color: colors.textSecondary }}>Total Amount Paid:</Text>
-              <Text style={{ color: colors.textPrimary, fontWeight: '800', fontSize: 16 }}>
-                {formatCurrency(lastCompletedSale?.total_amount)}
-              </Text>
-            </View>
-
-            <View style={styles.receiptRow}>
-              <Text style={{ color: colors.textSecondary }}>Payment Method:</Text>
-              <Badge label={lastCompletedSale?.payment_method || 'CASH'} variant="info" />
-            </View>
-
-            <View style={styles.receiptRow}>
-              <Text style={{ color: colors.textSecondary }}>Customer:</Text>
-              <Text style={{ color: colors.textPrimary, fontWeight: '600' }}>
-                {lastCompletedSale?.customer_name || 'Walk-in Customer'}
-              </Text>
-            </View>
-
-            <View style={[styles.receiptDivider, { backgroundColor: colors.border }]} />
-
-            <Button
-              title="Next Sale"
-              onPress={() => setCheckoutModalVisible(false)}
-              style={{ width: '100%', marginTop: 8 }}
-            />
+            <Text style={[styles.checkoutBarTotal, { color: brandColors.primary }]}>
+              {formatCurrency(grandTotal)}
+            </Text>
           </View>
+
+          <TouchableOpacity
+            style={[styles.makeBillBtn, { backgroundColor: brandColors.primary }]}
+            onPress={handleMakeBill}
+            disabled={submitting}
+            activeOpacity={0.8}
+          >
+            {submitting ? (
+              <ActivityIndicator color="#FFF" size="small" />
+            ) : (
+              <>
+                <Text style={styles.makeBillBtnText}>⚡ MAKE BILL</Text>
+                <Text style={styles.makeBillBtnSub}>{formatCurrency(grandTotal)}</Text>
+              </>
+            )}
+          </TouchableOpacity>
         </View>
-      </Modal>
+      ) : null}
+
+      {/* Customer Selector Modal */}
+      <CustomerSelectorModal
+        visible={customerModalVisible}
+        customers={customers}
+        selectedCustomer={selectedCustomer}
+        onSelect={setSelectedCustomer}
+        onQuickAddCustomer={handleQuickAddCustomer}
+        onClose={() => setCustomerModalVisible(false)}
+      />
+
+      {/* Edit Cart Item Modal (Price & Quantity override) */}
+      <EditCartItemModal
+        visible={Boolean(editingItem)}
+        item={editingItem}
+        onClose={() => setEditingItem(null)}
+        onSave={handleSaveItemEdit}
+      />
+
+      {/* Bill Receipt Modal (After bill is generated) */}
+      <BillReceiptModal
+        visible={receiptModalVisible}
+        sale={completedSale}
+        onClose={() => setReceiptModalVisible(false)}
+        onNewBill={() => setReceiptModalVisible(false)}
+      />
     </View>
   );
 };
 
 const styles = StyleSheet.create({
-  cartBanner: {
+  scrollContent: {
+    padding: 14,
+    paddingBottom: 110,
+    gap: 12,
+  },
+  cardSection: {
+    padding: 14,
+  },
+  cardHeaderRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingHorizontal: 16,
-    paddingVertical: 10,
-  },
-  cartBannerText: {
-    color: '#FFFFFF',
-    fontWeight: '700',
-    fontSize: 14,
-  },
-  payNowBtn: {
-    backgroundColor: '#FFFFFF',
-    paddingHorizontal: 14,
-    paddingVertical: 6,
-    borderRadius: 16,
-  },
-  payNowText: {
-    color: '#FF6A1A',
-    fontWeight: '800',
-    fontSize: 12,
-  },
-  scrollContent: {
-    padding: 16,
-    paddingBottom: 40,
+    marginBottom: 10,
   },
   sectionTitle: {
     fontSize: 15,
     fontWeight: '800',
-    marginBottom: 10,
   },
-  custChip: {
+  sectionSub: {
+    fontSize: 11,
+    marginTop: 1,
+  },
+  changeCustomerBtn: {
     paddingHorizontal: 12,
     paddingVertical: 6,
-    borderRadius: 12,
-    borderWidth: 1,
-    marginRight: 8,
+    borderRadius: 14,
   },
-  custText: {
+  changeCustomerText: {
     fontSize: 12,
+    fontWeight: '700',
   },
-  paymentRow: {
+  customerInfoBar: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-  },
-  payChip: {
-    flex: 1,
-    paddingVertical: 8,
+    alignItems: 'center',
+    padding: 12,
     borderRadius: 10,
     borderWidth: 1,
-    alignItems: 'center',
-    marginHorizontal: 3,
   },
-  payChipText: {
-    fontSize: 11,
-  },
-  cartHeaderRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 8,
-  },
-  cartItemRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingVertical: 10,
-    borderBottomWidth: 1,
-  },
-  cartItemName: {
+  activeCustName: {
     fontSize: 14,
     fontWeight: '700',
   },
-  cartItemSub: {
-    fontSize: 11,
+  activeCustMeta: {
+    fontSize: 12,
     marginTop: 2,
   },
-  qtyControl: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginHorizontal: 10,
+  summaryCard: {
+    marginTop: 12,
+    padding: 12,
+    borderRadius: 10,
+    borderWidth: 1,
   },
-  qtyBtn: {
-    width: 28,
-    height: 28,
-    borderRadius: 14,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  qtyVal: {
-    marginHorizontal: 8,
-    fontWeight: '700',
-    fontSize: 14,
-  },
-  itemTotal: {
-    fontWeight: '800',
-    fontSize: 14,
-    minWidth: 60,
-    textAlign: 'right',
-  },
-  calcBox: {
-    paddingTop: 10,
-    marginTop: 8,
-    borderTopWidth: 1,
-  },
-  calcRow: {
+  calcLine: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 6,
+    marginVertical: 3,
   },
-  discountRow: {
+  calcLineLabel: {
+    fontSize: 13,
+  },
+  calcLineVal: {
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  extraInputsRow: {
     flexDirection: 'row',
-    gap: 8,
-    marginVertical: 4,
+    gap: 12,
+    marginVertical: 8,
+  },
+  inputTinyLabel: {
+    fontSize: 11,
+    marginBottom: 4,
+    fontWeight: '600',
   },
   smallInput: {
-    flex: 1,
-    height: 36,
-    borderRadius: 8,
     borderWidth: 1,
-    paddingHorizontal: 8,
-    fontSize: 12,
+    borderRadius: 8,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    fontSize: 13,
   },
-  grandLabel: {
+  divider: {
+    height: 1,
+    marginVertical: 8,
+  },
+  grandTotalLabel: {
     fontSize: 16,
     fontWeight: '800',
   },
-  grandValue: {
+  grandTotalVal: {
     fontSize: 18,
     fontWeight: '900',
   },
-  searchBox: {
+  catalogCount: {
+    fontSize: 12,
+  },
+  searchBar: {
     flexDirection: 'row',
     alignItems: 'center',
+    paddingHorizontal: 12,
+    paddingVertical: 8,
     borderRadius: 10,
     borderWidth: 1,
-    paddingHorizontal: 10,
-    height: 40,
-    marginBottom: 12,
+    gap: 8,
+    marginBottom: 10,
   },
-  searchTextInput: {
+  searchInput: {
     flex: 1,
-    padding: 0,
     fontSize: 13,
+    padding: 0,
   },
-  prodGrid: {
+  categoryScroll: {
+    gap: 8,
+    paddingBottom: 10,
+  },
+  categoryPill: {
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 16,
+    borderWidth: 1,
+  },
+  categoryPillText: {
+    fontSize: 12,
+    fontWeight: '600',
+  },
+  catalogGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    marginHorizontal: -4,
+    gap: 10,
   },
-  prodTile: {
-    width: '31.3%',
-    marginHorizontal: '1%',
-    marginBottom: 8,
-    padding: 10,
-    borderRadius: 12,
+  productTile: {
+    width: '48%',
+    borderRadius: 10,
     borderWidth: 1,
+    padding: 10,
     justifyContent: 'space-between',
-    minHeight: 76,
+  },
+  tileHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
   },
   tileName: {
-    fontSize: 12,
+    fontSize: 13,
     fontWeight: '700',
-    lineHeight: 15,
+    flex: 1,
+  },
+  inCartBadge: {
+    borderRadius: 10,
+    paddingHorizontal: 6,
+    paddingVertical: 1,
+    marginLeft: 4,
+  },
+  inCartBadgeText: {
+    color: '#FFF',
+    fontSize: 10,
+    fontWeight: '800',
+  },
+  tileSku: {
+    fontSize: 11,
+    marginVertical: 4,
   },
   tileFooter: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginTop: 6,
+    marginTop: 4,
   },
   tilePrice: {
-    fontSize: 13,
+    fontSize: 14,
     fontWeight: '800',
   },
-  modalOverlay: {
-    flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.6)',
-    alignItems: 'center',
-    justifyContent: 'center',
-    padding: 24,
+  addBtn: {
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 8,
   },
-  receiptCard: {
-    width: '100%',
-    borderRadius: 24,
-    padding: 24,
-    alignItems: 'center',
-  },
-  receiptIcon: {
-    fontSize: 48,
-    marginBottom: 8,
-  },
-  receiptTitle: {
-    fontSize: 20,
-    fontWeight: '800',
-    marginBottom: 4,
-  },
-  receiptInvoice: {
-    fontSize: 15,
+  addBtnText: {
+    fontSize: 11,
     fontWeight: '700',
-    marginBottom: 12,
   },
-  receiptDivider: {
-    width: '100%',
-    height: 1,
-    marginVertical: 12,
-  },
-  receiptRow: {
-    width: '100%',
+  checkoutBar: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 8,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    borderTopWidth: 1,
+    elevation: 8,
+  },
+  checkoutBarInfo: {
+    flex: 1,
+  },
+  checkoutBarLabel: {
+    fontSize: 12,
+    fontWeight: '600',
+  },
+  checkoutBarTotal: {
+    fontSize: 20,
+    fontWeight: '900',
+  },
+  makeBillBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    paddingHorizontal: 20,
+    paddingVertical: 12,
+    borderRadius: 12,
+  },
+  makeBillBtnText: {
+    color: '#FFF',
+    fontSize: 14,
+    fontWeight: '900',
+  },
+  makeBillBtnSub: {
+    color: '#FFE4D6',
+    fontSize: 13,
+    fontWeight: '700',
   },
 });
 
 export default PosBillingScreen;
-
