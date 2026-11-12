@@ -22,7 +22,8 @@ class MainApplication : Application(), ReactApplication {
                 RNScreensPackage(),
                 SafeAreaContextPackage(),
                 SvgPackage(),
-                AsyncStoragePackage()
+                AsyncStoragePackage(),
+                SystemBarPackage()
             )
         }
 

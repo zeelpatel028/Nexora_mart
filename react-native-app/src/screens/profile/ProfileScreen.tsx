@@ -6,6 +6,7 @@ import {
   ScrollView,
   Alert,
 } from 'react-native';
+import { useNavigation } from '@react-navigation/native';
 import { useAuth } from '../../hooks/useAuth';
 import { useTheme } from '../../hooks/useTheme';
 import { storeService, authService } from '../../services';
@@ -17,6 +18,7 @@ import Button from '../../components/common/Button';
 import Input from '../../components/common/Input';
 
 export const ProfileScreen: React.FC = () => {
+  const navigation = useNavigation();
   const { user, logout, refreshProfile } = useAuth();
   const { colors, brandColors } = useTheme();
 
@@ -124,7 +126,12 @@ export const ProfileScreen: React.FC = () => {
 
   return (
     <View style={{ flex: 1, backgroundColor: colors.background }}>
-      <Header title="Merchant Profile" subtitle="Account & Store identity" />
+      <Header
+        title="Merchant Profile"
+        subtitle="Account & Store identity"
+        showBack
+        onBack={() => navigation.goBack()}
+      />
 
       <ScrollView contentContainerStyle={styles.scrollContent}>
         {/* User Badge Card */}

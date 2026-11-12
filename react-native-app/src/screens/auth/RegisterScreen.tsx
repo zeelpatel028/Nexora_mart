@@ -18,9 +18,11 @@ import {
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { RootStackParamList } from '../../navigation/types';
 import { useAuth } from '../../hooks/useAuth';
 import { useTheme } from '../../hooks/useTheme';
+import { useScreenSystemBar } from '../../utils/systemBar';
 import categoryService from '../../services/categoryService';
 import {
   UserIcon,
@@ -60,6 +62,10 @@ export const RegisterScreen: React.FC = () => {
   const { register } = useAuth();
   const { isDark, toggleTheme } = useTheme();
   const { width } = useWindowDimensions();
+  const insets = useSafeAreaInsets();
+
+  // Dynamic system bars synchronization for Register
+  useScreenSystemBar('white');
 
   // Form State
   const [fullName, setFullName] = useState('');
@@ -225,12 +231,6 @@ export const RegisterScreen: React.FC = () => {
 
   return (
     <View style={[styles.root, { backgroundColor: isDark ? '#121316' : '#FFFFFF' }]}>
-      <StatusBar
-        barStyle={isDark ? 'light-content' : 'dark-content'}
-        backgroundColor="transparent"
-        translucent
-      />
-
       <KeyboardAvoidingView
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
         style={styles.keyboardView}
@@ -243,7 +243,7 @@ export const RegisterScreen: React.FC = () => {
           keyboardShouldPersistTaps="handled"
         >
           {/* Top Bar with Back Button (Left) & Theme Toggle Button (Right) */}
-          <View style={styles.topBar}>
+          <View style={[styles.topBar, { paddingTop: insets.top > 0 ? insets.top + 8 : 14 }]}>
             <TouchableOpacity
               style={[
                 styles.navCircularBtn,
@@ -783,7 +783,6 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingTop: Platform.OS === 'android' ? (StatusBar.currentHeight ? StatusBar.currentHeight + 6 : 28) : 44,
     paddingHorizontal: 20,
     marginBottom: 2,
     zIndex: 10,

@@ -5,6 +5,7 @@ import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../../navigation/types';
 import { useAuth } from '../../hooks/useAuth';
 import { useTheme } from '../../hooks/useTheme';
+import { useScreenSystemBar } from '../../utils/systemBar';
 import { WaveBackground } from '../../components/branding/WaveBackground';
 import { BrandLogo } from '../../components/branding/BrandLogo';
 
@@ -15,16 +16,11 @@ export const SplashScreen: React.FC = () => {
   const { isAuthenticated, isLoading } = useAuth();
   const { isDark, colors, brandColors } = useTheme();
 
-  // Declarative navigation in AppNavigator automatically handles screen transition
-  // once authentication loading completes.
+  // Bind orange status and bottom navigation bar on splash
+  useScreenSystemBar('orange');
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
-      <StatusBar
-        barStyle={isDark ? 'light-content' : 'dark-content'}
-        backgroundColor="transparent"
-        translucent
-      />
       <WaveBackground />
 
       <View style={styles.centerBox}>

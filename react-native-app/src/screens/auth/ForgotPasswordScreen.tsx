@@ -15,7 +15,9 @@ import {
   useWindowDimensions,
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTheme } from '../../hooks/useTheme';
+import { useScreenSystemBar } from '../../utils/systemBar';
 import authService from '../../services/authService';
 import {
   MailIcon,
@@ -33,6 +35,10 @@ export const ForgotPasswordScreen: React.FC = () => {
   const navigation = useNavigation();
   const { isDark, toggleTheme } = useTheme();
   const { width } = useWindowDimensions();
+  const insets = useSafeAreaInsets();
+
+  // Dynamic system bars synchronization for ForgotPassword
+  useScreenSystemBar('white');
 
   // Step 1: Request OTP; Step 2: Verify OTP; Step 3: Set New Password; Step 4: Success
   const [step, setStep] = useState<'request' | 'verify' | 'new_password' | 'success'>('request');
@@ -138,12 +144,6 @@ export const ForgotPasswordScreen: React.FC = () => {
 
   return (
     <View style={[styles.root, { backgroundColor: isDark ? '#121316' : '#FFFFFF' }]}>
-      <StatusBar
-        barStyle={isDark ? 'light-content' : 'dark-content'}
-        backgroundColor="transparent"
-        translucent
-      />
-
       <KeyboardAvoidingView
         style={styles.keyboardView}
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
@@ -156,7 +156,7 @@ export const ForgotPasswordScreen: React.FC = () => {
           bounces={false}
         >
           {/* Top Bar with Back Button & Theme Toggle Button */}
-          <View style={styles.topBar}>
+          <View style={[styles.topBar, { paddingTop: insets.top > 0 ? insets.top + 8 : 14 }]}>
             <TouchableOpacity
               style={[
                 styles.navCircularBtn,
@@ -586,7 +586,6 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingTop: Platform.OS === 'android' ? (StatusBar.currentHeight ? StatusBar.currentHeight + 10 : 38) : 50,
     paddingHorizontal: 22,
     marginBottom: 4,
     zIndex: 10,

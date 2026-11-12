@@ -23,6 +23,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { RootStackParamList } from '../../navigation/types';
 import { useAuth } from '../../hooks/useAuth';
 import { useTheme } from '../../hooks/useTheme';
+import { useScreenSystemBar } from '../../utils/systemBar';
 import { storeService, reportService } from '../../services';
 import storage from '../../utils/storage';
 import { Store, DashboardSummary, AnalyticsOverview } from '../../models/types';
@@ -53,7 +54,20 @@ export const DashboardScreen: React.FC = () => {
   const { user, logout } = useAuth();
   const { isDark, colors, brandColors, toggleTheme } = useTheme();
   const insets = useSafeAreaInsets();
-  const topInset = Math.max(insets.top, Platform.OS === 'android' ? (StatusBar.currentHeight || 0) : 0);
+  const topPadding = insets.top > 0 ? insets.top + 6 : 8;
+
+  // Dynamic status bar (Orange top banner) and bottom navigation bar (white/theme)
+  useScreenSystemBar('orange');
+
+  // Helper to reliably navigate to root stack screens from child tab
+  const navigateRoot = (screenName: string, params?: any) => {
+    const parent = navigation.getParent();
+    if (parent) {
+      (parent as any).navigate(screenName, params);
+    } else {
+      (navigation as any).navigate(screenName, params);
+    }
+  };
 
   const [store, setStore] = useState<Store | null>(null);
   const [summary, setSummary] = useState<DashboardSummary | null>(null);
@@ -108,16 +122,7 @@ export const DashboardScreen: React.FC = () => {
     });
   };
 
-  // Set orange status bar every time Dashboard comes into focus
-  useFocusEffect(
-    useCallback(() => {
-      StatusBar.setBarStyle('light-content');
-      if (Platform.OS === 'android') {
-        StatusBar.setBackgroundColor('#FF6A1A');
-        StatusBar.setTranslucent(true);
-      }
-    }, [])
-  );
+
 
   // Close overlays on screen blur (e.g., navigating to another tab)
   useEffect(() => {
@@ -204,7 +209,7 @@ export const DashboardScreen: React.FC = () => {
   const handleGoToAccountDetails = async () => {
     setStoreSetupPopupVisible(false);
     await storage.setItem('nmart_setup_popup_dismissed', 'true');
-    navigation.navigate('AccountDetail');
+    navigateRoot('AccountDetail');
   };
 
   // 4 Core Stat Boxes
@@ -340,29 +345,23 @@ export const DashboardScreen: React.FC = () => {
   const sidebarMenuItems = [
     { id: 'home', label: 'Home', icon: (c: string) => <HomeIcon size={20} color={c} />, action: () => closeSidebar() },
     { id: 'make_bill', label: 'Make Bill', icon: (c: string) => <ShoppingCartIcon size={20} color={c} />, action: () => closeSidebar(() => (navigation as any).navigate('PosTab')) },
-    { id: 'view_bill', label: 'View Bill', icon: (c: string) => <ReceiptIcon size={20} color={c} />, action: () => closeSidebar(() => navigation.navigate('SalesList')) },
+    { id: 'view_bill', label: 'View Bill', icon: (c: string) => <ReceiptIcon size={20} color={c} />, action: () => closeSidebar(() => navigateRoot('SalesList')) },
     { id: 'product', label: 'Product List', icon: (c: string) => <PackageIcon size={20} color={c} />, action: () => closeSidebar(() => (navigation as any).navigate('ProductsTab')) },
-    { id: 'add_product', label: 'Add Product', icon: (c: string) => <PlusIcon size={20} color={c} />, action: () => closeSidebar(() => navigation.navigate('AddProduct', {})) },
-    { id: 'stock_inward', label: 'Stock Inward', icon: (c: string) => <BoxesIcon size={20} color={c} />, action: () => closeSidebar(() => navigation.navigate('StockInward', {})) },
+    { id: 'add_product', label: 'Add Product', icon: (c: string) => <PlusIcon size={20} color={c} />, action: () => closeSidebar(() => navigateRoot('AddProduct', {})) },
+    { id: 'stock_inward', label: 'Stock Inward', icon: (c: string) => <BoxesIcon size={20} color={c} />, action: () => closeSidebar(() => navigateRoot('StockInward', {})) },
     { id: 'debit_customer', label: 'Debit Customer', icon: (c: string) => <UsersIcon size={20} color={c} />, action: () => closeSidebar(() => (navigation as any).navigate('CustomerTab')) },
-    { id: 'supper', label: 'Supplier', icon: (c: string) => <TruckIcon size={20} color={c} />, action: () => closeSidebar(() => navigation.navigate('SupplierList')) },
-    { id: 'order', label: 'Purchase Orders', icon: (c: string) => <ShoppingBagIcon size={20} color={c} />, action: () => closeSidebar(() => navigation.navigate('PurchaseList')) },
-    { id: 'create_purchase', label: 'Add Purchase', icon: (c: string) => <PlusIcon size={20} color={c} />, action: () => closeSidebar(() => navigation.navigate('CreatePurchase')) },
-    { id: 'store_expense', label: 'Store Expense', icon: (c: string) => <IndianRupeeIcon size={20} color={c} />, action: () => closeSidebar(() => navigation.navigate('Finance')) },
-    { id: 'sales_analicis', label: 'Sales Analicis', icon: (c: string) => <ChartColumnIcon size={20} color={c} />, action: () => closeSidebar(() => navigation.navigate('Reports')) },
-    { id: 'account', label: 'Account', icon: (c: string) => <StoreIcon size={20} color={c} />, action: () => closeSidebar(() => navigation.navigate('AccountDetail')) },
+    { id: 'supper', label: 'Supplier', icon: (c: string) => <TruckIcon size={20} color={c} />, action: () => closeSidebar(() => navigateRoot('SupplierList')) },
+    { id: 'order', label: 'Purchase Orders', icon: (c: string) => <ShoppingBagIcon size={20} color={c} />, action: () => closeSidebar(() => navigateRoot('PurchaseList')) },
+    { id: 'create_purchase', label: 'Add Purchase', icon: (c: string) => <PlusIcon size={20} color={c} />, action: () => closeSidebar(() => navigateRoot('CreatePurchase')) },
+    { id: 'store_expense', label: 'Store Expense', icon: (c: string) => <IndianRupeeIcon size={20} color={c} />, action: () => closeSidebar(() => navigateRoot('Finance')) },
+    { id: 'sales_analicis', label: 'Sales Analicis', icon: (c: string) => <ChartColumnIcon size={20} color={c} />, action: () => closeSidebar(() => navigateRoot('Reports')) },
+    { id: 'account', label: 'Account', icon: (c: string) => <StoreIcon size={20} color={c} />, action: () => closeSidebar(() => navigateRoot('AccountDetail')) },
   ];
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
-      <StatusBar
-        barStyle="light-content"
-        backgroundColor="#FF6A1A"
-        translucent={Platform.OS === 'android'}
-      />
-
       {/* 1. TOP HEADER WITH ORANGE BANNER (EXTENDS SEAMLESSLY INTO TOP STATUS BAR AREA) */}
-      <View style={[styles.headerTopContainer, { paddingTop: topInset + 6 }]}>
+      <View style={[styles.headerTopContainer, { paddingTop: topPadding }]}>
         <View style={styles.topHeader}>
           {/* Hamburger Menu Button */}
           <TouchableOpacity
@@ -416,7 +415,7 @@ export const DashboardScreen: React.FC = () => {
 
       {/* 2. SCROLLABLE SCREEN CONTENT */}
       <ScrollView
-        contentContainerStyle={styles.scrollContent}
+        contentContainerStyle={[styles.scrollContent, { paddingBottom: 32 + insets.bottom }]}
         refreshControl={
           <RefreshControl
             refreshing={refreshing}
@@ -578,7 +577,13 @@ export const DashboardScreen: React.FC = () => {
                   styles.quickTile,
                   { backgroundColor: isDark ? '#22252F' : '#F8FAFC', borderColor: isDark ? '#2D323E' : '#E2E8F0' },
                 ]}
-                onPress={() => navigation.navigate(tile.nav as any)}
+                onPress={() => {
+                  if (tile.nav === 'PosTab' || tile.nav === 'ProductsTab' || tile.nav === 'CustomerTab') {
+                    (navigation as any).navigate(tile.nav);
+                  } else {
+                    navigateRoot(tile.nav);
+                  }
+                }}
                 activeOpacity={0.7}
               >
                 <View style={[styles.quickIconWrap, { backgroundColor: isDark ? 'rgba(255, 106, 26, 0.15)' : '#FFF0E8' }]}>
@@ -600,7 +605,7 @@ export const DashboardScreen: React.FC = () => {
             <Text style={[styles.sectionTitle, { color: isDark ? '#FFFFFF' : '#111827' }]}>
               Recent Activities
             </Text>
-            <TouchableOpacity onPress={() => navigation.navigate('Reports')}>
+            <TouchableOpacity onPress={() => navigateRoot('Reports')}>
               <Text style={{ color: brandColors.primary, fontSize: 13, fontWeight: '600' }}>View All →</Text>
             </TouchableOpacity>
           </View>
@@ -629,7 +634,7 @@ export const DashboardScreen: React.FC = () => {
             <Text style={[styles.sectionTitle, { color: isDark ? '#FFFFFF' : '#111827' }]}>
               Low Stock Products (Top 5)
             </Text>
-            <TouchableOpacity onPress={() => navigation.navigate('Inventory')}>
+            <TouchableOpacity onPress={() => navigateRoot('Inventory')}>
               <Text style={{ color: brandColors.primary, fontSize: 13, fontWeight: '600' }}>Manage Stock →</Text>
             </TouchableOpacity>
           </View>
@@ -657,7 +662,7 @@ export const DashboardScreen: React.FC = () => {
             <Text style={[styles.sectionTitle, { color: isDark ? '#FFFFFF' : '#111827' }]}>
               Upcoming Product Orders
             </Text>
-            <TouchableOpacity onPress={() => navigation.navigate('PurchaseList')}>
+            <TouchableOpacity onPress={() => navigateRoot('PurchaseList')}>
               <Text style={{ color: brandColors.primary, fontSize: 13, fontWeight: '600' }}>View Orders →</Text>
             </TouchableOpacity>
           </View>

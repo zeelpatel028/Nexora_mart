@@ -14,6 +14,7 @@ import {
 import { useNavigation } from '@react-navigation/native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTheme } from '../../hooks/useTheme';
+import { useScreenSystemBar } from '../../utils/systemBar';
 import { storeService } from '../../services';
 import storage from '../../utils/storage';
 import {
@@ -31,7 +32,10 @@ export const AccountDetailScreen: React.FC = () => {
   const navigation = useNavigation();
   const { isDark, colors, brandColors, toggleTheme } = useTheme();
   const insets = useSafeAreaInsets();
-  const topInset = Math.max(insets.top, Platform.OS === 'android' ? (StatusBar.currentHeight || 0) : 0);
+  const topPadding = insets.top > 0 ? insets.top + 6 : 8;
+
+  // Dynamic white/theme status bar and bottom nav bar
+  useScreenSystemBar('white');
 
   const [activeTab, setActiveTab] = useState<TabKey>('basic');
   const [loading, setLoading] = useState(false);
@@ -285,14 +289,8 @@ export const AccountDetailScreen: React.FC = () => {
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
-      <StatusBar
-        barStyle={isDark ? 'light-content' : 'dark-content'}
-        backgroundColor={colors.background}
-        translucent={Platform.OS === 'android'}
-      />
-
       {/* TOP HEADER */}
-      <View style={[styles.header, { borderBottomColor: isDark ? '#262A34' : '#E5E7EB', paddingTop: topInset + 8 }]}>
+      <View style={[styles.header, { borderBottomColor: isDark ? '#262A34' : '#E5E7EB', paddingTop: topPadding }]}>
         <View style={styles.headerLeft}>
           <TouchableOpacity
             style={[styles.circularBtn, { backgroundColor: colors.toggleBg, borderColor: colors.toggleBorder }]}

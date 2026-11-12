@@ -157,6 +157,8 @@ export const InventoryScreen: React.FC = () => {
       <Header
         title="Inventory & Stock"
         subtitle="Live tracking & physical audit"
+        showBack
+        onBack={() => navigation.goBack()}
         rightAction={{
           icon: '📥',
           onPress: () => navigation.navigate('StockInward', {}),

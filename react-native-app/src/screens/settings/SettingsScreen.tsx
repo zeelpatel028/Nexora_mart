@@ -8,6 +8,7 @@ import {
   Alert,
   TouchableOpacity,
 } from 'react-native';
+import { useNavigation } from '@react-navigation/native';
 import { useTheme } from '../../hooks/useTheme';
 import { useAuth } from '../../hooks/useAuth';
 import Header from '../../components/common/Header';
@@ -16,6 +17,7 @@ import Button from '../../components/common/Button';
 import { SunIcon, MoonIcon, SettingsIcon } from '../../components/branding/Icons';
 
 export const SettingsScreen: React.FC = () => {
+  const navigation = useNavigation();
   const { mode, isDark, setMode, toggleTheme, colors, brandColors } = useTheme();
   const { logout, user } = useAuth();
 
@@ -34,7 +36,12 @@ export const SettingsScreen: React.FC = () => {
 
   return (
     <View style={{ flex: 1, backgroundColor: colors.background }}>
-      <Header title="App Settings" subtitle="Preferences & Appearance" />
+      <Header
+        title="App Settings"
+        subtitle="Preferences & Appearance"
+        showBack
+        onBack={() => navigation.goBack()}
+      />
 
       <ScrollView contentContainerStyle={styles.scrollContent}>
         {/* Appearance Card */}

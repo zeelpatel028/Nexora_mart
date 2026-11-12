@@ -1,7 +1,9 @@
 import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, StatusBar, Platform } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, Platform } from 'react-native';
+import { useNavigation } from '@react-navigation/native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTheme } from '../../hooks/useTheme';
+import { useScreenSystemBar } from '../../utils/systemBar';
 import { ChevronLeftIcon } from '../branding/Icons';
 
 interface HeaderProps {
@@ -13,6 +15,10 @@ interface HeaderProps {
     icon: string | React.ReactNode;
     onPress: () => void;
   };
+  /**
+   * Status bar theme override: defaults to 'white' (matching header background)
+   */
+  statusBarTheme?: 'white' | 'orange';
 }
 
 export const Header: React.FC<HeaderProps> = ({
@@ -21,10 +27,26 @@ export const Header: React.FC<HeaderProps> = ({
   showBack = false,
   onBack,
   rightAction,
+  statusBarTheme = 'white',
 }) => {
+  const navigation = useNavigation<any>();
   const { colors, brandColors, isDark } = useTheme();
   const insets = useSafeAreaInsets();
-  const topInset = Math.max(insets.top, Platform.OS === 'android' ? (StatusBar.currentHeight || 0) : 0);
+
+  // Dynamic status bar and bottom navigation bar synchronization on screen focus
+  useScreenSystemBar(statusBarTheme);
+
+  // If onBack is not explicitly provided, fall back to navigation.goBack
+  const handleBack = () => {
+    if (onBack) {
+      onBack();
+    } else if (navigation?.canGoBack && navigation.canGoBack()) {
+      navigation.goBack();
+    }
+  };
+
+  // Safe area padding for top: insets.top handles notches/cutouts & Android 15/16 edge-to-edge
+  const topPadding = insets.top > 0 ? insets.top + 6 : 12;
 
   return (
     <View
@@ -33,21 +55,17 @@ export const Header: React.FC<HeaderProps> = ({
         {
           backgroundColor: colors.surface,
           borderBottomColor: colors.border,
-          paddingTop: topInset + 8,
+          paddingTop: topPadding,
         },
       ]}
     >
-      <StatusBar
-        barStyle={isDark ? 'light-content' : 'dark-content'}
-        backgroundColor={colors.surface}
-        translucent={Platform.OS === 'android'}
-      />
       <View style={styles.content}>
         {showBack ? (
           <TouchableOpacity
             style={[styles.iconButton, { backgroundColor: isDark ? colors.surfaceSubtle : '#F1F5F9' }]}
-            onPress={onBack}
+            onPress={handleBack}
             activeOpacity={0.7}
+            accessibilityLabel="Go back"
           >
             <ChevronLeftIcon size={20} color={colors.textPrimary} />
           </TouchableOpacity>
@@ -88,7 +106,6 @@ export const Header: React.FC<HeaderProps> = ({
 
 const styles = StyleSheet.create({
   container: {
-    paddingTop: 12,
     paddingBottom: 12,
     paddingHorizontal: 16,
     borderBottomWidth: 1,
@@ -108,11 +125,6 @@ const styles = StyleSheet.create({
   },
   iconButtonPlaceholder: {
     width: 38,
-  },
-  backText: {
-    fontSize: 28,
-    fontWeight: '300',
-    marginTop: -4,
   },
   rightActionIcon: {
     fontSize: 18,
@@ -134,4 +146,3 @@ const styles = StyleSheet.create({
 });
 
 export default Header;
-

@@ -6,12 +6,13 @@ import {
   ScrollView,
   TouchableOpacity,
   ActivityIndicator,
-  SafeAreaView,
   KeyboardAvoidingView,
   Platform,
 } from 'react-native';
-import Ionicons from 'react-native-vector-icons/Ionicons';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTheme } from '../../../../hooks/useTheme';
+import { useScreenSystemBar } from '../../../../utils/systemBar';
+import { ArrowLeftIcon, CheckIcon, BookmarkIcon } from '../../../../components/branding/Icons';
 import { StoreTypeCode } from '../types';
 import { STORE_TYPE_METADATA } from '../constants';
 
@@ -37,6 +38,11 @@ export const AddProductLayout: React.FC<AddProductLayoutProps> = ({
   children,
 }) => {
   const { colors, brandColors } = useTheme();
+  const insets = useSafeAreaInsets();
+
+  // Dynamic white header / status bar synchronization
+  useScreenSystemBar('white');
+
   const meta = STORE_TYPE_METADATA[storeType] || {
     displayName: 'Store',
     icon: 'cube',
@@ -46,16 +52,27 @@ export const AddProductLayout: React.FC<AddProductLayoutProps> = ({
   const pageTitle = title || `Add ${meta.displayName} Product`;
   const pageSubtitle = subtitle || `Configure specifications and inventory for ${meta.displayName}`;
 
+  const topPadding = insets.top > 0 ? insets.top + 6 : 12;
+
   return (
-    <SafeAreaView style={[styles.safeArea, { backgroundColor: colors.background }]}>
+    <View style={[styles.safeArea, { backgroundColor: colors.background }]}>
       <KeyboardAvoidingView
         style={styles.keyboardView}
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
       >
         {/* Navigation Bar Header */}
-        <View style={[styles.header, { backgroundColor: colors.surface, borderBottomColor: colors.border }]}>
-          <TouchableOpacity style={styles.backButton} onPress={onBack} disabled={isLoading}>
-            <Ionicons name="arrow-back" size={24} color={colors.textPrimary} />
+        <View
+          style={[
+            styles.header,
+            {
+              backgroundColor: colors.surface,
+              borderBottomColor: colors.border,
+              paddingTop: topPadding,
+            },
+          ]}
+        >
+          <TouchableOpacity style={styles.backButton} onPress={onBack} disabled={isLoading} activeOpacity={0.7}>
+            <ArrowLeftIcon size={22} color={colors.textPrimary} />
           </TouchableOpacity>
 
           <View style={styles.titleContainer}>
@@ -64,7 +81,6 @@ export const AddProductLayout: React.FC<AddProductLayoutProps> = ({
                 {pageTitle}
               </Text>
               <View style={[styles.badge, { backgroundColor: meta.badgeColor + '20' }]}>
-                <Ionicons name={meta.icon as any} size={12} color={meta.badgeColor} />
                 <Text style={[styles.badgeText, { color: meta.badgeColor }]}>{meta.displayName}</Text>
               </View>
             </View>
@@ -77,7 +93,7 @@ export const AddProductLayout: React.FC<AddProductLayoutProps> = ({
         {/* Scrollable Form Content */}
         <ScrollView
           style={styles.scrollView}
-          contentContainerStyle={styles.scrollContent}
+          contentContainerStyle={[styles.scrollContent, { paddingBottom: 32 + insets.bottom }]}
           showsVerticalScrollIndicator={false}
           keyboardShouldPersistTaps="handled"
         >
@@ -85,14 +101,24 @@ export const AddProductLayout: React.FC<AddProductLayoutProps> = ({
         </ScrollView>
 
         {/* Bottom Actions Bar */}
-        <View style={[styles.footer, { backgroundColor: colors.surface, borderTopColor: colors.border }]}>
+        <View
+          style={[
+            styles.footer,
+            {
+              backgroundColor: colors.surface,
+              borderTopColor: colors.border,
+              paddingBottom: Math.max(insets.bottom, 14),
+            },
+          ]}
+        >
           {onSaveDraft && (
             <TouchableOpacity
               style={[styles.draftButton, { borderColor: colors.border }]}
               onPress={onSaveDraft}
               disabled={isLoading}
+              activeOpacity={0.7}
             >
-              <Ionicons name="bookmark-outline" size={18} color={colors.textSecondary} />
+              <BookmarkIcon size={18} color={colors.textSecondary} />
               <Text style={[styles.draftButtonText, { color: colors.textSecondary }]}>Save Draft</Text>
             </TouchableOpacity>
           )}
@@ -101,19 +127,20 @@ export const AddProductLayout: React.FC<AddProductLayoutProps> = ({
             style={[styles.saveButton, { backgroundColor: brandColors.primary }]}
             onPress={onSave}
             disabled={isLoading}
+            activeOpacity={0.85}
           >
             {isLoading ? (
               <ActivityIndicator color="#FFFFFF" size="small" />
             ) : (
               <>
-                <Ionicons name="checkmark-circle-outline" size={20} color="#FFFFFF" />
+                <CheckIcon size={20} color="#FFFFFF" />
                 <Text style={styles.saveButtonText}>Save Product</Text>
               </>
             )}
           </TouchableOpacity>
         </View>
       </KeyboardAvoidingView>
-    </SafeAreaView>
+    </View>
   );
 };
 
@@ -128,7 +155,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: 16,
-    paddingVertical: 12,
+    paddingBottom: 12,
     borderBottomWidth: 1,
     gap: 12,
   },
@@ -170,7 +197,6 @@ const styles = StyleSheet.create({
   },
   scrollContent: {
     padding: 16,
-    paddingBottom: 40,
     gap: 16,
   },
   footer: {
@@ -184,13 +210,13 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 6,
-    borderWidth: 1,
-    borderRadius: 10,
     paddingVertical: 14,
+    borderRadius: 12,
+    borderWidth: 1,
+    gap: 8,
   },
   draftButtonText: {
-    fontSize: 14,
+    fontSize: 15,
     fontWeight: '600',
   },
   saveButton: {
@@ -198,9 +224,9 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 8,
-    borderRadius: 10,
     paddingVertical: 14,
+    borderRadius: 12,
+    gap: 8,
   },
   saveButtonText: {
     color: '#FFFFFF',
@@ -208,3 +234,5 @@ const styles = StyleSheet.create({
     fontWeight: '700',
   },
 });
+
+export default AddProductLayout;

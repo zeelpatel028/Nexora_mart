@@ -130,6 +130,27 @@ export const BellIcon: React.FC<IconProps> = ({
     <Path d="M9 17v1a3 3 0 0 0 6 0v-1" />
   </Svg>
 );
+
+export const BookmarkIcon: React.FC<IconProps> = ({
+  size = 24,
+  color = '#F97316',
+  strokeWidth = 2,
+  style,
+}) => (
+  <Svg
+    width={size}
+    height={size}
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke={color}
+    strokeWidth={strokeWidth}
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    style={style}
+  >
+    <Path d="m19 21-7-4-7 4V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v16z" />
+  </Svg>
+);
 // 06-BoxesIcon-stack-2.svg
 export const BoxesIcon: React.FC<IconProps> = ({
   size = 24,

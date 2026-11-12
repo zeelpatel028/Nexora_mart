@@ -1,4 +1,4 @@
-import React, { useCallback } from 'react';
+import React from 'react';
 import {
   View,
   Text,
@@ -6,16 +6,16 @@ import {
   ScrollView,
   TouchableOpacity,
   Alert,
-  StatusBar,
   Image,
   Platform,
 } from 'react-native';
-import { useNavigation, useFocusEffect } from '@react-navigation/native';
+import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { RootStackParamList } from '../../navigation/types';
 import { useTheme } from '../../hooks/useTheme';
 import { useAuth } from '../../hooks/useAuth';
+import { useScreenSystemBar } from '../../utils/systemBar';
 import {
   HomeIcon,
   ShoppingCartIcon,
@@ -54,18 +54,11 @@ export const MoreMenuScreen: React.FC = () => {
   const { colors, brandColors, isDark, toggleTheme } = useTheme();
   const { logout, user } = useAuth();
   const insets = useSafeAreaInsets();
-  const topInset = Math.max(insets.top, Platform.OS === 'android' ? (StatusBar.currentHeight || 0) : 0);
 
-  // Set orange status bar every time MoreMenu comes into focus
-  useFocusEffect(
-    useCallback(() => {
-      StatusBar.setBarStyle('light-content');
-      if (Platform.OS === 'android') {
-        StatusBar.setBackgroundColor('#FF6A1A');
-        StatusBar.setTranslucent(true);
-      }
-    }, [])
-  );
+  // Dynamic status bar (Orange top banner) and bottom navigation bar (white/theme)
+  useScreenSystemBar('orange');
+
+  const topPadding = insets.top > 0 ? insets.top + 6 : 8;
 
   // Categorized Sections
   const categorizedSections: { title: string; items: MenuListItem[] }[] = [
@@ -265,40 +258,39 @@ export const MoreMenuScreen: React.FC = () => {
           },
         },
       ]);
-    } else if (item.screen || item.id === 'nav_home') {
-      const tabTarget =
-        item.screen === 'DashboardTab' || item.id === 'nav_home'
-          ? 'DashboardTab'
-          : item.screen === 'PosBilling' || item.id === 'pos_make_bill'
-          ? 'PosTab'
-          : item.screen === 'ProductList' || item.id === 'nav_product'
-          ? 'ProductsTab'
-          : item.screen === 'CustomerList' || item.id === 'pos_debit_customer'
-          ? 'CustomerTab'
-          : null;
+      return;
+    }
 
-      if (tabTarget) {
-        try {
-          (navigation as any).navigate(tabTarget);
-        } catch {
-          (navigation.getParent() as any)?.navigate('MainTabs', { screen: tabTarget });
-        }
+    const tabTarget =
+      item.screen === 'DashboardTab' || item.id === 'nav_home'
+        ? 'DashboardTab'
+        : item.screen === 'PosBilling' || item.id === 'pos_make_bill'
+        ? 'PosTab'
+        : item.screen === 'ProductList' || item.id === 'nav_product'
+        ? 'ProductsTab'
+        : item.screen === 'CustomerList' || item.id === 'pos_debit_customer'
+        ? 'CustomerTab'
+        : null;
+
+    if (tabTarget) {
+      (navigation as any).navigate(tabTarget);
+      return;
+    }
+
+    if (item.screen) {
+      const parent = navigation.getParent();
+      if (parent) {
+        (parent as any).navigate(item.screen, item.params);
       } else {
-        navigation.navigate(item.screen as any, item.params);
+        (navigation as any).navigate(item.screen, item.params);
       }
     }
   };
 
   return (
     <View style={[styles.root, { backgroundColor: colors.background }]}>
-      <StatusBar
-        barStyle="light-content"
-        backgroundColor="#FF6A1A"
-        translucent={Platform.OS === 'android'}
-      />
-
       {/* Top Header Bar with Seamless Orange Status Bar Space and White Circle Brand Logo */}
-      <View style={[styles.headerTopContainer, { paddingTop: topInset + 6 }]}>
+      <View style={[styles.headerTopContainer, { paddingTop: topPadding }]}>
         <View style={styles.topHeader}>
           <View style={styles.headerLeft}>
             <View style={styles.headerLogoCircle}>
@@ -329,7 +321,10 @@ export const MoreMenuScreen: React.FC = () => {
         </View>
       </View>
 
-      <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
+      <ScrollView
+        contentContainerStyle={[styles.scrollContent, { paddingBottom: 32 + insets.bottom }]}
+        showsVerticalScrollIndicator={false}
+      >
         {/* Categorized Detailed Menu Lists */}
         {categorizedSections.map((section, sIdx) => (
           <View key={sIdx} style={styles.categorySection}>
