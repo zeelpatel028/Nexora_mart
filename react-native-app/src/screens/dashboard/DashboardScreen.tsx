@@ -265,13 +265,13 @@ export const DashboardScreen: React.FC = () => {
   // Quick Access 2 Rows x 4 Cols Grid
   const quickAccessGrid = [
     // Row 1
-    { id: 'make_bill', name: 'Make Bill', icon: (c: string) => <ShoppingCartIcon size={22} color={c} />, nav: 'PosBilling' as const },
+    { id: 'make_bill', name: 'Make Bill', icon: (c: string) => <ShoppingCartIcon size={22} color={c} />, nav: 'PosTab' as const },
     { id: 'view_bill', name: 'View Bill', icon: (c: string) => <ReceiptIcon size={22} color={c} />, nav: 'SalesList' as const },
     { id: 'add_product', name: 'Add Product', icon: (c: string) => <PlusIcon size={22} color={c} />, nav: 'AddProduct' as const },
-    { id: 'product', name: 'Product', icon: (c: string) => <PackageIcon size={22} color={c} />, nav: 'ProductList' as const },
+    { id: 'product', name: 'Product', icon: (c: string) => <PackageIcon size={22} color={c} />, nav: 'ProductsTab' as const },
     // Row 2
     { id: 'stock_inward', name: 'Stock In', icon: (c: string) => <BoxesIcon size={22} color={c} />, nav: 'StockInward' as const },
-    { id: 'debit_customer', name: 'Customer', icon: (c: string) => <UsersIcon size={22} color={c} />, nav: 'CustomerList' as const },
+    { id: 'debit_customer', name: 'Customer', icon: (c: string) => <UsersIcon size={22} color={c} />, nav: 'CustomerTab' as const },
     { id: 'supper', name: 'Supplier', icon: (c: string) => <TruckIcon size={22} color={c} />, nav: 'SupplierList' as const },
     { id: 'store_expense', name: 'Expense', icon: (c: string) => <IndianRupeeIcon size={22} color={c} />, nav: 'Finance' as const },
   ];
@@ -339,12 +339,12 @@ export const DashboardScreen: React.FC = () => {
   // Sidebar Menu Items with animated close
   const sidebarMenuItems = [
     { id: 'home', label: 'Home', icon: (c: string) => <HomeIcon size={20} color={c} />, action: () => closeSidebar() },
-    { id: 'make_bill', label: 'Make Bill', icon: (c: string) => <ShoppingCartIcon size={20} color={c} />, action: () => closeSidebar(() => navigation.navigate('PosBilling')) },
+    { id: 'make_bill', label: 'Make Bill', icon: (c: string) => <ShoppingCartIcon size={20} color={c} />, action: () => closeSidebar(() => (navigation as any).navigate('PosTab')) },
     { id: 'view_bill', label: 'View Bill', icon: (c: string) => <ReceiptIcon size={20} color={c} />, action: () => closeSidebar(() => navigation.navigate('SalesList')) },
-    { id: 'product', label: 'Product List', icon: (c: string) => <PackageIcon size={20} color={c} />, action: () => closeSidebar(() => navigation.navigate('ProductList')) },
+    { id: 'product', label: 'Product List', icon: (c: string) => <PackageIcon size={20} color={c} />, action: () => closeSidebar(() => (navigation as any).navigate('ProductsTab')) },
     { id: 'add_product', label: 'Add Product', icon: (c: string) => <PlusIcon size={20} color={c} />, action: () => closeSidebar(() => navigation.navigate('AddProduct', {})) },
     { id: 'stock_inward', label: 'Stock Inward', icon: (c: string) => <BoxesIcon size={20} color={c} />, action: () => closeSidebar(() => navigation.navigate('StockInward', {})) },
-    { id: 'debit_customer', label: 'Debit Customer', icon: (c: string) => <UsersIcon size={20} color={c} />, action: () => closeSidebar(() => navigation.navigate('CustomerList')) },
+    { id: 'debit_customer', label: 'Debit Customer', icon: (c: string) => <UsersIcon size={20} color={c} />, action: () => closeSidebar(() => (navigation as any).navigate('CustomerTab')) },
     { id: 'supper', label: 'Supplier', icon: (c: string) => <TruckIcon size={20} color={c} />, action: () => closeSidebar(() => navigation.navigate('SupplierList')) },
     { id: 'order', label: 'Purchase Orders', icon: (c: string) => <ShoppingBagIcon size={20} color={c} />, action: () => closeSidebar(() => navigation.navigate('PurchaseList')) },
     { id: 'create_purchase', label: 'Add Purchase', icon: (c: string) => <PlusIcon size={20} color={c} />, action: () => closeSidebar(() => navigation.navigate('CreatePurchase')) },

@@ -139,6 +139,14 @@ export const MoreMenuScreen: React.FC = () => {
           screen: 'Inventory',
         },
         {
+          id: 'nav_categories',
+          title: 'Category Manager',
+          subtitle: 'Store categories, units & dynamic specifications',
+          color: '#6366F1',
+          icon: (c) => <BoxesIcon size={20} color={c} />,
+          screen: 'CategoryManager',
+        },
+        {
           id: 'nav_stock_inward',
           title: 'Stock Inward (Add Stock)',
           subtitle: 'Receive inventory shipments and restock products',
@@ -258,14 +266,23 @@ export const MoreMenuScreen: React.FC = () => {
         },
       ]);
     } else if (item.screen || item.id === 'nav_home') {
-      if (item.screen === 'DashboardTab' || item.id === 'nav_home') {
-        navigation.navigate('MainTabs' as any, { screen: 'DashboardTab' });
-      } else if (item.screen === 'PosBilling') {
-        navigation.navigate('MainTabs' as any, { screen: 'PosTab' });
-      } else if (item.screen === 'ProductList') {
-        navigation.navigate('MainTabs' as any, { screen: 'ProductsTab' });
-      } else if (item.screen === 'CustomerList') {
-        navigation.navigate('MainTabs' as any, { screen: 'CustomerTab' });
+      const tabTarget =
+        item.screen === 'DashboardTab' || item.id === 'nav_home'
+          ? 'DashboardTab'
+          : item.screen === 'PosBilling' || item.id === 'pos_make_bill'
+          ? 'PosTab'
+          : item.screen === 'ProductList' || item.id === 'nav_product'
+          ? 'ProductsTab'
+          : item.screen === 'CustomerList' || item.id === 'pos_debit_customer'
+          ? 'CustomerTab'
+          : null;
+
+      if (tabTarget) {
+        try {
+          (navigation as any).navigate(tabTarget);
+        } catch {
+          (navigation.getParent() as any)?.navigate('MainTabs', { screen: tabTarget });
+        }
       } else {
         navigation.navigate(item.screen as any, item.params);
       }

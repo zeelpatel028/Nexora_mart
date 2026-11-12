@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useRouter } from '../../routes/useRouter';
 import { storeService, reportService } from '../../services';
 import { AnalyticsDashboardView } from './AnalyticsDashboardView';
 import { ProductCatalog } from '../../components/products/ProductCatalog';
@@ -14,10 +15,34 @@ import { ReportDashboard } from '../../components/reports/ReportDashboard';
 import { CategoryManager } from '../../components/categories/CategoryManager';
 import { ProfileView } from './ProfileView';
 import { SettingsView } from './SettingsView';
+import { MoreView } from './MoreView';
 import { DashboardSkeleton } from '../../components/common';
 import './Dashboard.css';
 
+// Canonical route mapping for all dashboard tabs
+export const TAB_TO_ROUTE = {
+  overview: '/dashboard',
+  pos: '/pos',
+  sales: '/sales',
+  products: '/products',
+  'add-product': '/add-product',
+  inventory: '/inventory',
+  'debit-customers': '/debit-customers',
+  customers: '/customers',
+  suppliers: '/suppliers',
+  purchases: '/purchases',
+  expenses: '/expenses',
+  employees: '/employees',
+  reports: '/reports',
+  profile: '/profile',
+  stores: '/stores',
+  categories: '/categories',
+  settings: '/settings',
+  more: '/more'
+};
+
 export const Dashboard = ({ user, onLogout, initialTab = 'overview' }) => {
+  const { currentPath, navigate } = useRouter();
   const [currentUser, setCurrentUser] = useState(user);
   const [activeTab, setActiveTab] = useState(initialTab);
   const [storeData, setStoreData] = useState(null);
@@ -27,7 +52,6 @@ export const Dashboard = ({ user, onLogout, initialTab = 'overview' }) => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [showNotifications, setShowNotifications] = useState(false);
   const [showUserMenu, setShowUserMenu] = useState(false);
-  const [showMoreModal, setShowMoreModal] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
 
   const userName =
@@ -236,13 +260,28 @@ export const Dashboard = ({ user, onLogout, initialTab = 'overview' }) => {
           <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
         </svg>
       )
+    },
+    {
+      id: 'more',
+      label: 'More Options',
+      icon: (
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+          <rect x="3" y="3" width="7" height="7" rx="1.5"></rect>
+          <rect x="14" y="3" width="7" height="7" rx="1.5"></rect>
+          <rect x="14" y="14" width="7" height="7" rx="1.5"></rect>
+          <rect x="3" y="14" width="7" height="7" rx="1.5"></rect>
+        </svg>
+      )
     }
   ];
 
   const handleSelectTab = (tabId) => {
     setActiveTab(tabId);
     setSidebarOpen(false);
-    setShowMoreModal(false);
+    const targetPath = TAB_TO_ROUTE[tabId] || '/dashboard';
+    if (currentPath !== targetPath) {
+      navigate(targetPath);
+    }
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
@@ -595,17 +634,33 @@ export const Dashboard = ({ user, onLogout, initialTab = 'overview' }) => {
 
           {/* System Settings */}
           {activeTab === 'settings' && <SettingsView />}
+
+          {/* 15. More Page & ERP Hub */}
+          {activeTab === 'more' && (
+            <MoreView
+              user={currentUser}
+              storeData={storeData}
+              onNavigateTab={handleSelectTab}
+              onLogout={onLogout}
+            />
+          )}
         </main>
       </div>
 
       {/* 3. MOBILE BOTTOM TAB NAVIGATION (MATCHES REACT NATIVE TAB NAVIGATOR) */}
-      <nav className="mobile-bottom-nav">
+      <nav className="mobile-bottom-nav" aria-label="Mobile Navigation">
         <button
           type="button"
           className={`mobile-nav-btn ${activeTab === 'overview' ? 'active' : ''}`}
           onClick={() => handleSelectTab('overview')}
+          aria-label="Home Dashboard"
         >
-          <span className="mobile-nav-icon">🏠</span>
+          <span className="mobile-nav-icon">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={activeTab === 'overview' ? 2.5 : 2} strokeLinecap="round" strokeLinejoin="round">
+              <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
+              <polyline points="9 22 9 12 15 12 15 22" />
+            </svg>
+          </span>
           <span>Home</span>
         </button>
 
@@ -613,8 +668,15 @@ export const Dashboard = ({ user, onLogout, initialTab = 'overview' }) => {
           type="button"
           className={`mobile-nav-btn ${activeTab === 'pos' ? 'active' : ''}`}
           onClick={() => handleSelectTab('pos')}
+          aria-label="Make Bill POS"
         >
-          <span className="mobile-nav-icon">🛒</span>
+          <span className="mobile-nav-icon">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={activeTab === 'pos' ? 2.5 : 2} strokeLinecap="round" strokeLinejoin="round">
+              <circle cx="9" cy="21" r="1" />
+              <circle cx="20" cy="21" r="1" />
+              <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6" />
+            </svg>
+          </span>
           <span>Sales</span>
         </button>
 
@@ -622,8 +684,15 @@ export const Dashboard = ({ user, onLogout, initialTab = 'overview' }) => {
           type="button"
           className={`mobile-nav-btn ${activeTab === 'products' ? 'active' : ''}`}
           onClick={() => handleSelectTab('products')}
+          aria-label="Product Catalog"
         >
-          <span className="mobile-nav-icon">📦</span>
+          <span className="mobile-nav-icon">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={activeTab === 'products' ? 2.5 : 2} strokeLinecap="round" strokeLinejoin="round">
+              <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z" />
+              <polyline points="3.27 6.96 12 12.01 20.73 6.96" />
+              <line x1="12" y1="22.08" x2="12" y2="12" />
+            </svg>
+          </span>
           <span>Products</span>
         </button>
 
@@ -631,80 +700,35 @@ export const Dashboard = ({ user, onLogout, initialTab = 'overview' }) => {
           type="button"
           className={`mobile-nav-btn ${activeTab === 'inventory' ? 'active' : ''}`}
           onClick={() => handleSelectTab('inventory')}
+          aria-label="Inventory Manager"
         >
-          <span className="mobile-nav-icon">▦</span>
+          <span className="mobile-nav-icon">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={activeTab === 'inventory' ? 2.5 : 2} strokeLinecap="round" strokeLinejoin="round">
+              <polygon points="12 2 2 7 12 12 22 7 12 2" />
+              <polyline points="2 17 12 22 22 17" />
+              <polyline points="2 12 12 17 22 12" />
+            </svg>
+          </span>
           <span>Inventory</span>
         </button>
 
         <button
           type="button"
-          className={`mobile-nav-btn ${showMoreModal ? 'active' : ''}`}
-          onClick={() => setShowMoreModal(!showMoreModal)}
+          className={`mobile-nav-btn ${activeTab === 'more' || !['overview', 'pos', 'products', 'inventory'].includes(activeTab) ? 'active' : ''}`}
+          onClick={() => handleSelectTab('more')}
+          aria-label="More Management Options"
         >
-          <span className="mobile-nav-icon">⋯</span>
+          <span className="mobile-nav-icon">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={activeTab === 'more' || !['overview', 'pos', 'products', 'inventory'].includes(activeTab) ? 2.5 : 2} strokeLinecap="round" strokeLinejoin="round">
+              <rect x="3" y="3" width="7" height="7" rx="1.5" />
+              <rect x="14" y="3" width="7" height="7" rx="1.5" />
+              <rect x="14" y="14" width="7" height="7" rx="1.5" />
+              <rect x="3" y="14" width="7" height="7" rx="1.5" />
+            </svg>
+          </span>
           <span>More</span>
         </button>
       </nav>
-
-      {/* 4. MOBILE "MORE" DRAWER / MODAL (MATCHES REACT NATIVE MoreMenuScreen) */}
-      {showMoreModal && (
-        <div
-          className="position-fixed inset-0 bg-dark bg-opacity-50 d-flex flex-column justify-content-end"
-          style={{ zIndex: 1060 }}
-          onClick={() => setShowMoreModal(false)}
-        >
-          <div
-            className="bg-white rounded-top-4 p-4 shadow-lg"
-            style={{ maxHeight: '80vh', overflowY: 'auto' }}
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div className="d-flex justify-content-between align-items-center mb-3 pb-2 border-bottom">
-              <h5 className="fw-bold mb-0 text-dark">More Management Options</h5>
-              <button
-                type="button"
-                className="btn-close"
-                onClick={() => setShowMoreModal(false)}
-              ></button>
-            </div>
-
-            <div className="row g-2 mb-3">
-              {[
-                { id: 'sales', label: 'View Bills', icon: '📋' },
-                { id: 'add-product', label: 'Add Product', icon: '➕' },
-                { id: 'debit-customers', label: 'Debit Customers', icon: '💳' },
-                { id: 'suppliers', label: 'Suppliers', icon: '🚚' },
-                { id: 'employees', label: 'Employees', icon: '👥' },
-                { id: 'purchases', label: 'Orders', icon: '🛍️' },
-                { id: 'expenses', label: 'Expenses', icon: '💸' },
-                { id: 'reports', label: 'Reports', icon: '📊' },
-                { id: 'stores', label: 'Stores', icon: '🏬' },
-                { id: 'categories', label: 'Categories', icon: '📑' },
-                { id: 'profile', label: 'Profile', icon: '👤' },
-                { id: 'settings', label: 'Settings', icon: '⚙️' },
-              ].map((m) => (
-                <div key={m.id} className="col-4 text-center">
-                  <button
-                    type="button"
-                    className="btn btn-light w-100 p-3 rounded-3 d-flex flex-column align-items-center justify-content-center"
-                    onClick={() => handleSelectTab(m.id)}
-                  >
-                    <span className="fs-3 mb-1">{m.icon}</span>
-                    <span className="small fw-semibold text-dark">{m.label}</span>
-                  </button>
-                </div>
-              ))}
-            </div>
-
-            <button
-              type="button"
-              className="btn btn-outline-danger w-100 py-2 fw-semibold rounded-pill"
-              onClick={onLogout}
-            >
-              Sign Out from Account
-            </button>
-          </div>
-        </div>
-      )}
     </div>
   );
 };

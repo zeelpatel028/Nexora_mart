@@ -98,11 +98,6 @@ const MainTabNavigator: React.FC = () => {
             />
           ),
         }}
-        listeners={({ navigation }) => ({
-          tabPress: () => {
-            navigation.navigate('DashboardTab');
-          },
-        })}
       />
       <Tab.Screen
         name="CustomerTab"
@@ -117,11 +112,6 @@ const MainTabNavigator: React.FC = () => {
             />
           ),
         }}
-        listeners={({ navigation }) => ({
-          tabPress: () => {
-            navigation.navigate('CustomerTab');
-          },
-        })}
       />
       <Tab.Screen
         name="PosTab"
@@ -136,11 +126,6 @@ const MainTabNavigator: React.FC = () => {
             />
           ),
         }}
-        listeners={({ navigation }) => ({
-          tabPress: () => {
-            navigation.navigate('PosTab');
-          },
-        })}
       />
       <Tab.Screen
         name="ProductsTab"
@@ -155,11 +140,6 @@ const MainTabNavigator: React.FC = () => {
             />
           ),
         }}
-        listeners={({ navigation }) => ({
-          tabPress: () => {
-            navigation.navigate('ProductsTab');
-          },
-        })}
       />
       <Tab.Screen
         name="MoreTab"
@@ -174,11 +154,6 @@ const MainTabNavigator: React.FC = () => {
             />
           ),
         }}
-        listeners={({ navigation }) => ({
-          tabPress: () => {
-            navigation.navigate('MoreTab');
-          },
-        })}
       />
     </Tab.Navigator>
   );

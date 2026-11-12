@@ -15,6 +15,19 @@ export const AppRoutes = ({ brandName = 'NEXORA MART' }) => {
 
   const normalizedPath = (currentPath.toLowerCase().split('?')[0].replace(/\/+$/, '') || '/');
 
+  // List of public auth paths
+  const authPaths = ['/', '/splash', '/login', '/register', '/forgot-password'];
+  const isAuthPath = authPaths.includes(normalizedPath);
+
+  useEffect(() => {
+    // Route guards: redirect authenticated users away from login/splash, unauthenticated to login
+    if (user && (normalizedPath === '/' || normalizedPath === '/login' || normalizedPath === '/register' || normalizedPath === '/splash')) {
+      navigate('/dashboard', { replace: true });
+    } else if (!user && !isAuthPath) {
+      navigate('/login', { replace: true });
+    }
+  }, [user, normalizedPath, isAuthPath, navigate]);
+
   // Preview / Error Routes for testing & status redirection
   if (normalizedPath === '/401' || normalizedPath === '/unauthorized') {
     return <ErrorPage code={401} onLogin={() => navigate('/login')} onGoHome={() => navigate('/login')} />;
@@ -40,19 +53,6 @@ export const AppRoutes = ({ brandName = 'NEXORA MART' }) => {
   if (normalizedPath === '/504' || normalizedPath === '/timeout') {
     return <ErrorPage code={504} onRetry={() => window.location.reload()} onGoHome={() => navigate(user ? '/dashboard' : '/login')} />;
   }
-
-  // List of public auth paths
-  const authPaths = ['/', '/splash', '/login', '/register', '/forgot-password'];
-  const isAuthPath = authPaths.includes(normalizedPath);
-
-  useEffect(() => {
-    // Route guards: redirect authenticated users away from login/splash, unauthenticated to login
-    if (user && (normalizedPath === '/' || normalizedPath === '/login' || normalizedPath === '/register' || normalizedPath === '/splash')) {
-      navigate('/dashboard', { replace: true });
-    } else if (!user && !isAuthPath) {
-      navigate('/login', { replace: true });
-    }
-  }, [user, normalizedPath, isAuthPath, navigate]);
 
   if (isInitializing) {
     return (
@@ -132,10 +132,12 @@ export const AppRoutes = ({ brandName = 'NEXORA MART' }) => {
             tab = 'stores';
           } else if (normalizedPath === '/settings') {
             tab = 'settings';
-          } else if (normalizedPath === '/inventory') {
+          } else if (normalizedPath === '/inventory' || normalizedPath === '/stock') {
             tab = 'inventory';
           } else if (normalizedPath === '/categories') {
             tab = 'categories';
+          } else if (normalizedPath === '/more' || normalizedPath === '/menu') {
+            tab = 'more';
           } else if (normalizedPath !== '/dashboard') {
             return (
               <ErrorPage
