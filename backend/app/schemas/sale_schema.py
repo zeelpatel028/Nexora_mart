@@ -44,7 +44,9 @@ class SaleResponse(BaseModel):
     customer_name: Optional[str] = None
     customer_phone: Optional[str] = None
     invoice_number: str
-    sale_date: datetime.datetime
+    sale_date: Optional[datetime.datetime] = None
+    invoice_date: Optional[datetime.datetime] = None
+    created_at: Optional[datetime.datetime] = None
     subtotal: float
     tax_amount: float
     discount_amount: float
