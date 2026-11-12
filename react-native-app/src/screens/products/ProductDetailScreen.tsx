@@ -290,17 +290,10 @@ export const ProductDetailScreen: React.FC = () => {
         {/* Quick Inventory Actions */}
         <View style={styles.actionBtnRow}>
           <Button
-            title="Stock Inward"
-            icon="📥"
-            variant="outline"
-            style={{ flex: 1, marginRight: 8 }}
-            onPress={() => navigation.navigate('StockInward', { productId: product.id })}
-          />
-          <Button
-            title="Stock Adjust"
+            title="Adjust Stock"
             icon="⚖️"
             variant="outline"
-            style={{ flex: 1, marginLeft: 8 }}
+            style={{ flex: 1 }}
             onPress={() => navigation.navigate('StockAdjustment', { productId: product.id })}
           />
         </View>

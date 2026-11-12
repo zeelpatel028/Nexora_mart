@@ -243,11 +243,6 @@ export const ClothingEditProductScreen: React.FC = () => {
         baseMrp={pricingInfo.mrp}
       />
 
-      <ClothingMeasurementSection
-        measurements={measurements}
-        onChange={(up) => setMeasurements((p) => ({ ...p, ...up }))}
-      />
-
       <CommonPricingSection
         data={pricingInfo}
         onChange={updatePricingInfo}

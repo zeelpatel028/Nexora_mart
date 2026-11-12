@@ -3,8 +3,8 @@ import { StoreTypeCode } from '../common/types';
 export const STORE_PRODUCT_ROUTES = {
   ADD_PRODUCT: 'AddProduct',
   EDIT_PRODUCT: 'EditProduct',
-  PRODUCT_DETAILS: 'ProductDetails',
-  PRODUCT_LIST: 'Products',
+  PRODUCT_DETAILS: 'ProductDetail',
+  PRODUCT_LIST: 'ProductList',
 
   // Store-specific direct sub-routes (if needed for deep linking)
   GROCERY_ADD: 'GroceryAddProduct',

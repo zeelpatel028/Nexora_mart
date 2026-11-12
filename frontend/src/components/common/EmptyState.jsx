@@ -51,7 +51,7 @@ export const EmptyState = ({
     'no-inventory': {
       defaultTitle: 'No Inventory Found',
       defaultDesc: 'All stock levels are clear or not yet recorded. Inward goods or execute stock adjustments to update inventory.',
-      defaultAction: 'Record Stock Inward',
+      defaultAction: 'Add Stock Entry',
       icon: (
         <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="#FF6A1A" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
           <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z" />

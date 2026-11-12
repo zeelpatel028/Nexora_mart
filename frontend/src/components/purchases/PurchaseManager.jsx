@@ -99,7 +99,7 @@ export const PurchaseManager = () => {
       };
 
       const res = await billingService.createPurchase(payload);
-      setStatusMsg(`Stock Inward #${res.invoice_number} received! Warehouse stock updated.`);
+      setStatusMsg(`Purchase Order #${res.invoice_number} received! Warehouse stock updated.`);
       setShowAddModal(false);
       setInvoiceNumber('');
       setPurchaseItems([{ product_id: '', quantity: 10, unit_cost: 0, batch_number: '', expiry_date: '' }]);
@@ -115,13 +115,13 @@ export const PurchaseManager = () => {
     <div className="purchase-manager">
       <div className="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3 mb-4">
         <div>
-          <h4 className="fw-bold mb-1 text-dark">Supplier Purchases & Stock Inward</h4>
+          <h4 className="fw-bold mb-1 text-dark">Supplier Purchases & Orders</h4>
           <p className="text-muted small mb-0">
             Log procurement orders, record batch details, and automatically update warehouse stock.
           </p>
         </div>
         <Button variant="primary" onClick={() => setShowAddModal(true)}>
-          + New Inward Order
+          + New Purchase Order
         </Button>
       </div>
 
@@ -145,7 +145,7 @@ export const PurchaseManager = () => {
         <div className="text-center py-5 bg-white rounded-3 border">
           <p className="text-muted mb-3">No purchase orders recorded yet.</p>
           <Button variant="outline" size="sm" onClick={() => setShowAddModal(true)}>
-            Record First Inward Shipment
+            Record First Purchase Order
           </Button>
         </div>
       ) : (

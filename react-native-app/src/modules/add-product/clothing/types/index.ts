@@ -16,6 +16,21 @@ export interface ClothingSpecifications {
   sleeveLength?: string;
   occasion?: string;
   careInstructions?: string;
+  collarType?: string;
+  closureType?: string;
+  pocketType?: string;
+  waistType?: string;
+  riseType?: string;
+  washType?: string;
+  length?: string;
+  workType?: string;
+  borderType?: string;
+  blousePiece?: string;
+  dressType?: string;
+  color?: string;
+  material?: string;
+  customSpecs?: Array<{ name: string; value: string }>;
+  [key: string]: any;
 }
 
 export interface ClothingMeasurements {
@@ -35,7 +50,7 @@ export interface ClothingProductFormData {
   inventory: BaseProductInventoryInfo;
   units: BaseProductUnitInfo;
   specifications: ClothingSpecifications;
-  measurements: ClothingMeasurements;
+  measurements?: ClothingMeasurements;
   selectedSizes: string[];
   selectedColors: string[];
   variants: ProductVariantItem[];

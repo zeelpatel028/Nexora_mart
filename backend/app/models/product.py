@@ -37,6 +37,7 @@ class Product(Base):
     hsn_code = Column(String(50), nullable=True)
     status = Column(String(50), default="active", nullable=False, index=True)  # active, draft, inactive, deleted
     is_featured = Column(Boolean, default=False)
+    expiry_date = Column(DateTime, nullable=True, index=True)
     created_at = Column(DateTime, default=lambda: datetime.datetime.now(datetime.timezone.utc), index=True)
     updated_at = Column(DateTime, default=lambda: datetime.datetime.now(datetime.timezone.utc), onupdate=lambda: datetime.datetime.now(datetime.timezone.utc))
     deleted_at = Column(DateTime, nullable=True, index=True)
@@ -153,6 +154,8 @@ class Product(Base):
         ]:
             if rel is not None:
                 d = {k: v for k, v in rel.__dict__.items() if not k.startswith("_") and k not in ("id", "store_id", "product_id", "created_at", "updated_at")}
+                if hasattr(rel, "specifications") and isinstance(rel.specifications, dict):
+                    d.update(rel.specifications)
                 return d
         return {}
 
@@ -206,9 +209,10 @@ class ProductAlert(Base):
     id = Column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()), index=True)
     store_id = Column(Integer, ForeignKey("stores.id", ondelete="CASCADE"), nullable=False, index=True)
     product_id = Column(Integer, ForeignKey("products.id", ondelete="CASCADE"), nullable=False, index=True)
-    alert_type = Column(String(50), nullable=False)  # LOW_STOCK, EXPIRY_WARNING, OUT_OF_STOCK
+    alert_type = Column(String(50), nullable=False)  # LOW_STOCK, EXPIRY_WARNING, OUT_OF_STOCK, low_stock, expiring_soon
     threshold_value = Column(Numeric(12, 3), nullable=True)
     alert_days_before = Column(Integer, nullable=True)
+    expiry_date = Column(DateTime, nullable=True)
     is_enabled = Column(Boolean, default=True)
     notify_email = Column(Boolean, default=False)
     notify_sms = Column(Boolean, default=False)
@@ -342,6 +346,8 @@ class ProductClothingDetail(Base):
     neck_type = Column(String(100), nullable=True)
     occasion = Column(String(100), nullable=True)
     season = Column(String(100), nullable=True)
+    color = Column(String(50), nullable=True)
+    specifications = Column(JSON, default=dict)
     care_instructions = Column(Text, nullable=True)
     country_of_origin = Column(String(100), nullable=True)
     manufacturer = Column(String(200), nullable=True)

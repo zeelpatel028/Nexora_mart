@@ -51,19 +51,8 @@ STORE_TYPE_DETAIL_CONFIGS = {
         "fields": [
             {"name": "food_type", "label": "Food Type", "type": "select", "options": ["Vegetarian", "Non-Vegetarian", "Vegan", "Egg"], "default": "Vegetarian", "required": False},
             {"name": "item_type", "label": "Item Type", "type": "select", "options": ["Packaged Food", "Staples & Grains", "Fresh Produce", "Dairy Products", "Beverages & Juices", "Snacks & Confectionery", "Personal Care"], "default": "Packaged Food", "required": False},
-            {"name": "net_weight", "label": "Net Weight", "type": "text", "placeholder": "e.g. 500g, 1 kg, 250ml", "required": False},
-            {"name": "gross_weight", "label": "Gross Weight", "type": "text", "placeholder": "e.g. 550g", "required": False},
             {"name": "packaging_type", "label": "Packaging Type", "type": "select", "options": ["Packet / Pouch", "Bottle", "Box / Carton", "Can / Tin", "Glass Jar", "Loose / Bulk", "Tetra Pak"], "default": "Packet / Pouch", "required": False},
-            {"name": "manufacturer", "label": "Manufacturer", "type": "text", "placeholder": "e.g. Nestle, Tata Consumer, Amul", "required": False},
-            {"name": "country_of_origin", "label": "Country of Origin", "type": "text", "default": "India", "required": False},
-            {"name": "manufacturing_date", "label": "Manufacturing Date", "type": "date", "required": False},
-            {"name": "expiry_date", "label": "Expiry Date", "type": "date", "required": False},
-            {"name": "shelf_life_days", "label": "Shelf Life (Days)", "type": "number", "placeholder": "e.g. 180", "required": False},
-            {"name": "is_vegetarian", "label": "Is Vegetarian", "type": "boolean", "default": "true", "required": False},
-            {"name": "storage_type", "label": "Storage Instructions", "type": "select", "options": ["Room Temperature", "Refrigerated (2°C - 8°C)", "Deep Frozen (-18°C)", "Cool & Dry Place"], "default": "Cool & Dry Place", "required": False},
-            {"name": "nutritional_information", "label": "Nutritional Information", "type": "textarea", "placeholder": "Energy: 450 kcal, Protein: 8g, Carbs: 65g...", "required": False},
-            {"name": "ingredients", "label": "Ingredients List", "type": "textarea", "placeholder": "Wheat flour, Sugar, Edible vegetable oil...", "required": False},
-            {"name": "fssai_license", "label": "FSSAI License No.", "type": "text", "placeholder": "14-digit FSSAI Number", "required": False},
+            {"name": "net_weight", "label": "Net Weight / Volume", "type": "text", "placeholder": "e.g. 500g, 1 kg, 250ml", "required": False},
         ]
     },
     "clothing": {
@@ -71,20 +60,12 @@ STORE_TYPE_DETAIL_CONFIGS = {
         "model": ProductClothingDetail,
         "attr": "clothing_details",
         "fields": [
-            {"name": "gender", "label": "Gender / Target Group", "type": "select", "options": ["Men", "Women", "Unisex", "Kids", "Boys", "Girls", "Infants"], "default": "Men", "required": False},
-            {"name": "clothing_type", "label": "Clothing Type", "type": "select", "options": ["Shirt", "T-Shirt", "Jeans", "Trousers", "Saree", "Kurti", "Dress", "Jacket", "Sweater", "Suit", "Activewear"], "default": "T-Shirt", "required": False},
+            {"name": "clothing_type", "label": "Product Type", "type": "select", "options": ["T-Shirt", "Shirt", "Jeans", "Pants", "Trousers", "Kurti", "Saree", "Dress", "Jacket", "Shorts", "Other"], "default": "T-Shirt", "required": False},
+            {"name": "gender", "label": "Gender / Target Group", "type": "select", "options": ["Men", "Women", "Unisex", "Kids", "Boys", "Girls"], "default": "Men", "required": False},
             {"name": "fabric_type", "label": "Fabric Type", "type": "select", "options": ["100% Cotton", "Pure Silk", "Polyester", "Denim", "Linen", "Wool", "Rayon", "Cotton Blend", "Georgette"], "default": "100% Cotton", "required": False},
-            {"name": "material", "label": "Material Composition", "type": "text", "placeholder": "e.g. 98% Cotton, 2% Elastane", "required": False},
-            {"name": "pattern", "label": "Pattern / Print", "type": "select", "options": ["Solid / Plain", "Striped", "Checked", "Printed", "Embroidered", "Floral", "Graphic Print"], "default": "Solid / Plain", "required": False},
             {"name": "fit_type", "label": "Fit Type", "type": "select", "options": ["Regular Fit", "Slim Fit", "Oversized Fit", "Relaxed Fit", "Tailored Fit", "Skinny Fit"], "default": "Regular Fit", "required": False},
-            {"name": "sleeve_type", "label": "Sleeve Type", "type": "select", "options": ["Full Sleeve", "Half Sleeve", "Sleeveless", "3/4th Sleeve", "Roll-up Sleeve"], "default": "Half Sleeve", "required": False},
-            {"name": "neck_type", "label": "Neck / Collar Type", "type": "select", "options": ["Round Neck", "V-Neck", "Polo Collar", "Spread Collar", "Mandarin Collar", "Hooded", "Boat Neck"], "default": "Round Neck", "required": False},
-            {"name": "occasion", "label": "Occasion", "type": "select", "options": ["Casual", "Formal", "Festive", "Party Wear", "Sports / Gym", "Daily Wear"], "default": "Casual", "required": False},
-            {"name": "season", "label": "Season", "type": "select", "options": ["All Season", "Summer Collection", "Winter Collection", "Monsoon", "Autumn / Spring"], "default": "All Season", "required": False},
-            {"name": "care_instructions", "label": "Care Instructions", "type": "textarea", "placeholder": "Machine wash cold with like colors, do not bleach, tumble dry low...", "required": False},
-            {"name": "country_of_origin", "label": "Country of Origin", "type": "text", "default": "India", "required": False},
-            {"name": "manufacturer", "label": "Manufacturer / Brand", "type": "text", "placeholder": "e.g. Raymond, Zara, Levi Strauss", "required": False},
-            {"name": "collection_name", "label": "Collection / Series", "type": "text", "placeholder": "e.g. Summer 2026, Urban Heritage", "required": False},
+            {"name": "pattern", "label": "Pattern / Print", "type": "select", "options": ["Solid / Plain", "Striped", "Checked", "Printed", "Embroidered", "Graphic Print"], "default": "Solid / Plain", "required": False},
+            {"name": "color", "label": "Color", "type": "text", "placeholder": "e.g. Navy Blue, Jet Black, Maroon", "required": False},
         ]
     },
     "medical": {
@@ -92,20 +73,12 @@ STORE_TYPE_DETAIL_CONFIGS = {
         "model": ProductMedicineDetail,
         "attr": "medicine_details",
         "fields": [
-            {"name": "medicine_type", "label": "Medicine Classification", "type": "select", "options": ["Allopathic", "Ayurvedic", "Homeopathic", "Surgical / Medical Device", "OTC Wellness", "Nutraceutical"], "default": "Allopathic", "required": False},
-            {"name": "salt_composition", "label": "Salt Composition / Active Molecules", "type": "textarea", "placeholder": "e.g. Paracetamol 500mg, Caffeine 30mg", "required": False},
-            {"name": "generic_name", "label": "Generic Name", "type": "text", "placeholder": "e.g. Paracetamol Tablets IP", "required": False},
-            {"name": "strength", "label": "Strength / Potency", "type": "text", "placeholder": "e.g. 500 mg, 10 mg/ml, 250 mcg", "required": False},
+            {"name": "generic_name", "label": "Generic Name / Active Salt", "type": "text", "placeholder": "e.g. Paracetamol Tablets IP, Amoxicillin", "required": False},
             {"name": "dosage_form", "label": "Dosage Form", "type": "select", "options": ["Tablet", "Capsule", "Oral Syrup", "Suspension", "Injection", "Ointment / Cream", "Eye/Ear Drops", "Inhaler", "Powder / Sachet"], "default": "Tablet", "required": False},
+            {"name": "strength", "label": "Strength / Potency", "type": "text", "placeholder": "e.g. 500 mg, 10 mg/ml, 250 mcg", "required": False},
             {"name": "prescription_required", "label": "Prescription Required (Rx)", "type": "boolean", "default": "false", "required": False},
-            {"name": "schedule_type", "label": "Drug Schedule", "type": "select", "options": ["OTC (Over The Counter)", "Schedule H", "Schedule H1", "Schedule X (Narcotics)", "Schedule G"], "default": "OTC (Over The Counter)", "required": False},
-            {"name": "manufacturer", "label": "Pharmaceutical Manufacturer", "type": "text", "placeholder": "e.g. Cipla, Sun Pharma, Dr. Reddy's", "required": False},
+            {"name": "schedule_type", "label": "Drug Schedule", "type": "select", "options": ["OTC (Over The Counter)", "Schedule H", "Schedule H1", "Schedule X (Narcotics)"], "default": "OTC (Over The Counter)", "required": False},
             {"name": "pack_size", "label": "Packaging Size", "type": "text", "placeholder": "e.g. 10 Tablets / Strip, 100ml Bottle", "required": False},
-            {"name": "storage_conditions", "label": "Storage Conditions", "type": "text", "placeholder": "Store below 25°C. Protect from direct moisture & light.", "required": False},
-            {"name": "drug_license_number", "label": "Drug License / Mfg Lic No.", "type": "text", "placeholder": "e.g. 20B/21B-DL-9876", "required": False},
-            {"name": "therapeutic_category", "label": "Therapeutic Category", "type": "text", "placeholder": "e.g. Analgesic, Antibiotic, Antipyretic, Antihistamine", "required": False},
-            {"name": "side_effects", "label": "Possible Side Effects", "type": "textarea", "placeholder": "Drowsiness, mild nausea, dry mouth...", "required": False},
-            {"name": "usage_instructions", "label": "Usage Instructions", "type": "textarea", "placeholder": "As directed by the registered medical practitioner.", "required": False},
         ]
     },
     "mobile_electronics": {
@@ -114,21 +87,11 @@ STORE_TYPE_DETAIL_CONFIGS = {
         "attr": "electronics_details",
         "fields": [
             {"name": "device_type", "label": "Device Category", "type": "select", "options": ["Smartphone", "Laptop", "Tablet", "Smartwatch", "Smart TV", "Audio & Earbuds", "Gaming Console", "Computer Peripheral", "Home Appliance", "Mobile Accessory"], "default": "Smartphone", "required": False},
-            {"name": "model_number", "label": "Model Number", "type": "text", "placeholder": "e.g. SM-S928B, A2849", "required": False},
-            {"name": "model_name", "label": "Model Commercial Name", "type": "text", "placeholder": "e.g. Galaxy S24 Ultra, MacBook Air M3", "required": False},
-            {"name": "manufacturer", "label": "Manufacturer / Brand", "type": "text", "placeholder": "e.g. Apple, Samsung, Dell, Sony", "required": False},
-            {"name": "brand_model", "label": "Series / Sub-Brand", "type": "text", "placeholder": "e.g. iPhone Pro Series, ThinkPad", "required": False},
+            {"name": "model_name", "label": "Model Name / Commercial Name", "type": "text", "placeholder": "e.g. Galaxy S24 Ultra, MacBook Air M3, iPhone 15", "required": False},
             {"name": "color", "label": "Color / Finish", "type": "text", "placeholder": "e.g. Titanium Black, Midnight Blue", "required": False},
             {"name": "ram", "label": "System RAM", "type": "select", "options": ["4 GB", "6 GB", "8 GB", "12 GB", "16 GB", "24 GB", "32 GB", "64 GB", "N/A"], "default": "8 GB", "required": False},
             {"name": "storage_capacity", "label": "Internal Storage / ROM", "type": "select", "options": ["64 GB", "128 GB", "256 GB", "512 GB", "1 TB SSD", "2 TB SSD", "N/A"], "default": "128 GB", "required": False},
-            {"name": "processor", "label": "Processor / Chipset", "type": "text", "placeholder": "e.g. Snapdragon 8 Gen 3, Apple M3, Core i7", "required": False},
-            {"name": "screen_size", "label": "Display Size", "type": "text", "placeholder": "e.g. 6.8 inches AMOLED, 15.6 inches FHD", "required": False},
-            {"name": "battery_capacity", "label": "Battery Capacity", "type": "text", "placeholder": "e.g. 5000 mAh, 70 Wh", "required": False},
-            {"name": "connectivity", "label": "Connectivity", "type": "text", "placeholder": "e.g. 5G, Wi-Fi 7, Bluetooth 5.3, USB Type-C", "required": False},
             {"name": "warranty_months", "label": "Warranty Period (Months)", "type": "number", "default": "12", "required": False},
-            {"name": "warranty_type", "label": "Warranty Coverage", "type": "select", "options": ["Brand On-Site Warranty", "Brand Carry-In Warranty", "Seller Warranty", "No Warranty"], "default": "Brand Carry-In Warranty", "required": False},
-            {"name": "power_rating", "label": "Power Rating / Charging", "type": "text", "placeholder": "e.g. 65W Fast Charge, 230V 50Hz", "required": False},
-            {"name": "country_of_origin", "label": "Country of Origin", "type": "text", "default": "India", "required": False},
         ]
     },
     "plastic": {
@@ -136,20 +99,11 @@ STORE_TYPE_DETAIL_CONFIGS = {
         "model": ProductPlasticDetail,
         "attr": "plastic_details",
         "fields": [
-            {"name": "plastic_type", "label": "Polymer / Plastic Type", "type": "select", "options": ["Polypropylene (PP)", "High Density Polyethylene (HDPE)", "Polyethylene Terephthalate (PET)", "Low Density Polyethylene (LDPE)", "Polyvinyl Chloride (PVC)", "Polystyrene (PS)", "ABS Resin"], "default": "Polypropylene (PP)", "required": False},
-            {"name": "material_grade", "label": "Material Grade", "type": "select", "options": ["100% Virgin Grade", "Commercial Recycled Grade", "Food Contact Grade A", "Industrial Heavy Duty"], "default": "100% Virgin Grade", "required": False},
-            {"name": "material_type", "label": "Structure Form", "type": "select", "options": ["Rigid Molded", "Flexible Film", "Foam Cushioned", "Corrugated Polymer"], "default": "Rigid Molded", "required": False},
+            {"name": "plastic_type", "label": "Polymer / Plastic Type", "type": "select", "options": ["Polypropylene (PP)", "High Density Polyethylene (HDPE)", "PET", "Low Density Polyethylene (LDPE)", "PVC", "100% Virgin Grade"], "default": "Polypropylene (PP)", "required": False},
+            {"name": "capacity", "label": "Storage Capacity", "type": "text", "placeholder": "e.g. 5, 20, 500", "required": False},
+            {"name": "capacity_unit", "label": "Capacity Unit", "type": "select", "options": ["Liters", "ml", "Kilograms", "Gallons"], "default": "Liters", "required": False},
             {"name": "color", "label": "Product Color", "type": "text", "placeholder": "e.g. Transparent, Blue, Red, Ivory", "required": False},
-            {"name": "length", "label": "Length", "type": "text", "placeholder": "e.g. 30 cm, 12 inches", "required": False},
-            {"name": "width", "label": "Width", "type": "text", "placeholder": "e.g. 20 cm", "required": False},
-            {"name": "height", "label": "Height", "type": "text", "placeholder": "e.g. 15 cm", "required": False},
-            {"name": "thickness", "label": "Wall Thickness / Gauge", "type": "text", "placeholder": "e.g. 2.5 mm, 50 microns", "required": False},
-            {"name": "weight", "label": "Item Tare Weight", "type": "text", "placeholder": "e.g. 250 grams", "required": False},
-            {"name": "capacity", "label": "Storage Capacity", "type": "text", "placeholder": "e.g. 500, 20", "required": False},
-            {"name": "capacity_unit", "label": "Capacity Unit", "type": "select", "options": ["ml", "Liters", "Gallons", "Kilograms"], "default": "Liters", "required": False},
             {"name": "food_grade", "label": "Food Grade Certified (BPA Free)", "type": "boolean", "default": "true", "required": False},
-            {"name": "recyclable", "label": "Recyclable Polymer", "type": "boolean", "default": "true", "required": False},
-            {"name": "usage_type", "label": "Primary Usage Sector", "type": "select", "options": ["Household & Kitchenware", "Industrial Packaging", "Commercial Storage & Bins", "Agricultural Utility", "Water Storage Tanks"], "default": "Household & Kitchenware", "required": False},
         ]
     },
     "handloom": {
@@ -157,20 +111,11 @@ STORE_TYPE_DETAIL_CONFIGS = {
         "model": ProductHandloomDetail,
         "attr": "handloom_details",
         "fields": [
+            {"name": "product_type", "label": "Product Type", "type": "select", "options": ["Saree", "Bedsheet & Linen", "Kurta & Apparel", "Shawl & Stole", "Fabric by Meter"], "default": "Saree", "required": False},
             {"name": "fabric_type", "label": "Authentic Fabric Type", "type": "select", "options": ["Pure Khadi Cotton", "Mulberry Pure Silk", "Chanderi Silk Cotton", "Tussar Silk", "Banarasi Katan Silk", "Kanchipuram Silk", "Linen Weave", "Kota Doria"], "default": "Pure Khadi Cotton", "required": False},
-            {"name": "weaving_type", "label": "Loom & Weaving Technique", "type": "select", "options": ["Traditional Pit Loom", "Frame Handloom", "Shuttle Handloom", "Jacquard Handloom", "Backstrap Loom"], "default": "Traditional Pit Loom", "required": False},
-            {"name": "craft_type", "label": "Artisan Craft / Heritage Art", "type": "select", "options": ["Bandhani Tie & Dye", "Kalamkari Hand Painting", "Ikat / Patola", "Jamdani Weave", "Kantha Stitch", "Ajrakh Block Print", "Zari Brocade", "Chikankari"], "default": "Zari Brocade", "required": False},
-            {"name": "material", "label": "Fiber Composition", "type": "text", "placeholder": "e.g. 100% Hand-spun Organic Cotton, Pure Zari", "required": False},
-            {"name": "thread_count", "label": "Thread Count / Reed", "type": "text", "placeholder": "e.g. 80s count, 100s count, 120s count", "required": False},
-            {"name": "design_name", "label": "Traditional Design Motif", "type": "text", "placeholder": "e.g. Peacock Border, Paisley Butta, Temple Border", "required": False},
-            {"name": "pattern", "label": "Pattern Style", "type": "select", "options": ["Traditional Royal Motifs", "Geometric Tribal", "Floral Jaal", "Solid with Rich Zari Pallu", "Checkered / Stripes"], "default": "Traditional Royal Motifs", "required": False},
-            {"name": "origin_region", "label": "Origin Region / Craft Hub", "type": "text", "placeholder": "e.g. Varanasi, Chanderi, Kanchipuram, Sambalpur, Pochampally", "required": False},
-            {"name": "artisan_name", "label": "Master Weaver / Guild", "type": "text", "placeholder": "e.g. Bunkar Cooperative, Master Artisan Ram", "required": False},
-            {"name": "handwoven", "label": "Handwoven Certified (Handloom Mark)", "type": "boolean", "default": "true", "required": False},
-            {"name": "length", "label": "Length Specification", "type": "text", "placeholder": "e.g. 6.3 meters (with blouse piece), 2.5 meters", "required": False},
-            {"name": "width", "label": "Width", "type": "text", "placeholder": "e.g. 45 inches", "required": False},
+            {"name": "craft_type", "label": "Artisan Craft / Heritage Art", "type": "select", "options": ["Zari Brocade", "Bandhani Tie & Dye", "Kalamkari Hand Painting", "Ikat / Patola", "Jamdani Weave", "Kantha Stitch", "Ajrakh Block Print"], "default": "Zari Brocade", "required": False},
+            {"name": "origin_region", "label": "Origin Region / Craft Hub", "type": "text", "placeholder": "e.g. Varanasi, Chanderi, Kanchipuram, Sambalpur", "required": False},
             {"name": "color", "label": "Natural / Base Color", "type": "text", "placeholder": "e.g. Indigo Blue, Royal Maroon, Mustard Yellow", "required": False},
-            {"name": "care_instructions", "label": "Artisanal Care Instructions", "type": "textarea", "placeholder": "Dry clean recommended for silk and zari. Hand wash with gentle mild detergent for cotton.", "required": False},
         ]
     },
     "furniture": {
@@ -178,19 +123,13 @@ STORE_TYPE_DETAIL_CONFIGS = {
         "model": ProductFurnitureDetail,
         "attr": "furniture_details",
         "fields": [
-            {"name": "furniture_type", "label": "Furniture Category", "type": "select", "options": ["Sofa & Couch", "Bed & Cot", "Dining Table & Chairs", "Office Ergonomic Chair", "Wardrobe & Almirah", "Study & Work Desk", "Bookshelf & Cabinet", "Recliner", "TV Unit & Console"], "default": "Sofa & Couch", "required": False},
-            {"name": "material", "label": "Primary Material", "type": "select", "options": ["Solid Teak Wood", "Sheesham Wood (Rosewood)", "Engineered Wood / MDF", "Solid Oak", "Wrought Iron / Steel", "Natural Cane & Rattan", "Commercial Plywood"], "default": "Solid Teak Wood", "required": False},
-            {"name": "frame_material", "label": "Frame Material", "type": "text", "placeholder": "e.g. Kiln-dried Hardwood, Heavy-duty Steel", "required": False},
-            {"name": "finish_type", "label": "Wood / Surface Finish", "type": "select", "options": ["Matte Natural Finish", "High Gloss Lacquer", "Walnut Finish", "Warm Honey Oak", "Teak Polished", "Rustic Vintage", "Melamine"], "default": "Walnut Finish", "required": False},
-            {"name": "length", "label": "Length / Depth", "type": "text", "placeholder": "e.g. 84 inches / 213 cm", "required": False},
-            {"name": "width", "label": "Width", "type": "text", "placeholder": "e.g. 36 inches / 91 cm", "required": False},
-            {"name": "height", "label": "Height", "type": "text", "placeholder": "e.g. 32 inches / 81 cm", "required": False},
-            {"name": "weight", "label": "Gross Weight", "type": "text", "placeholder": "e.g. 45 kg", "required": False},
+            {"name": "furniture_type", "label": "Furniture Category", "type": "select", "options": ["Sofa & Couch", "Bed & Cot", "Dining Table & Chairs", "Office Ergonomic Chair", "Wardrobe & Almirah", "Study & Work Desk", "Bookshelf & Cabinet", "Recliner"], "default": "Sofa & Couch", "required": False},
+            {"name": "material", "label": "Primary Material", "type": "select", "options": ["Solid Teak Wood", "Sheesham Wood (Rosewood)", "Engineered Wood / MDF", "Solid Oak", "Wrought Iron / Steel"], "default": "Solid Teak Wood", "required": False},
+            {"name": "finish_type", "label": "Wood / Surface Finish", "type": "select", "options": ["Walnut Finish", "High Gloss Lacquer", "Warm Honey Oak", "Teak Polished", "Rustic Vintage", "Matte Natural"], "default": "Walnut Finish", "required": False},
+            {"name": "dimensions", "label": "Dimensions (L x W x H)", "type": "text", "placeholder": "e.g. 84 x 36 x 32 inches", "required": False},
             {"name": "seating_capacity", "label": "Seating Capacity", "type": "number", "placeholder": "e.g. 3, 6", "required": False},
-            {"name": "assembly_required", "label": "Assembly Required (DIY / Carpenter)", "type": "boolean", "default": "false", "required": False},
-            {"name": "warranty_months", "label": "Structural Warranty (Months)", "type": "number", "default": "36", "required": False},
-            {"name": "room_type", "label": "Recommended Room", "type": "select", "options": ["Living Room", "Master Bedroom", "Dining Room", "Home Office", "Outdoor / Garden", "Commercial Reception"], "default": "Living Room", "required": False},
             {"name": "color", "label": "Upholstery / Wood Color", "type": "text", "placeholder": "e.g. Charcoal Grey, Classic Walnut, Beige Fabric", "required": False},
+            {"name": "warranty_months", "label": "Structural Warranty (Months)", "type": "number", "default": "36", "required": False},
         ]
     },
     "agro": {
@@ -198,21 +137,13 @@ STORE_TYPE_DETAIL_CONFIGS = {
         "model": ProductAgroDetail,
         "attr": "agro_details",
         "fields": [
-            {"name": "agro_category", "label": "Agricultural Category", "type": "select", "options": ["Certified Crop Seeds", "Chemical Fertilizers (NPK)", "Organic Fertilizers & Manure", "Insecticides & Pesticides", "Fungicides & Herbicides", "Plant Growth Regulators", "Sprayers & Farm Implements", "Animal Feed & Supplements"], "default": "Certified Crop Seeds", "required": False},
+            {"name": "agro_category", "label": "Agricultural Category", "type": "select", "options": ["Certified Crop Seeds", "Chemical Fertilizers (NPK)", "Organic Fertilizers & Manure", "Insecticides & Pesticides", "Fungicides & Herbicides", "Plant Growth Regulators"], "default": "Certified Crop Seeds", "required": False},
             {"name": "product_type", "label": "Formulation Type", "type": "select", "options": ["Hybrid F1 Seeds", "Bio-Fertilizer", "Granular NPK", "Liquid Concentrate (EC)", "Soluble Powder (WP)", "Organic Bio-Stimulant"], "default": "Hybrid F1 Seeds", "required": False},
             {"name": "crop_name", "label": "Target Crops", "type": "text", "placeholder": "e.g. Wheat, Paddy, Cotton, Soybean, Tomato, Maize", "required": False},
-            {"name": "seed_variety", "label": "Seed Variety / Hybrid Code", "type": "text", "placeholder": "e.g. Pioneer 3355, Mahyco Hybrid 6444", "required": False},
-            {"name": "brand_name", "label": "Agro Brand", "type": "text", "placeholder": "e.g. IFFCO, Bayer CropScience, Syngenta, UPL", "required": False},
-            {"name": "composition", "label": "Chemical / Biological Composition", "type": "textarea", "placeholder": "e.g. Nitrogen 12%, Phosphorus 32%, Potassium 16%...", "required": False},
             {"name": "active_ingredient", "label": "Active Ingredient Molecule", "type": "text", "placeholder": "e.g. Chlorpyrifos 50% + Cypermethrin 5% EC", "required": False},
-            {"name": "concentration", "label": "Concentration Percentage", "type": "text", "placeholder": "e.g. 20% SL, 10% EC", "required": False},
-            {"name": "application_method", "label": "Application Method", "type": "select", "options": ["Foliar Spray Application", "Soil Drenching", "Seed Treatment", "Broadcast Fertilization", "Drip Irrigation Fertigation"], "default": "Foliar Spray Application", "required": False},
-            {"name": "recommended_crop", "label": "Recommended Season / Soil", "type": "text", "placeholder": "Kharif & Rabi seasons; well-drained loamy soil", "required": False},
+            {"name": "composition", "label": "Chemical / Biological Composition", "type": "textarea", "placeholder": "e.g. Nitrogen 12%, Phosphorus 32%, Potassium 16%...", "required": False},
             {"name": "dosage", "label": "Recommended Dosage", "type": "text", "placeholder": "e.g. 2 ml per liter of water; 50 kg per acre", "required": False},
             {"name": "pack_size", "label": "Commercial Pack Size", "type": "text", "placeholder": "e.g. 250 ml, 500 ml, 1 Litre, 25 kg Bag", "required": False},
-            {"name": "manufacturer", "label": "Agricultural Manufacturer", "type": "text", "placeholder": "e.g. National Seeds Corp, Coromandel, Bayer", "required": False},
-            {"name": "license_number", "label": "CIB / Fertilizer License Number", "type": "text", "placeholder": "e.g. CIR-12345/AGRO/2026", "required": False},
-            {"name": "safety_instructions", "label": "Farmer Safety & Handling Instructions", "type": "textarea", "placeholder": "Wear protective gloves and mask during spray. Keep out of reach of children and farm animals.", "required": False},
         ]
     }
 }
@@ -293,46 +224,42 @@ class ProductService:
             or_(Unit.store_id == ctx.store_id, Unit.store_id.is_(None))
         ).order_by(Unit.name.asc()).all()
 
-        # Build Common Fields
+        # Build Common Fields (Clean, minimal, essential)
         common_fields: List[FormFieldConfig] = [
-            # Basic Information
-            FormFieldConfig(field_name="product_name", field_label="Product Name", field_type="text", is_required=True, placeholder="e.g. Premium Basmati Rice", display_order=1, section="basic"),
-            FormFieldConfig(field_name="category_id", field_label="Category", field_type="select", is_required=False, display_order=2, section="basic"),
-            FormFieldConfig(field_name="brand_id", field_label="Brand", field_type="select", is_required=False, display_order=3, section="basic"),
-            FormFieldConfig(field_name="product_code", field_label="Product Code", field_type="text", is_required=False, placeholder="Auto-generated if blank", display_order=4, section="basic"),
-            FormFieldConfig(field_name="sku", field_label="SKU (Stock Keeping Unit)", field_type="text", is_required=False, placeholder="e.g. SKU-10023", display_order=5, section="basic"),
-            FormFieldConfig(field_name="barcode", field_label="Barcode / EAN", field_type="text", is_required=False, placeholder="Scan or enter barcode", display_order=6, section="basic"),
-            FormFieldConfig(field_name="unit_id", field_label="Unit of Measure", field_type="select", is_required=False, display_order=7, section="basic"),
-            FormFieldConfig(field_name="hsn_code", field_label="HSN / SAC Code", field_type="text", is_required=False, placeholder="e.g. 10063020", display_order=8, section="basic"),
-            FormFieldConfig(field_name="short_description", field_label="Short Tagline", field_type="text", is_required=False, placeholder="Brief highlight of the product", display_order=9, section="basic"),
-            FormFieldConfig(field_name="description", field_label="Detailed Description", field_type="textarea", is_required=False, placeholder="Complete product features, specifications, and notes...", display_order=10, section="basic"),
+            FormFieldConfig(field_name="product_name", field_label="Product Name", field_type="text", is_required=True, placeholder="Enter product name", display_order=1, section="basic"),
+            FormFieldConfig(field_name="category_id", field_label="Category", field_type="select", is_required=True, display_order=2, section="basic"),
+        ]
+        if st_key != "grocery":
+            common_fields.append(
+                FormFieldConfig(field_name="brand_id", field_label="Brand", field_type="select", is_required=False, display_order=3, section="basic")
+            )
+        common_fields.append(
+            FormFieldConfig(field_name="unit_id", field_label="Unit of Measure", field_type="select", is_required=False, display_order=4, section="basic")
+        )
+        if st_key in ("clothing", "agro"):
+            common_fields.append(
+                FormFieldConfig(field_name="image_url", field_label="Product Image", field_type="text", is_required=False, placeholder="Paste image URL or upload", display_order=5, section="basic")
+            )
 
-            # Pricing & Tax
-            FormFieldConfig(field_name="purchase_price", field_label="Purchase / Cost Price (₹)", field_type="number", is_required=False, default_value="0.00", display_order=20, section="pricing"),
-            FormFieldConfig(field_name="selling_price", field_label="Selling / Retail Price (₹)", field_type="number", is_required=True, default_value="0.00", display_order=21, section="pricing"),
+        # Pricing Section
+        common_fields.extend([
+            FormFieldConfig(field_name="purchase_price", field_label="Purchase Price (₹)", field_type="number", is_required=False, default_value="0.00", display_order=20, section="pricing"),
+            FormFieldConfig(field_name="selling_price", field_label="Selling Price (₹)", field_type="number", is_required=True, default_value="0.00", display_order=21, section="pricing"),
             FormFieldConfig(field_name="mrp", field_label="Maximum Retail Price - MRP (₹)", field_type="number", is_required=False, placeholder="Optional MRP", display_order=22, section="pricing"),
-            FormFieldConfig(field_name="wholesale_price", field_label="Wholesale Price (₹)", field_type="number", is_required=False, placeholder="Optional B2B rate", display_order=23, section="pricing"),
-            FormFieldConfig(field_name="tax_type", field_label="Tax Treatment", field_type="select", is_required=True, default_value="exclusive", options=[
+            FormFieldConfig(field_name="tax_type", field_label="Tax Treatment", field_type="select", is_required=False, default_value="exclusive", options=[
                 FormFieldOption(label="Tax Exclusive (Base + GST)", value="exclusive", is_default=True),
-                FormFieldOption(label="Tax Inclusive (GST included in MRP)", value="inclusive"),
-                FormFieldOption(label="Tax Exempt / Zero Rated", value="exempt"),
+                FormFieldOption(label="Tax Inclusive (GST included)", value="inclusive"),
+                FormFieldOption(label="Tax Exempt / Nil", value="exempt"),
             ], display_order=24, section="pricing"),
-            FormFieldConfig(field_name="gst_rate", field_label="GST Tax Rate (%)", field_type="select", is_required=False, default_value="0", options=[
-                FormFieldOption(label="0% (Nil / Exempt)", value="0", is_default=True),
+            FormFieldConfig(field_name="gst_rate", field_label="GST Rate (%)", field_type="select", is_required=False, default_value="0", options=[
+                FormFieldOption(label="0% (Exempt)", value="0", is_default=True),
                 FormFieldOption(label="5% GST", value="5"),
                 FormFieldOption(label="12% GST", value="12"),
                 FormFieldOption(label="18% GST", value="18"),
                 FormFieldOption(label="28% GST", value="28"),
             ], display_order=25, section="pricing"),
-
-            # Stock & Inventory
-            FormFieldConfig(field_name="opening_stock", field_label="Opening Stock Qty", field_type="number", is_required=False, default_value="0", display_order=30, section="inventory"),
-            FormFieldConfig(field_name="current_stock", field_label="Current Available Stock", field_type="number", is_required=False, default_value="0", display_order=31, section="inventory"),
-            FormFieldConfig(field_name="minimum_stock", field_label="Low Stock Alert Threshold", field_type="number", is_required=False, default_value="5", display_order=32, section="inventory"),
-            FormFieldConfig(field_name="maximum_stock", field_label="Maximum Warehouse Stock", field_type="number", is_required=False, display_order=33, section="inventory"),
-            FormFieldConfig(field_name="reorder_level", field_label="Reorder Stock Level", field_type="number", is_required=False, default_value="10", display_order=34, section="inventory"),
-            FormFieldConfig(field_name="warehouse_location", field_label="Warehouse Rack / Bin", field_type="text", is_required=False, placeholder="e.g. Shelf A-3, Floor 2", display_order=35, section="inventory"),
-        ]
+            FormFieldConfig(field_name="current_stock", field_label="Available Stock Quantity", field_type="number", is_required=False, default_value="0", display_order=30, section="inventory"),
+        ])
 
         # Build Store-Specific Fields (ONLY for this store type)
         store_specific_fields: List[FormFieldConfig] = []
@@ -368,6 +295,10 @@ class ProductService:
             store_type={
                 "code": st_key,
                 "name": store_config["name"],
+                "has_image": st_key in ("clothing", "agro"),
+                "has_expiry": st_key in ("medical", "grocery", "agro"),
+                "has_brand": st_key != "grocery",
+                "has_smart_specs": st_key == "clothing",
                 "has_variants": st_key in ("clothing", "footwear", "mobile_electronics", "furniture"),
                 "has_batches": st_key in ("medical", "grocery", "agro"),
                 "has_serials": st_key in ("mobile_electronics", "electronics"),
@@ -534,19 +465,74 @@ class ProductService:
                     display_order=0,
                 ))
 
-            # Step 11: Insert Alerts
-            if request.alerts:
-                for alert in request.alerts:
-                    db.add(ProductAlert(
-                        store_id=ctx.store_id,
-                        product_id=product.id,
-                        alert_type=alert.alert_type,
-                        threshold_value=Decimal(str(alert.threshold_value)) if alert.threshold_value is not None else None,
-                        alert_days_before=alert.alert_days_before,
-                        is_enabled=alert.is_enabled,
-                        notify_email=alert.notify_email,
-                        notify_sms=alert.notify_sms,
-                    ))
+            # Step 11: Insert Alerts & Expiry Date
+            low_enabled = getattr(request, "low_stock_alert_enabled", None)
+            if low_enabled is True or (low_enabled is None and request.alerts and any('low' in str(a.alert_type).lower() and a.is_enabled for a in request.alerts)):
+                thresh = getattr(request, "low_stock_threshold", None) or getattr(request, "min_stock_level", None) or 5.0
+                db.add(ProductAlert(
+                    store_id=ctx.store_id,
+                    product_id=product.id,
+                    alert_type="low_stock",
+                    threshold_value=Decimal(str(thresh)),
+                    is_enabled=True,
+                    notify_email=False,
+                    notify_sms=False
+                ))
+                inventory.minimum_stock = Decimal(str(thresh))
+            elif request.alerts:
+                for a in request.alerts:
+                    if 'low' in str(a.alert_type).lower():
+                        db.add(ProductAlert(
+                            store_id=ctx.store_id,
+                            product_id=product.id,
+                            alert_type=a.alert_type,
+                            threshold_value=Decimal(str(a.threshold_value)) if a.threshold_value is not None else None,
+                            is_enabled=a.is_enabled,
+                            notify_email=a.notify_email,
+                            notify_sms=a.notify_sms,
+                        ))
+
+            exp_enabled = getattr(request, "expiry_alert_enabled", None)
+            exp_d_val = getattr(request, "expiry_date", None)
+            if exp_enabled is True and exp_d_val:
+                exp_dt = exp_d_val
+                if isinstance(exp_dt, str) and exp_dt.strip():
+                    try:
+                        exp_dt = datetime.datetime.fromisoformat(exp_dt.strip())
+                    except Exception:
+                        pass
+                product.expiry_date = exp_dt
+                db.add(ProductAlert(
+                    store_id=ctx.store_id,
+                    product_id=product.id,
+                    alert_type="expiring_soon",
+                    expiry_date=exp_dt,
+                    alert_days_before=int(getattr(request, "alert_days_before", None) or 7),
+                    is_enabled=True,
+                    notify_email=False,
+                    notify_sms=False
+                ))
+            elif request.alerts:
+                for a in request.alerts:
+                    if 'expir' in str(a.alert_type).lower():
+                        exp_dt = getattr(a, "expiry_date", None)
+                        if isinstance(exp_dt, str) and exp_dt.strip():
+                            try:
+                                exp_dt = datetime.datetime.fromisoformat(exp_dt.strip())
+                            except Exception:
+                                pass
+                        if exp_dt:
+                            product.expiry_date = exp_dt
+                        db.add(ProductAlert(
+                            store_id=ctx.store_id,
+                            product_id=product.id,
+                            alert_type=a.alert_type,
+                            expiry_date=exp_dt,
+                            alert_days_before=a.alert_days_before or 7,
+                            is_enabled=a.is_enabled,
+                            notify_email=a.notify_email,
+                            notify_sms=a.notify_sms,
+                        ))
 
             # Step 12: Insert Variants
             if request.variants:
@@ -608,6 +594,14 @@ class ProductService:
             # Clean and sanitize keys matching model columns
             valid_cols = {col.name for col in detail_model.__table__.columns}
             cleaned_detail = {k: v for k, v in detail_dict.items() if k in valid_cols and k not in ("id", "store_id", "product_id", "created_at", "updated_at")}
+
+            # If clothing, extract smart specifications
+            if st_key == "clothing":
+                specs = dict(detail_dict.get("specifications") or {})
+                for k, v in detail_dict.items():
+                    if k not in valid_cols and k not in ("id", "store_id", "product_id", "created_at", "updated_at"):
+                        specs[k] = v
+                cleaned_detail["specifications"] = specs
 
             # Parse date strings if any
             for date_key in ("manufacturing_date", "expiry_date"):
@@ -870,6 +864,64 @@ class ProductService:
                     if request.inventory.warehouse_location is not None:
                         inv.warehouse_location = request.inventory.warehouse_location
 
+            # Update Alerts (Low Stock Alert & Expiry Alert)
+            if request:
+                low_enabled = getattr(request, "low_stock_alert_enabled", None)
+                if low_enabled is not None:
+                    low_alert = db.query(ProductAlert).filter(
+                        ProductAlert.product_id == product.id,
+                        ProductAlert.alert_type.in_(["low_stock", "LOW_STOCK"])
+                    ).first()
+                    if low_enabled:
+                        thresh = getattr(request, "low_stock_threshold", None) or (float(low_alert.threshold_value) if low_alert and low_alert.threshold_value is not None else 5.0)
+                        if not low_alert:
+                            low_alert = ProductAlert(store_id=ctx.store_id, product_id=product.id, alert_type="low_stock")
+                            db.add(low_alert)
+                        low_alert.threshold_value = Decimal(str(thresh))
+                        low_alert.is_enabled = True
+                        if product.inventory_record:
+                            product.inventory_record.minimum_stock = Decimal(str(thresh))
+                    else:
+                        if low_alert:
+                            low_alert.is_enabled = False
+
+                exp_enabled = getattr(request, "expiry_alert_enabled", None)
+                if exp_enabled is not None:
+                    exp_alert = db.query(ProductAlert).filter(
+                        ProductAlert.product_id == product.id,
+                        ProductAlert.alert_type.in_(["expiring_soon", "EXPIRY_WARNING"])
+                    ).first()
+                    if exp_enabled:
+                        if not exp_alert:
+                            exp_alert = ProductAlert(store_id=ctx.store_id, product_id=product.id, alert_type="expiring_soon")
+                            db.add(exp_alert)
+                        exp_d_val = getattr(request, "expiry_date", None)
+                        if exp_d_val:
+                            exp_dt = exp_d_val
+                            if isinstance(exp_dt, str) and exp_dt.strip():
+                                try:
+                                    exp_dt = datetime.datetime.fromisoformat(exp_dt.strip())
+                                except Exception:
+                                    pass
+                            exp_alert.expiry_date = exp_dt
+                            product.expiry_date = exp_dt
+                        if getattr(request, "alert_days_before", None) is not None:
+                            exp_alert.alert_days_before = int(request.alert_days_before)
+                        exp_alert.is_enabled = True
+                    else:
+                        if exp_alert:
+                            exp_alert.is_enabled = False
+
+                if getattr(request, "image_url", None) is not None:
+                    primary_img = db.query(ProductImage).filter(
+                        ProductImage.product_id == product.id,
+                        ProductImage.is_primary == True
+                    ).first()
+                    if primary_img:
+                        primary_img.image_url = request.image_url
+                    elif request.image_url:
+                        db.add(ProductImage(store_id=ctx.store_id, product_id=product.id, image_url=request.image_url, is_primary=True))
+
             # Update Store-Specific Details
             if request:
                 st_key = _normalize_store_type_key(ctx.store_type_code)
@@ -895,6 +947,14 @@ class ProductService:
                     for k, v in detail_dict.items():
                         if k in valid_cols and k not in ("id", "store_id", "product_id", "created_at", "updated_at"):
                             setattr(existing_detail, k, v)
+
+                    # For clothing: store custom/smart specifications
+                    if st_key == "clothing":
+                        specs = dict(detail_dict.get("specifications") or {})
+                        for k, v in detail_dict.items():
+                            if k not in valid_cols and k not in ("id", "store_id", "product_id", "created_at", "updated_at"):
+                                specs[k] = v
+                        existing_detail.specifications = specs
 
             db.commit()
             db.refresh(product)
@@ -933,3 +993,87 @@ class ProductService:
         product.status = "deleted"
         db.commit()
         return {"status": "success", "message": f"Product '{product.product_name}' was safely removed from catalog."}
+
+    @staticmethod
+    def get_active_alerts(db: Session, ctx: Any) -> Dict[str, Any]:
+        """
+        Retrieves real-time active Low Stock and Expiry alerts for the current store.
+        Avoids duplicates, checks enable toggles, and filters by threshold / warning window.
+        """
+        resolved_ctx = _resolve_context(store_or_ctx=ctx, db=db)
+        store_id = resolved_ctx.store_id
+        today = datetime.datetime.now(datetime.timezone.utc).date()
+
+        products = db.query(Product).filter(
+            Product.store_id == store_id,
+            Product.deleted_at.is_(None),
+            Product.status == "active"
+        ).all()
+
+        low_stock_alerts = []
+        expiry_alerts = []
+        seen_keys = set()
+
+        for p in products:
+            curr_stock = float(p.current_stock or 0.0)
+            p_name = p.product_name or p.name or "Product"
+
+            # Check low stock alerts
+            if getattr(p, "alerts", None):
+                for a in p.alerts:
+                    atype = str(a.alert_type).lower()
+                    if "low" in atype and a.is_enabled:
+                        threshold = float(a.threshold_value) if a.threshold_value is not None else float(p.min_stock_level or 5.0)
+                        if curr_stock <= threshold:
+                            key = f"low_{p.id}"
+                            if key not in seen_keys:
+                                seen_keys.add(key)
+                                low_stock_alerts.append({
+                                    "id": key,
+                                    "product_id": p.id,
+                                    "product_name": p_name,
+                                    "type": "low_stock",
+                                    "title": "Low Stock Alert",
+                                    "message": f"'{p_name}' has only {int(curr_stock)} units left (Threshold: {int(threshold)}).",
+                                    "current_stock": curr_stock,
+                                    "threshold": threshold,
+                                    "category": p.category.name if p.category else "General",
+                                    "severity": "danger" if curr_stock <= 0 else "warning"
+                                })
+
+            # Check expiry alerts
+            if getattr(p, "alerts", None):
+                for a in p.alerts:
+                    atype = str(a.alert_type).lower()
+                    if "expir" in atype and a.is_enabled:
+                        exp_val = a.expiry_date or getattr(p, "expiry_date", None)
+                        if exp_val:
+                            d_target = exp_val.date() if isinstance(exp_val, datetime.datetime) else exp_val
+                            days_before = int(a.alert_days_before or 7)
+                            days_left = (d_target - today).days
+                            if days_left <= days_before:
+                                key = f"exp_{p.id}"
+                                if key not in seen_keys:
+                                    seen_keys.add(key)
+                                    expiry_alerts.append({
+                                        "id": key,
+                                        "product_id": p.id,
+                                        "product_name": p_name,
+                                        "type": "expiring_soon",
+                                        "title": "Expiry Alert",
+                                        "message": f"'{p_name}' expires on {d_target.strftime('%d/%m/%Y')} ({days_left} days left).",
+                                        "days_left": days_left,
+                                        "expiry_date": d_target.isoformat(),
+                                        "category": p.category.name if p.category else "General",
+                                        "severity": "danger" if days_left <= 0 else "warning"
+                                    })
+
+        combined = low_stock_alerts + expiry_alerts
+        return {
+            "total_count": len(combined),
+            "low_stock_count": len(low_stock_alerts),
+            "expiry_count": len(expiry_alerts),
+            "low_stock": low_stock_alerts,
+            "expiring_soon": expiry_alerts,
+            "all": combined
+        }

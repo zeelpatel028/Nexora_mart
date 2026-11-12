@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useRouter } from '../../routes/useRouter';
-import { storeService, reportService } from '../../services';
+import { storeService, reportService, productService } from '../../services';
 import { AnalyticsDashboardView } from './AnalyticsDashboardView';
 import { ProductCatalog } from '../../components/products/ProductCatalog';
 import { ProductForm } from '../../components/products/ProductForm';
@@ -12,7 +12,6 @@ import { DebitCustomerManager } from '../../components/partners/DebitCustomerMan
 import { EmployeeManager } from '../../components/employees/EmployeeManager';
 import { StoreSelectionManager } from '../../components/stores/StoreSelectionManager';
 import { ReportDashboard } from '../../components/reports/ReportDashboard';
-import { CategoryManager } from '../../components/categories/CategoryManager';
 import { ProfileView } from './ProfileView';
 import { SettingsView } from './SettingsView';
 import { MoreView } from './MoreView';
@@ -36,7 +35,6 @@ export const TAB_TO_ROUTE = {
   reports: '/reports',
   profile: '/profile',
   stores: '/stores',
-  categories: '/categories',
   settings: '/settings',
   more: '/more'
 };
@@ -53,20 +51,24 @@ export const Dashboard = ({ user, onLogout, initialTab = 'overview' }) => {
   const [showNotifications, setShowNotifications] = useState(false);
   const [showUserMenu, setShowUserMenu] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
+  const [activeAlerts, setActiveAlerts] = useState([]);
 
   const userName =
     currentUser?.first_name || currentUser?.firstName || currentUser?.name || (currentUser?.email ? currentUser.email.split('@')[0] : 'Owner');
 
   const loadData = async () => {
     try {
-      const [store, sum, overview] = await Promise.all([
+      const [store, sum, overview, alerts] = await Promise.all([
         storeService.getMyStore().catch(() => null),
         reportService.getDashboardSummary().catch(() => null),
-        reportService.getAnalyticsOverview().catch(() => null)
+        reportService.getAnalyticsOverview().catch(() => null),
+        productService.getActiveAlerts().catch(() => ({ all: [] }))
       ]);
       setStoreData(store);
       setSummary(sum);
       setAnalyticsOverview(overview);
+      const alertItems = Array.isArray(alerts) ? alerts : (alerts?.all || alerts?.alerts || []);
+      setActiveAlerts(alertItems);
     } catch (err) {
       console.warn('Dashboard fetch notice:', err);
     } finally {
@@ -357,33 +359,50 @@ export const Dashboard = ({ user, onLogout, initialTab = 'overview' }) => {
                 <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path>
                 <path d="M13.73 21a2 2 0 0 1-3.46 0"></path>
               </svg>
-              <span className="notification-badge">3</span>
+              {activeAlerts.length > 0 && (
+                <span className="notification-badge">{activeAlerts.length}</span>
+              )}
             </button>
 
             {/* Notifications Popover */}
             {showNotifications && (
               <div
                 className="position-absolute end-0 mt-2 bg-white rounded-3 shadow-lg border p-3"
-                style={{ width: '280px', zIndex: 1100 }}
+                style={{ width: '320px', zIndex: 1100, maxHeight: '400px', overflowY: 'auto' }}
               >
                 <div className="d-flex justify-content-between align-items-center mb-2 pb-2 border-bottom">
-                  <span className="fw-bold text-dark small">Notifications</span>
-                  <span className="badge bg-primary text-white rounded-pill">3 New</span>
+                  <span className="fw-bold text-dark small">Active Alerts</span>
+                  <span className={`badge ${activeAlerts.length > 0 ? 'bg-danger' : 'bg-success'} text-white rounded-pill`}>
+                    {activeAlerts.length} {activeAlerts.length === 1 ? 'Alert' : 'Alerts'}
+                  </span>
                 </div>
-                <div className="d-flex flex-column gap-2">
-                  <div className="small p-2 rounded bg-light">
-                    <span className="fw-bold text-danger d-block">Low Stock Alert</span>
-                    Rice (5kg) has only 8 units left in inventory.
+                {activeAlerts.length === 0 ? (
+                  <div className="text-center py-3 text-muted small">
+                    <span style={{ fontSize: '24px' }}>✓</span>
+                    <p className="mt-1 mb-0">All stock & expiry levels healthy.</p>
                   </div>
-                  <div className="small p-2 rounded bg-light">
-                    <span className="fw-bold text-success d-block">New Order Completed</span>
-                    Invoice #INV-1001 • ₹ 850 paid via Cash.
+                ) : (
+                  <div className="d-flex flex-column gap-2">
+                    {activeAlerts.map((alert, idx) => (
+                      <div
+                        key={idx}
+                        className={`small p-2 rounded border ${
+                          (alert.alert_type === 'low_stock' || alert.type === 'low_stock') ? 'bg-danger-subtle border-danger-subtle' : 'bg-warning-subtle border-warning-subtle'
+                        }`}
+                      >
+                        <span className={`fw-bold d-block ${(alert.alert_type === 'low_stock' || alert.type === 'low_stock') ? 'text-danger' : 'text-warning-emphasis'}`}>
+                          {(alert.alert_type === 'low_stock' || alert.type === 'low_stock') ? '⚠️ Low Stock Alert' : '⏳ Expiry Alert'}
+                        </span>
+                        <div className="text-dark fw-semibold">{alert.product_name}</div>
+                        <div className="text-muted" style={{ fontSize: '11px' }}>
+                          {(alert.alert_type === 'low_stock' || alert.type === 'low_stock')
+                            ? `Stock on hand: ${alert.current_stock} (threshold: ≤ ${alert.threshold_value ?? alert.threshold})`
+                            : `Expiring on: ${alert.expiry_date ? alert.expiry_date.split('T')[0] : 'N/A'}`}
+                        </div>
+                      </div>
+                    ))}
                   </div>
-                  <div className="small p-2 rounded bg-light">
-                    <span className="fw-bold text-primary d-block">Staff Active</span>
-                    Alex Morgan signed in to cashier terminal.
-                  </div>
-                </div>
+                )}
               </div>
             )}
           </div>
@@ -617,18 +636,6 @@ export const Dashboard = ({ user, onLogout, initialTab = 'overview' }) => {
                 setStoreData(updatedStore);
                 loadData();
               }}
-            />
-          )}
-
-          {/* Category Configuration */}
-          {activeTab === 'categories' && (
-            <CategoryManager
-              currentStore={storeData}
-              onCategoryChanged={(updatedStore) => {
-                setStoreData(updatedStore);
-                loadData();
-              }}
-              onClose={() => handleSelectTab('overview')}
             />
           )}
 

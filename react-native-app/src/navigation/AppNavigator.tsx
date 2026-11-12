@@ -34,9 +34,7 @@ import ProductListScreen from '../screens/products/ProductListScreen';
 import ProductDetailScreen from '../screens/products/ProductDetailScreen';
 import AddProductScreen from '../screens/products/AddProductScreen';
 import EditProductScreen from '../screens/products/EditProductScreen';
-import CategoryListScreen from '../screens/categories/CategoryListScreen';
 import InventoryScreen from '../screens/inventory/InventoryScreen';
-import StockInwardScreen from '../screens/inventory/StockInwardScreen';
 import StockAdjustmentScreen from '../screens/inventory/StockAdjustmentScreen';
 import PosBillingScreen from '../screens/orders/PosBillingScreen';
 import SalesListScreen from '../screens/orders/SalesListScreen';
@@ -90,6 +88,7 @@ const MainTabNavigator: React.FC = () => {
         component={DashboardScreen}
         options={{
           tabBarLabel: 'Home',
+          tabBarAccessibilityLabel: 'Home Dashboard Tab',
           tabBarIcon: ({ focused }) => (
             <HomeIcon
               size={22}
@@ -104,6 +103,7 @@ const MainTabNavigator: React.FC = () => {
         component={CustomerListScreen}
         options={{
           tabBarLabel: 'Customer',
+          tabBarAccessibilityLabel: 'Customer Management Tab',
           tabBarIcon: ({ focused }) => (
             <UsersIcon
               size={22}
@@ -118,6 +118,7 @@ const MainTabNavigator: React.FC = () => {
         component={PosBillingScreen}
         options={{
           tabBarLabel: 'Make Bills',
+          tabBarAccessibilityLabel: 'POS Terminal and Billing Tab',
           tabBarIcon: ({ focused }) => (
             <ReceiptIcon
               size={22}
@@ -132,6 +133,7 @@ const MainTabNavigator: React.FC = () => {
         component={ProductListScreen}
         options={{
           tabBarLabel: 'Product',
+          tabBarAccessibilityLabel: 'Product Directory and Inventory Tab',
           tabBarIcon: ({ focused }) => (
             <PackageIcon
               size={22}
@@ -146,6 +148,7 @@ const MainTabNavigator: React.FC = () => {
         component={MoreMenuScreen}
         options={{
           tabBarLabel: 'More',
+          tabBarAccessibilityLabel: 'More Store Operations and Settings Tab',
           tabBarIcon: ({ focused }) => (
             <GridIcon
               size={22}
@@ -208,17 +211,12 @@ export const AppNavigator: React.FC = () => {
             <Stack.Screen name="ProductList" component={ProductListScreen} />
             <Stack.Screen name="Inventory" component={InventoryScreen} />
             <Stack.Screen name="ProductDetail" component={ProductDetailScreen} />
-            <Stack.Screen name="ProductDetails" component={ProductDetailScreen} />
             <Stack.Screen name="AddProduct" component={AddProductScreen} />
             <Stack.Screen name="EditProduct" component={EditProductScreen} />
-            <Stack.Screen name="CategoryManager" component={CategoryListScreen} />
-            <Stack.Screen name="StockInward" component={StockInwardScreen} />
             <Stack.Screen name="StockAdjustment" component={StockAdjustmentScreen} />
             <Stack.Screen name="SalesList" component={SalesListScreen} />
-            <Stack.Screen name="Sales" component={SalesListScreen} />
             <Stack.Screen name="SaleDetail" component={SaleDetailScreen} />
             <Stack.Screen name="PurchaseList" component={PurchaseListScreen} />
-            <Stack.Screen name="Purchases" component={PurchaseListScreen} />
             <Stack.Screen name="CreatePurchase" component={CreatePurchaseScreen} />
             <Stack.Screen name="CustomerList" component={CustomerListScreen} />
             <Stack.Screen name="SupplierList" component={SupplierListScreen} />

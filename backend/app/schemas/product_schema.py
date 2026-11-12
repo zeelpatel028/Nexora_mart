@@ -52,9 +52,10 @@ class InventoryResponse(InventoryBase):
 
 # --- Alerts Schemas ---
 class AlertBase(BaseModel):
-    alert_type: str = "LOW_STOCK"  # LOW_STOCK, EXPIRY_WARNING, OUT_OF_STOCK
+    alert_type: str = "LOW_STOCK"  # LOW_STOCK, EXPIRY_WARNING, OUT_OF_STOCK, low_stock, expiring_soon
     threshold_value: Optional[float] = None
     alert_days_before: Optional[int] = None
+    expiry_date: Optional[Union[datetime, date, str]] = None
     is_enabled: bool = True
     notify_email: bool = False
     notify_sms: bool = False
@@ -176,6 +177,9 @@ class ClothingDetailsSchema(BaseModel):
     neck_type: Optional[str] = None
     occasion: Optional[str] = None
     season: Optional[str] = None
+    color: Optional[str] = None
+    specification_type: Optional[str] = None
+    specifications: Optional[Dict[str, Any]] = None
     care_instructions: Optional[str] = None
     country_of_origin: Optional[str] = "India"
     manufacturer: Optional[str] = None
@@ -309,6 +313,20 @@ class ProductCreate(BaseModel):
     min_stock_level: Optional[float] = None
     image_url: Optional[str] = None
 
+    # Alert toggles & settings
+    low_stock_alert_enabled: Optional[bool] = None
+    low_stock_threshold: Optional[float] = None
+    expiry_alert_enabled: Optional[bool] = None
+    expiry_date: Optional[Union[datetime, date, str]] = None
+    alert_days_before: Optional[int] = None
+
+    # Alert toggles & settings
+    low_stock_alert_enabled: Optional[bool] = None
+    low_stock_threshold: Optional[float] = None
+    expiry_alert_enabled: Optional[bool] = None
+    expiry_date: Optional[Union[datetime, date, str]] = None
+    alert_days_before: Optional[int] = None
+
     # Nested comprehensive components
     pricing: Optional[PricingCreate] = None
     inventory: Optional[InventoryCreate] = None
@@ -360,6 +378,13 @@ class ProductUpdate(BaseModel):
     min_stock_level: Optional[float] = None
     image_url: Optional[str] = None
 
+    # Alert toggles & settings
+    low_stock_alert_enabled: Optional[bool] = None
+    low_stock_threshold: Optional[float] = None
+    expiry_alert_enabled: Optional[bool] = None
+    expiry_date: Optional[Union[datetime, date, str]] = None
+    alert_days_before: Optional[int] = None
+
     pricing: Optional[PricingCreate] = None
     inventory: Optional[InventoryCreate] = None
     alerts: Optional[List[AlertCreate]] = None
@@ -409,6 +434,11 @@ class ProductResponse(BaseModel):
     is_featured: bool = False
     has_variants: bool = False
     image_url: Optional[str] = None
+    expiry_date: Optional[datetime] = None
+    low_stock_alert_enabled: bool = False
+    low_stock_threshold: Optional[float] = None
+    expiry_alert_enabled: bool = False
+    alert_days_before: Optional[int] = None
     created_at: Optional[datetime] = None
     updated_at: Optional[datetime] = None
 

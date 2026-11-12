@@ -8,18 +8,17 @@ export const GENDER_OPTIONS = [
 ];
 
 export const CLOTHING_TYPE_OPTIONS = [
-  { label: 'T-Shirt', value: 't-shirt' },
-  { label: 'Casual Shirt', value: 'casual-shirt' },
-  { label: 'Formal Shirt', value: 'formal-shirt' },
-  { label: 'Jeans & Denim', value: 'jeans' },
-  { label: 'Trousers & Chinos', value: 'trousers' },
-  { label: 'Kurti & Kurta', value: 'kurti' },
-  { label: 'Saree & Ethnic Wear', value: 'saree' },
-  { label: 'Dress & Gown', value: 'dress' },
-  { label: 'Jacket & Blazer', value: 'jacket' },
-  { label: 'Hoodie & Sweatshirt', value: 'hoodie' },
-  { label: 'Shorts & Track Pants', value: 'shorts' },
-  { label: 'Innerwear & Loungewear', value: 'innerwear' },
+  { label: 'T-Shirt', value: 'T-Shirt' },
+  { label: 'Shirt', value: 'Shirt' },
+  { label: 'Jeans', value: 'Jeans' },
+  { label: 'Pants', value: 'Pants' },
+  { label: 'Trousers', value: 'Trousers' },
+  { label: 'Kurti', value: 'Kurti' },
+  { label: 'Saree', value: 'Saree' },
+  { label: 'Dress', value: 'Dress' },
+  { label: 'Jacket', value: 'Jacket' },
+  { label: 'Shorts', value: 'Shorts' },
+  { label: 'Other', value: 'Other' },
 ];
 
 export const FABRIC_OPTIONS = [

@@ -148,21 +148,6 @@ export const MoreView = ({ user, storeData, onNavigateTab, onLogout }) => {
               <polyline points="2 12 12 17 22 12" />
             </svg>
           )
-        },
-        {
-          id: 'categories',
-          title: 'Categories & Store Type',
-          subtitle: 'Organize categories, dynamic fields & store taxonomy',
-          color: '#6366F1',
-          bgColor: 'rgba(99, 102, 241, 0.1)',
-          icon: (
-            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2">
-              <rect x="3" y="3" width="7" height="7" rx="1" />
-              <rect x="14" y="3" width="7" height="7" rx="1" />
-              <rect x="14" y="14" width="7" height="7" rx="1" />
-              <rect x="3" y="14" width="7" height="7" rx="1" />
-            </svg>
-          )
         }
       ]
     },
@@ -187,7 +172,7 @@ export const MoreView = ({ user, storeData, onNavigateTab, onLogout }) => {
         },
         {
           id: 'purchases',
-          title: 'Purchase Orders & Stock Inward',
+          title: 'Purchase Orders',
           subtitle: 'Manage supplier bills, purchase entries & vendor receipts',
           color: '#EC4899',
           bgColor: 'rgba(236, 72, 153, 0.1)',

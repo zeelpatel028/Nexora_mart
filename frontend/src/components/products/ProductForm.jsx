@@ -1,6 +1,28 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { productService, categoryService } from '../../services';
-import { Button } from '../common/Button';
+import './ProductForm.css';
+
+// Pre-defined Clothing Specification Options
+const CLOTHING_SPEC_OPTIONS = {
+  patterns: ['Solid / Plain', 'Printed', 'Striped', 'Checked', 'Graphic Print', 'Floral', 'Embroidered'],
+  genders: ['Men', 'Women', 'Unisex', 'Boys', 'Girls'],
+  fabrics: ['100% Cotton', 'Cotton Blend', 'Pure Silk', 'Denim', 'Linen', 'Wool', 'Rayon', 'Polyester', 'Georgette', 'Chiffon'],
+  fitTypes: ['Regular Fit', 'Slim Fit', 'Oversized Fit', 'Relaxed Fit', 'Tailored Fit', 'Skinny Fit'],
+  neckTypes: ['Round Neck', 'V-Neck', 'Polo Neck', 'Henley Neck', 'Mandarin Neck', 'Boat Neck', 'Collar Neck'],
+  sleeveTypes: ['Half Sleeve', 'Full Sleeve', 'Sleeveless', 'Three-Quarter Sleeve', 'Roll-up Sleeve'],
+  collarTypes: ['Regular Spread', 'Button-Down', 'Mandarin / Chinese', 'Cutaway', 'Cuban Collar'],
+  closureTypes: ['Button Down', 'Zip Fly with Button', 'Zipper', 'Drawstring', 'Snap Button', 'Elastic Waistband'],
+  pocketTypes: ['Single Pocket', 'Double Pocket', 'No Pocket', 'Side Pockets'],
+  waistTypes: ['Mid Rise', 'High Rise', 'Low Rise', 'Elasticated Waist'],
+  washTypes: ['Light Wash', 'Medium Wash', 'Dark Wash', 'Acid Wash', 'Raw / Rinse'],
+  occasions: ['Casual', 'Daily Wear', 'Festive', 'Formal / Office', 'Party', 'Sports / Activewear', 'Wedding'],
+  kurtiLengths: ['Knee Length', 'Calf Length', 'Ankle Length', 'Short / Hip Length'],
+  kurtiWorks: ['Plain / Minimal', 'Hand Block Print', 'Chikankari', 'Zari Work', 'Mirror Work', 'Embroidered'],
+  sareeBorders: ['Zari Border', 'Broad Border', 'Contrast Border', 'Embroidered Border', 'Temple Border', 'No Border'],
+  sareeWorks: ['Woven Zari', 'Digital Printed', 'Handloom Weave', 'Embroidered', 'Stone Work'],
+  blousePieceOptions: ['Available (Attached)', 'Available (Unstitched)', 'Not Included'],
+  dressTypes: ['Maxi Dress', 'Midi Dress', 'Mini Dress', 'Bodycon', 'A-Line Dress', 'Shift Dress', 'Wrap Dress']
+};
 
 export const ProductForm = ({
   initialProduct = null,
@@ -10,27 +32,30 @@ export const ProductForm = ({
 }) => {
   const isEditing = Boolean(initialProduct && initialProduct.id);
 
-  // Form Configuration state loaded from authenticated store backend
+  // Form Configuration
   const [formConfig, setFormConfig] = useState(null);
   const [loadingConfig, setLoadingConfig] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
   const [successMessage, setSuccessMessage] = useState('');
-  const [activeSection, setActiveSection] = useState('all'); // 'all' or section id
 
-  // Section 1: Basic Information
+  // ----------------------------------------------------
+  // SECTION 1: BASIC PRODUCT INFORMATION
+  // ----------------------------------------------------
   const [productName, setProductName] = useState(initialProduct?.product_name || initialProduct?.name || '');
-  const [productCode, setProductCode] = useState(initialProduct?.product_code || '');
-  const [sku, setSku] = useState(initialProduct?.sku || '');
-  const [barcode, setBarcode] = useState(initialProduct?.barcode || '');
   const [categoryId, setCategoryId] = useState(initialProduct?.category_id || initialCategoryId || '');
   const [brandId, setBrandId] = useState(initialProduct?.brand_id || '');
   const [unitId, setUnitId] = useState(initialProduct?.unit_id || '');
-  const [hsnCode, setHsnCode] = useState(initialProduct?.hsn_code || '');
-  const [shortDescription, setShortDescription] = useState(initialProduct?.short_description || '');
-  const [description, setDescription] = useState(initialProduct?.description || '');
+  const [sku, setSku] = useState(initialProduct?.sku || '');
+  const [imageUrl, setImageUrl] = useState(
+    initialProduct?.images && initialProduct.images.length > 0
+      ? initialProduct.images[0].image_url
+      : initialProduct?.image_url || ''
+  );
 
-  // Section 2: Pricing & Tax
+  // ----------------------------------------------------
+  // SECTION 2: PRICING INFORMATION
+  // ----------------------------------------------------
   const [purchasePrice, setPurchasePrice] = useState(
     initialProduct?.pricing?.purchase_price ?? initialProduct?.purchase_price ?? ''
   );
@@ -40,93 +65,54 @@ export const ProductForm = ({
   const [mrp, setMrp] = useState(
     initialProduct?.pricing?.mrp ?? initialProduct?.mrp ?? ''
   );
-  const [wholesalePrice, setWholesalePrice] = useState(
-    initialProduct?.pricing?.wholesale_price ?? ''
-  );
   const [taxType, setTaxType] = useState(
     initialProduct?.pricing?.tax_type || 'exclusive'
   );
   const [gstRate, setGstRate] = useState(
     initialProduct?.pricing?.gst_rate !== undefined && initialProduct?.pricing?.gst_rate !== null
       ? Number(initialProduct.pricing.gst_rate)
-      : 18
-  );
-
-  // Section 3: Stock & Inventory
-  const [openingStock, setOpeningStock] = useState(
-    initialProduct?.inventory_record?.opening_stock ?? initialProduct?.initial_stock ?? 0
+      : 0
   );
   const [currentStock, setCurrentStock] = useState(
     initialProduct?.inventory_record?.current_stock ?? initialProduct?.current_stock ?? 0
   );
-  const [minimumStock, setMinimumStock] = useState(
-    initialProduct?.inventory_record?.minimum_stock ?? initialProduct?.min_stock_level ?? 5
-  );
-  const [maximumStock, setMaximumStock] = useState(
-    initialProduct?.inventory_record?.maximum_stock ?? 1000
-  );
-  const [reorderLevel, setReorderLevel] = useState(
-    initialProduct?.inventory_record?.reorder_level ?? 10
-  );
-  const [warehouseLocation, setWarehouseLocation] = useState(
-    initialProduct?.inventory_record?.warehouse_location ?? ''
-  );
 
-  // Section 4: Store-Specific Details (Dynamically populated according to store type)
+  // ----------------------------------------------------
+  // SECTION 3: STORE-SPECIFIC SPECIFICATIONS
+  // ----------------------------------------------------
   const [storeDetails, setStoreDetails] = useState({});
 
-  // Section 5: Variants
-  const [hasVariants, setHasVariants] = useState(
-    Boolean(initialProduct?.variants && initialProduct.variants.length > 0)
-  );
-  const [variantsList, setVariantsList] = useState(
-    initialProduct?.variants && initialProduct.variants.length > 0
-      ? initialProduct.variants.map((v) => ({
-          variant_name: v.variant_name || '',
-          sku: v.sku || '',
-          barcode: v.barcode || '',
-          selling_price: v.selling_price ?? '',
-          stock_quantity: v.stock_quantity ?? 0,
-          is_active: v.is_active !== false
-        }))
-      : []
-  );
+  // Clothing Smart Specifications State
+  const [clothingSpecType, setClothingSpecType] = useState('T-Shirt');
+  const [clothingSpecs, setClothingSpecs] = useState({
+    pattern: 'Solid / Plain',
+    neck_type: 'Round Neck',
+    sleeve_type: 'Half Sleeve',
+    fabric: '100% Cotton',
+    fit_type: 'Regular Fit',
+    color: '',
+    material: '100% Combed Cotton',
+    gender: 'Men',
+    occasion: 'Casual'
+  });
+  // Dynamic custom specifications when "Other" is chosen
+  const [customSpecs, setCustomSpecs] = useState([
+    { name: '', value: '' }
+  ]);
 
-  // Section 6: Batch & Expiry
-  const [hasBatches, setHasBatches] = useState(
-    Boolean(initialProduct?.batches && initialProduct.batches.length > 0)
-  );
-  const [batchesList, setBatchesList] = useState(
-    initialProduct?.batches && initialProduct.batches.length > 0
-      ? initialProduct.batches.map((b) => ({
-          batch_number: b.batch_number || '',
-          manufacturing_date: b.manufacturing_date ? b.manufacturing_date.split('T')[0] : '',
-          expiry_date: b.expiry_date ? b.expiry_date.split('T')[0] : '',
-          current_quantity: b.current_quantity ?? '',
-          mrp: b.mrp ?? '',
-          purchase_price: b.purchase_price ?? '',
-          is_active: b.is_active !== false
-        }))
-      : []
-  );
+  // ----------------------------------------------------
+  // SECTION 4: STOCK ALERT SETTINGS
+  // ----------------------------------------------------
+  // Low Stock Alert (Default: OFF)
+  const [lowStockAlertEnabled, setLowStockAlertEnabled] = useState(false);
+  const [lowStockThreshold, setLowStockThreshold] = useState('');
 
-  // Section 7: Alerts & Notifications
-  const [enableLowStockAlert, setEnableLowStockAlert] = useState(true);
-  const [enableExpiryAlert, setEnableExpiryAlert] = useState(true);
-  const [expiryWarningDays, setExpiryWarningDays] = useState(30);
-  const [notifyEmail, setNotifyEmail] = useState(true);
-  const [notifySms, setNotifySms] = useState(false);
+  // Expiry Alert (Default: OFF) - Only for Grocery, Medical, Agro
+  const [expiryAlertEnabled, setExpiryAlertEnabled] = useState(false);
+  const [expiryDate, setExpiryDate] = useState('');
+  const [alertDaysBefore, setAlertDaysBefore] = useState(7);
 
-  // Section 8: Additional Information
-  const [status, setStatus] = useState(initialProduct?.status || 'active');
-  const [isFeatured, setIsFeatured] = useState(Boolean(initialProduct?.is_featured));
-  const [imageUrl, setImageUrl] = useState(
-    initialProduct?.images && initialProduct.images.length > 0
-      ? initialProduct.images[0].image_url
-      : initialProduct?.image_url || ''
-  );
-
-  // Inline Quick Modals for Brand & Category creation
+  // Quick modals for Category and Brand
   const [showQuickCategoryModal, setShowQuickCategoryModal] = useState(false);
   const [newCategoryName, setNewCategoryName] = useState('');
   const [creatingCategory, setCreatingCategory] = useState(false);
@@ -135,7 +121,9 @@ export const ProductForm = ({
   const [newBrandName, setNewBrandName] = useState('');
   const [creatingBrand, setCreatingBrand] = useState(false);
 
-  // 1. Fetch Form Configuration on Component Mount
+  // ----------------------------------------------------
+  // 1. Fetch Form Configuration
+  // ----------------------------------------------------
   useEffect(() => {
     let isMounted = true;
     async function loadConfig() {
@@ -145,7 +133,7 @@ export const ProductForm = ({
         if (isMounted && config) {
           setFormConfig(config);
 
-          // Pre-select defaults from configuration if not already set
+          // Defaults
           if (!categoryId && config.categories && config.categories.length > 0) {
             setCategoryId(config.categories[0].id);
           }
@@ -153,29 +141,19 @@ export const ProductForm = ({
             setUnitId(config.units[0].id);
           }
 
-          // Enable variant / batch toggles based on store capabilities
-          if (!isEditing) {
-            if (config.store_type?.has_variants) {
-              setHasVariants(true);
-            }
-            if (config.store_type?.has_batches) {
-              setHasBatches(true);
-            }
-          }
-
-          // Initialize store-specific fields with existing values or defaults
-          const initialDetails = {};
-          const storeTypeCode = config.store_type?.code || 'grocery';
-          const existingDetailsObj =
-            initialProduct?.[`${storeTypeCode}_details`] ||
+          const storeCode = config.store_type?.code || 'grocery';
+          const existingDetails =
+            initialProduct?.[`${storeCode}_details`] ||
             initialProduct?.store_details ||
             initialProduct?.attributes ||
             {};
 
+          // Initialize store-specific details
+          const initialDetails = {};
           if (config.store_specific_fields) {
             config.store_specific_fields.forEach((field) => {
-              if (existingDetailsObj[field.name] !== undefined) {
-                initialDetails[field.name] = existingDetailsObj[field.name];
+              if (existingDetails[field.name] !== undefined) {
+                initialDetails[field.name] = existingDetails[field.name];
               } else if (field.default !== undefined) {
                 initialDetails[field.name] =
                   field.type === 'boolean'
@@ -187,10 +165,81 @@ export const ProductForm = ({
             });
           }
           setStoreDetails(initialDetails);
+
+          // Restore Clothing Smart Specifications if editing clothing product
+          if (storeCode === 'clothing') {
+            const rawClothing = initialProduct?.clothing_details || initialProduct?.store_details || {};
+            const savedType =
+              rawClothing.specification_type ||
+              rawClothing.clothing_type ||
+              'T-Shirt';
+            setClothingSpecType(savedType);
+
+            const savedSpecs = rawClothing.specifications || {};
+            setClothingSpecs({
+              pattern: rawClothing.pattern || savedSpecs.pattern || 'Solid / Plain',
+              neck_type: rawClothing.neck_type || savedSpecs.neck_type || 'Round Neck',
+              sleeve_type: rawClothing.sleeve_type || savedSpecs.sleeve_type || 'Half Sleeve',
+              fabric: rawClothing.fabric_type || rawClothing.fabric || savedSpecs.fabric || '100% Cotton',
+              fit_type: rawClothing.fit_type || savedSpecs.fit_type || 'Regular Fit',
+              color: rawClothing.color || savedSpecs.color || '',
+              material: savedSpecs.material || '100% Combed Cotton',
+              gender: rawClothing.gender || savedSpecs.gender || 'Men',
+              occasion: savedSpecs.occasion || 'Casual',
+              collar_type: savedSpecs.collar_type || 'Regular Spread',
+              closure_type: savedSpecs.closure_type || 'Button Down',
+              pocket_type: savedSpecs.pocket_type || 'Single Pocket',
+              waist_type: savedSpecs.waist_type || 'Mid Rise',
+              rise_type: savedSpecs.rise_type || 'Mid Rise',
+              wash_type: savedSpecs.wash_type || 'Medium Wash',
+              length: savedSpecs.length || '',
+              work_type: savedSpecs.work_type || 'Plain / Minimal',
+              border_type: savedSpecs.border_type || 'Zari Border',
+              blouse_piece: savedSpecs.blouse_piece || 'Available (Attached)',
+              dress_type: savedSpecs.dress_type || 'A-Line Dress'
+            });
+
+            // If "Other", parse custom key-values
+            if (savedType === 'Other') {
+              const customEntries = Object.entries(savedSpecs);
+              if (customEntries.length > 0) {
+                setCustomSpecs(customEntries.map(([k, v]) => ({ name: k, value: String(v) })));
+              }
+            }
+          }
+
+          // Restore Alert Settings if editing
+          if (initialProduct) {
+            // Low stock
+            const isLowEnabled = Boolean(
+              initialProduct.low_stock_alert_enabled ||
+              (initialProduct.alerts && initialProduct.alerts.some((a) => a.alert_type === 'low_stock' && a.is_enabled))
+            );
+            setLowStockAlertEnabled(isLowEnabled);
+            if (initialProduct.low_stock_threshold !== undefined && initialProduct.low_stock_threshold !== null) {
+              setLowStockThreshold(initialProduct.low_stock_threshold);
+            } else if (initialProduct.min_stock_level) {
+              setLowStockThreshold(initialProduct.min_stock_level);
+            }
+
+            // Expiry
+            const isExpEnabled = Boolean(
+              initialProduct.expiry_alert_enabled ||
+              initialProduct.expiry_date ||
+              (initialProduct.alerts && initialProduct.alerts.some((a) => a.alert_type === 'expiring_soon' && a.is_enabled))
+            );
+            setExpiryAlertEnabled(isExpEnabled);
+            if (initialProduct.expiry_date) {
+              setExpiryDate(initialProduct.expiry_date.split('T')[0]);
+            }
+            if (initialProduct.alert_days_before) {
+              setAlertDaysBefore(initialProduct.alert_days_before);
+            }
+          }
         }
       } catch (err) {
         if (isMounted) {
-          setErrorMessage(err.message || 'Failed to load store configuration. Please check your network.');
+          setErrorMessage(err.message || 'Failed to load store configuration.');
         }
       } finally {
         if (isMounted) setLoadingConfig(false);
@@ -203,135 +252,157 @@ export const ProductForm = ({
     };
   }, [isEditing]);
 
-  // Tax and Margin Calculations
-  const taxCalculations = useMemo(() => {
-    const sp = parseFloat(sellingPrice) || 0;
-    const pp = parseFloat(purchasePrice) || 0;
-    const gst = parseFloat(gstRate) || 0;
-
-    let basePrice = sp;
-    let taxAmount = 0;
-    let finalCustomerPrice = sp;
-
-    if (taxType === 'inclusive') {
-      basePrice = gst > 0 ? sp / (1 + gst / 100) : sp;
-      taxAmount = sp - basePrice;
-      finalCustomerPrice = sp;
-    } else if (taxType === 'exclusive') {
-      basePrice = sp;
-      taxAmount = (sp * gst) / 100;
-      finalCustomerPrice = sp + taxAmount;
-    } else {
-      // exempt
-      basePrice = sp;
-      taxAmount = 0;
-      finalCustomerPrice = sp;
-    }
-
-    const cgst = taxAmount / 2;
-    const sgst = taxAmount / 2;
-    const igst = taxAmount;
-
-    let profit = sp - pp;
-    let profitMargin = sp > 0 ? ((sp - pp) / sp) * 100 : 0;
-
-    return {
-      basePrice: basePrice.toFixed(2),
-      taxAmount: taxAmount.toFixed(2),
-      cgst: cgst.toFixed(2),
-      sgst: sgst.toFixed(2),
-      igst: igst.toFixed(2),
-      finalCustomerPrice: finalCustomerPrice.toFixed(2),
-      profit: profit.toFixed(2),
-      profitMargin: profitMargin.toFixed(1)
-    };
-  }, [sellingPrice, purchasePrice, gstRate, taxType]);
+  // Determine store capabilities
+  const storeTypeCode = formConfig?.store_type?.code || 'grocery';
+  const hasBrand = formConfig?.store_type?.has_brand ?? (storeTypeCode !== 'grocery');
+  // Image is ONLY allowed in Clothing and Agro stores
+  const hasImage = formConfig?.store_type?.has_image ?? (storeTypeCode === 'clothing' || storeTypeCode === 'agro');
+  // Expiry is ONLY allowed for Grocery, Medical, and Agro
+  const hasExpiry = formConfig?.store_type?.has_expiry ?? (storeTypeCode === 'grocery' || storeTypeCode === 'medical' || storeTypeCode === 'agro');
+  const isClothingStore = storeTypeCode === 'clothing';
 
   // Auto-generate SKU
   const handleGenerateSku = () => {
-    const prefix = formConfig?.store?.code || 'SKU';
-    const storeTypeCode = formConfig?.store_type?.code || 'GEN';
-    const randomSuffix = Math.floor(1000 + Math.random() * 9000);
-    const cleanName = (productName || 'PROD').substring(0, 4).toUpperCase().replace(/[^A-Z0-9]/g, '');
-    setSku(`${prefix}-${storeTypeCode.substring(0, 3).toUpperCase()}-${cleanName}-${randomSuffix}`);
+    const storeCode = formConfig?.store?.code || 'NEX';
+    const stCode = storeTypeCode.substring(0, 3).toUpperCase();
+    const cleanName = (productName || 'ITEM').substring(0, 4).toUpperCase().replace(/[^A-Z0-9]/g, '');
+    const rand = Math.floor(1000 + Math.random() * 9000);
+    setSku(`${storeCode}-${stCode}-${cleanName}-${rand}`);
   };
 
-  // Auto-generate Barcode (EAN-13 style 13 digits)
-  const handleGenerateBarcode = () => {
-    const random12 = '890' + Math.floor(100000000 + Math.random() * 900000000);
-    setBarcode(random12);
-  };
-
-  // Store-Specific Field Change Handler
-  const handleStoreDetailChange = (fieldName, value) => {
-    setStoreDetails((prev) => ({
-      ...prev,
-      [fieldName]: value
-    }));
-  };
-
-  // Add Variant Row
-  const handleAddVariantRow = () => {
-    const suffix = variantsList.length + 1;
-    setVariantsList([
-      ...variantsList,
-      {
-        variant_name: `Variant ${suffix}`,
-        sku: sku ? `${sku}-V${suffix}` : '',
-        barcode: '',
-        selling_price: sellingPrice || '',
-        stock_quantity: 10,
-        is_active: true
+  // Change Clothing Specification Type
+  const handleClothingTypeChange = (type) => {
+    setClothingSpecType(type);
+    // Adjust default values based on type
+    if (type === 'T-Shirt') {
+      setClothingSpecs((prev) => ({
+        ...prev,
+        pattern: 'Solid / Plain',
+        neck_type: 'Round Neck',
+        sleeve_type: 'Half Sleeve',
+        fabric: '100% Cotton',
+        fit_type: 'Regular Fit',
+        material: '100% Combed Cotton',
+        gender: 'Men',
+        occasion: 'Casual'
+      }));
+    } else if (type === 'Shirt') {
+      setClothingSpecs((prev) => ({
+        ...prev,
+        pattern: 'Solid / Plain',
+        collar_type: 'Regular Spread',
+        sleeve_type: 'Full Sleeve',
+        fabric: '100% Cotton',
+        fit_type: 'Slim Fit',
+        closure_type: 'Button Down',
+        pocket_type: 'Single Pocket',
+        gender: 'Men'
+      }));
+    } else if (type === 'Jeans') {
+      setClothingSpecs((prev) => ({
+        ...prev,
+        fit_type: 'Slim Fit',
+        waist_type: 'Mid Rise',
+        rise_type: 'Mid Rise',
+        wash_type: 'Medium Wash',
+        pattern: 'Solid / Plain',
+        fabric: 'Stretch Denim',
+        closure_type: 'Zip Fly with Button',
+        gender: 'Men'
+      }));
+    } else if (type === 'Pants' || type === 'Trousers') {
+      setClothingSpecs((prev) => ({
+        ...prev,
+        fit_type: 'Slim Fit',
+        waist_type: 'Mid Rise',
+        length: 'Full Length',
+        pattern: 'Solid / Plain',
+        fabric: 'Cotton Chino',
+        closure_type: 'Zip Fly with Button',
+        gender: 'Men'
+      }));
+    } else if (type === 'Kurti') {
+      setClothingSpecs((prev) => ({
+        ...prev,
+        pattern: 'Printed',
+        neck_type: 'Round Neck',
+        sleeve_type: 'Three-Quarter Sleeve',
+        length: 'Calf Length',
+        fabric: 'Rayon',
+        fit_type: 'Straight',
+        work_type: 'Hand Block Print',
+        occasion: 'Festive',
+        gender: 'Women'
+      }));
+    } else if (type === 'Saree') {
+      setClothingSpecs((prev) => ({
+        ...prev,
+        fabric: 'Pure Silk',
+        pattern: 'Floral',
+        border_type: 'Zari Border',
+        work_type: 'Woven Zari',
+        occasion: 'Wedding',
+        length: '5.5 Metres',
+        blouse_piece: 'Available (Attached)',
+        gender: 'Women'
+      }));
+    } else if (type === 'Dress') {
+      setClothingSpecs((prev) => ({
+        ...prev,
+        dress_type: 'A-Line Dress',
+        neck_type: 'V-Neck',
+        sleeve_type: 'Short Sleeve',
+        length: 'Midi',
+        pattern: 'Floral',
+        fabric: 'Cotton',
+        fit_type: 'Regular Fit',
+        occasion: 'Casual',
+        gender: 'Women'
+      }));
+    } else if (type === 'Jacket') {
+      setClothingSpecs((prev) => ({
+        ...prev,
+        fit_type: 'Regular Fit',
+        closure_type: 'Zipper',
+        fabric: 'Denim',
+        pattern: 'Solid / Plain',
+        sleeve_type: 'Full Sleeve',
+        occasion: 'Casual',
+        gender: 'Men'
+      }));
+    } else if (type === 'Shorts') {
+      setClothingSpecs((prev) => ({
+        ...prev,
+        fit_type: 'Regular Fit',
+        waist_type: 'Elasticated Waist',
+        length: 'Above Knee',
+        fabric: '100% Cotton',
+        pattern: 'Solid / Plain',
+        gender: 'Men'
+      }));
+    } else if (type === 'Other') {
+      if (customSpecs.length === 0) {
+        setCustomSpecs([{ name: '', value: '' }]);
       }
-    ]);
+    }
   };
 
-  // Remove Variant Row
-  const handleRemoveVariantRow = (index) => {
-    setVariantsList(variantsList.filter((_, i) => i !== index));
+  // Custom Spec Helpers (for "Other" type)
+  const handleAddCustomSpec = () => {
+    setCustomSpecs([...customSpecs, { name: '', value: '' }]);
   };
 
-  // Update Variant Row
-  const handleUpdateVariantRow = (index, field, value) => {
-    const updated = [...variantsList];
-    updated[index][field] = value;
-    setVariantsList(updated);
+  const handleRemoveCustomSpec = (idx) => {
+    setCustomSpecs(customSpecs.filter((_, i) => i !== idx));
   };
 
-  // Add Batch Row
-  const handleAddBatchRow = () => {
-    const dateStr = new Date().toISOString().split('T')[0];
-    const expDate = new Date();
-    expDate.setFullYear(expDate.getFullYear() + 2);
-    const expStr = expDate.toISOString().split('T')[0];
-
-    setBatchesList([
-      ...batchesList,
-      {
-        batch_number: `B-${Math.floor(10000 + Math.random() * 90000)}`,
-        manufacturing_date: dateStr,
-        expiry_date: expStr,
-        current_quantity: currentStock || 50,
-        mrp: mrp || sellingPrice || '',
-        purchase_price: purchasePrice || '',
-        is_active: true
-      }
-    ]);
+  const handleCustomSpecChange = (idx, field, val) => {
+    const updated = [...customSpecs];
+    updated[idx][field] = val;
+    setCustomSpecs(updated);
   };
 
-  // Remove Batch Row
-  const handleRemoveBatchRow = (index) => {
-    setBatchesList(batchesList.filter((_, i) => i !== index));
-  };
-
-  // Update Batch Row
-  const handleUpdateBatchRow = (index, field, value) => {
-    const updated = [...batchesList];
-    updated[index][field] = value;
-    setBatchesList(updated);
-  };
-
-  // Create Quick Category
+  // Quick Category Creation
   const handleCreateQuickCategory = async (e) => {
     e.preventDefault();
     if (!newCategoryName.trim()) return;
@@ -342,7 +413,6 @@ export const ProductForm = ({
         code: newCategoryName.trim().toLowerCase().replace(/[^a-z0-9]/g, '_'),
         is_active: true
       });
-      // Append to formConfig categories
       if (res && res.id) {
         setFormConfig((prev) => ({
           ...prev,
@@ -359,7 +429,7 @@ export const ProductForm = ({
     }
   };
 
-  // Create Quick Brand
+  // Quick Brand Creation
   const handleCreateQuickBrand = async (e) => {
     e.preventDefault();
     if (!newBrandName.trim()) return;
@@ -386,46 +456,80 @@ export const ProductForm = ({
     }
   };
 
-  // Submit Handler
+  // Form Submit Handler
   const handleSubmit = async (e) => {
     e.preventDefault();
     setErrorMessage('');
     setSuccessMessage('');
 
-    // Client-side validations
+    // Validations
     if (!productName.trim()) {
       setErrorMessage('Product Name is required.');
+      return;
+    }
+    if (!categoryId) {
+      setErrorMessage('Please select a Category.');
       return;
     }
     if (sellingPrice === '' || isNaN(Number(sellingPrice)) || Number(sellingPrice) < 0) {
       setErrorMessage('A valid Selling Price is required.');
       return;
     }
+    if (lowStockAlertEnabled) {
+      if (lowStockThreshold === '' || isNaN(Number(lowStockThreshold)) || Number(lowStockThreshold) < 0) {
+        setErrorMessage('Please enter a valid Low Stock Alert Quantity threshold.');
+        return;
+      }
+    }
+    if (expiryAlertEnabled) {
+      if (!expiryDate) {
+        setErrorMessage('Please enter an Expiry Date for the Expiry Alert.');
+        return;
+      }
+      if (alertDaysBefore === '' || isNaN(Number(alertDaysBefore)) || Number(alertDaysBefore) < 1) {
+        setErrorMessage('Please specify how many days before expiry to alert.');
+        return;
+      }
+    }
 
     setSubmitting(true);
 
     try {
-      const storeTypeCode = formConfig?.store_type?.code || 'grocery';
+      // Build store details
+      let detailsPayload = { ...storeDetails };
+
+      if (isClothingStore) {
+        let specsObj = {};
+        if (clothingSpecType === 'Other') {
+          customSpecs.forEach((item) => {
+            if (item.name.trim() && item.value.trim()) {
+              specsObj[item.name.trim()] = item.value.trim();
+            }
+          });
+        } else {
+          specsObj = { ...clothingSpecs };
+        }
+
+        detailsPayload = {
+          clothing_type: clothingSpecType,
+          specification_type: clothingSpecType,
+          gender: clothingSpecs.gender || 'Unisex',
+          fabric_type: clothingSpecs.fabric || '100% Cotton',
+          fit_type: clothingSpecs.fit_type || 'Regular Fit',
+          pattern: clothingSpecs.pattern || 'Solid / Plain',
+          color: clothingSpecs.color || '',
+          specifications: specsObj
+        };
+      }
+
       const detailKey = `${storeTypeCode}_details`;
 
-      // Build payload matching backend schemas
       const payload = {
-        // Section 1: Basic
         product_name: productName.trim(),
-        product_code: productCode.trim() || undefined,
         sku: sku.trim() || undefined,
-        barcode: barcode.trim() || undefined,
-        category_id: categoryId ? Number(categoryId) : undefined,
-        brand_id: brandId ? Number(brandId) : undefined,
+        category_id: Number(categoryId),
+        brand_id: hasBrand && brandId ? Number(brandId) : undefined,
         unit_id: unitId ? Number(unitId) : undefined,
-        hsn_code: hsnCode.trim() || undefined,
-        short_description: shortDescription.trim() || undefined,
-        description: description.trim() || undefined,
-        product_type: hasVariants && variantsList.length > 0 ? 'variable' : 'simple',
-        status: status || 'active',
-        is_featured: Boolean(isFeatured),
-
-        // Section 2: Pricing
         selling_price: parseFloat(sellingPrice) || 0,
         purchase_price: purchasePrice !== '' ? parseFloat(purchasePrice) : 0,
         mrp: mrp !== '' ? parseFloat(mrp) : undefined,
@@ -433,87 +537,30 @@ export const ProductForm = ({
           purchase_price: purchasePrice !== '' ? parseFloat(purchasePrice) : 0,
           selling_price: parseFloat(sellingPrice) || 0,
           mrp: mrp !== '' ? parseFloat(mrp) : undefined,
-          wholesale_price: wholesalePrice !== '' ? parseFloat(wholesalePrice) : undefined,
           tax_type: taxType,
           gst_rate: parseFloat(gstRate) || 0
         },
-
-        // Section 3: Inventory
-        initial_stock: parseFloat(currentStock) || 0,
         current_stock: parseFloat(currentStock) || 0,
-        min_stock_level: parseFloat(minimumStock) || 0,
+        initial_stock: parseFloat(currentStock) || 0,
+        min_stock_level: lowStockAlertEnabled && lowStockThreshold !== '' ? parseFloat(lowStockThreshold) : 0,
         inventory: {
-          opening_stock: parseFloat(openingStock) || 0,
           current_stock: parseFloat(currentStock) || 0,
-          minimum_stock: parseFloat(minimumStock) || 0,
-          maximum_stock: parseFloat(maximumStock) || 1000,
-          reorder_level: parseFloat(reorderLevel) || 10,
-          warehouse_location: warehouseLocation.trim() || undefined
+          minimum_stock: lowStockAlertEnabled && lowStockThreshold !== '' ? parseFloat(lowStockThreshold) : 0
         },
+        store_details: detailsPayload,
+        [detailKey]: detailsPayload,
 
-        // Section 4: Store Specific Details
-        store_details: storeDetails,
-        [detailKey]: storeDetails,
+        // Low stock alert settings
+        low_stock_alert_enabled: Boolean(lowStockAlertEnabled),
+        low_stock_threshold: lowStockAlertEnabled && lowStockThreshold !== '' ? parseFloat(lowStockThreshold) : null,
 
-        // Section 5: Variants
-        variants:
-          hasVariants && variantsList.length > 0
-            ? variantsList.map((v) => ({
-                variant_name: v.variant_name || 'Standard Variant',
-                sku: v.sku.trim() || undefined,
-                barcode: v.barcode.trim() || undefined,
-                purchase_price: purchasePrice !== '' ? parseFloat(purchasePrice) : 0,
-                selling_price: v.selling_price !== '' ? parseFloat(v.selling_price) : parseFloat(sellingPrice) || 0,
-                mrp: mrp !== '' ? parseFloat(mrp) : undefined,
-                stock_quantity: parseFloat(v.stock_quantity) || 0,
-                is_active: v.is_active !== false
-              }))
-            : [],
+        // Expiry alert settings (only if store supports expiry)
+        expiry_alert_enabled: Boolean(hasExpiry && expiryAlertEnabled),
+        expiry_date: hasExpiry && expiryAlertEnabled && expiryDate ? expiryDate : null,
+        alert_days_before: hasExpiry && expiryAlertEnabled ? parseInt(alertDaysBefore, 10) : 7,
 
-        // Section 6: Batches
-        batches:
-          hasBatches && batchesList.length > 0
-            ? batchesList.map((b) => ({
-                batch_number: b.batch_number.trim(),
-                manufacturing_date: b.manufacturing_date || undefined,
-                expiry_date: b.expiry_date || undefined,
-                purchase_price: b.purchase_price !== '' ? parseFloat(b.purchase_price) : 0,
-                selling_price: parseFloat(sellingPrice) || 0,
-                mrp: b.mrp !== '' ? parseFloat(b.mrp) : undefined,
-                initial_quantity: parseFloat(b.current_quantity) || 0,
-                current_quantity: parseFloat(b.current_quantity) || 0,
-                is_active: b.is_active !== false
-              }))
-            : [],
-
-        // Section 7: Alerts
-        alerts: [
-          ...(enableLowStockAlert
-            ? [
-                {
-                  alert_type: 'low_stock',
-                  threshold_value: parseFloat(minimumStock) || 5,
-                  is_enabled: true,
-                  notify_email: notifyEmail,
-                  notify_sms: notifySms
-                }
-              ]
-            : []),
-          ...(enableExpiryAlert && (hasBatches || storeTypeCode === 'grocery' || storeTypeCode === 'medical' || storeTypeCode === 'agro')
-            ? [
-                {
-                  alert_type: 'expiring_soon',
-                  alert_days_before: parseInt(expiryWarningDays, 10) || 30,
-                  is_enabled: true,
-                  notify_email: notifyEmail,
-                  notify_sms: notifySms
-                }
-              ]
-            : [])
-        ],
-
-        // Section 8: Images
-        images: imageUrl.trim() ? [{ image_url: imageUrl.trim(), is_primary: true }] : []
+        // Images - strictly allowed for Agro and Clothing only
+        images: hasImage && imageUrl.trim() ? [{ image_url: imageUrl.trim(), is_primary: true }] : []
       };
 
       let result;
@@ -522,14 +569,14 @@ export const ProductForm = ({
         setSuccessMessage(`Product "${result.product_name || result.name}" updated successfully!`);
       } else {
         result = await productService.createProduct(payload);
-        setSuccessMessage(`Product "${result.product_name || result.name}" created successfully under your store!`);
+        setSuccessMessage(`Product "${result.product_name || result.name}" added successfully!`);
       }
 
       if (onSuccess) {
-        setTimeout(() => onSuccess(result), 800);
+        setTimeout(() => onSuccess(result), 750);
       }
     } catch (err) {
-      setErrorMessage(err.message || 'Failed to save product. Please verify fields and try again.');
+      setErrorMessage(err.message || 'Failed to save product. Please check your inputs and try again.');
     } finally {
       setSubmitting(false);
     }
@@ -539,9 +586,9 @@ export const ProductForm = ({
     return (
       <div className="text-center py-5">
         <div className="spinner-border text-primary mb-3" role="status"></div>
-        <h5 className="fw-bold text-dark">Initializing Dynamic Store Configuration...</h5>
+        <h5 className="fw-bold text-dark">Loading Store Configuration...</h5>
         <p className="text-muted small">
-          Detecting store membership, role permissions, and customized retail attributes.
+          Customizing form layout and retail attributes for your store.
         </p>
       </div>
     );
@@ -549,1197 +596,1615 @@ export const ProductForm = ({
 
   const storeInfo = formConfig?.store;
   const storeType = formConfig?.store_type;
+  const categoriesList = formConfig?.categories || [];
+  const brandsList = formConfig?.brands || [];
+  const unitsList = formConfig?.units || [];
   const storeFields = formConfig?.store_specific_fields || [];
 
   return (
-    <div className="dynamic-product-form">
-      {/* 🏢 Store Verification Banner */}
-      <div className="card border-0 bg-primary bg-opacity-10 rounded-4 mb-4 shadow-sm">
-        <div className="card-body p-3 p-md-4">
-          <div className="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3">
-            <div className="d-flex align-items-center gap-3">
-              <div
-                className="bg-primary text-white rounded-3 d-flex align-items-center justify-content-center shadow-sm"
-                style={{ width: '52px', height: '52px', fontSize: '24px' }}
-              >
-                {storeType?.code === 'clothing'
-                  ? '👗'
-                  : storeType?.code === 'medical'
-                  ? '💊'
-                  : storeType?.code === 'mobile_electronics' || storeType?.code === 'electronics'
-                  ? '📱'
-                  : storeType?.code === 'plastic'
-                  ? '🧪'
-                  : storeType?.code === 'handloom'
-                  ? '🧵'
-                  : storeType?.code === 'furniture'
-                  ? '🛋️'
-                  : storeType?.code === 'agro'
-                  ? '🌾'
-                  : '🛒'}
-              </div>
-              <div>
-                <div className="d-flex align-items-center gap-2 flex-wrap">
-                  <h5 className="fw-bold text-dark mb-0">{storeInfo?.name || 'Authorized Store'}</h5>
-                  <span className="badge bg-primary px-3 py-1 rounded-pill">
-                    {storeType?.name || 'Retail Store'}
-                  </span>
-                  <span className="badge bg-white text-secondary border px-2 py-1 font-monospace small">
-                    {storeInfo?.code || 'STORE-01'}
-                  </span>
-                </div>
-                <p className="text-muted small mb-0 mt-1">
-                  Tenant Isolation Verified • Form automatically displays specifications customized for{' '}
-                  <strong>{storeType?.name}</strong>.
-                </p>
-              </div>
-            </div>
-
-            <div className="text-md-end">
-              <span className="badge bg-success-subtle text-success border border-success-subtle px-3 py-2 rounded-pill small">
-                ✓ Multi-Store Security Active
-              </span>
-            </div>
+    <div className="product-form-container">
+      {/* 🏬 Store Verification Banner */}
+      <div className="pf-store-banner">
+        <div className="pf-store-info">
+          <div className="pf-store-icon">
+            {storeTypeCode === 'clothing' ? '👗' :
+             storeTypeCode === 'medical' ? '💊' :
+             storeTypeCode === 'mobile_electronics' || storeTypeCode === 'electronics' ? '📱' :
+             storeTypeCode === 'plastic' ? '🧪' :
+             storeTypeCode === 'handloom' ? '🧵' :
+             storeTypeCode === 'furniture' ? '🛋️' :
+             storeTypeCode === 'agro' ? '🌾' : '🛒'}
           </div>
+          <div className="pf-store-meta">
+            <h5>{storeInfo?.name || 'Retail Store'}</h5>
+            <p>
+              Type: <strong>{storeType?.name || 'Store'}</strong> • Store Code: <code>{storeInfo?.code || 'STORE-01'}</code>
+            </p>
+          </div>
+        </div>
+        <div>
+          <span className="badge bg-success-subtle text-success border border-success-subtle px-3 py-2 rounded-pill small">
+            ✓ Store Verified
+          </span>
         </div>
       </div>
 
       {/* Notifications */}
       {errorMessage && (
-        <div className="alert alert-danger alert-dismissible fade show rounded-3 shadow-sm py-3 mb-4" role="alert">
+        <div className="alert alert-danger alert-dismissible fade show rounded-3 py-3 mb-4 shadow-sm" role="alert">
           <div className="d-flex align-items-center gap-2">
-            <span style={{ fontSize: '20px' }}>⚠️</span>
-            <div>
-              <strong>Validation Error:</strong> {errorMessage}
-            </div>
+            <span style={{ fontSize: '18px' }}>⚠️</span>
+            <div>{errorMessage}</div>
           </div>
         </div>
       )}
-
       {successMessage && (
-        <div className="alert alert-success alert-dismissible fade show rounded-3 shadow-sm py-3 mb-4" role="alert">
+        <div className="alert alert-success alert-dismissible fade show rounded-3 py-3 mb-4 shadow-sm" role="alert">
           <div className="d-flex align-items-center gap-2">
-            <span style={{ fontSize: '20px' }}>✓</span>
-            <div>
-              <strong>Success:</strong> {successMessage}
-            </div>
+            <span style={{ fontSize: '18px' }}>✓</span>
+            <div>{successMessage}</div>
           </div>
         </div>
       )}
 
-      {/* Section Jump Pills */}
-      <div className="d-flex gap-2 overflow-auto pb-2 mb-4">
-        {[
-          { id: 'all', label: '📄 All Sections' },
-          { id: 'sec-basic', label: '1. Basic Information' },
-          { id: 'sec-pricing', label: '2. Pricing & Tax' },
-          { id: 'sec-stock', label: '3. Stock & Inventory' },
-          { id: 'sec-store', label: `4. ${storeType?.name || 'Store'} Details` },
-          { id: 'sec-variants', label: '5. Variants' },
-          { id: 'sec-batches', label: '6. Batch & Expiry' },
-          { id: 'sec-alerts', label: '7. Alerts & Notifications' },
-          { id: 'sec-additional', label: '8. Additional Info' }
-        ].map((tab) => (
-          <button
-            key={tab.id}
-            type="button"
-            className={`btn btn-sm text-nowrap rounded-pill ${
-              activeSection === tab.id ? 'btn-primary shadow-sm' : 'btn-outline-secondary'
-            }`}
-            onClick={() => {
-              setActiveSection(tab.id);
-              if (tab.id !== 'all') {
-                document.getElementById(tab.id)?.scrollIntoView({ behavior: 'smooth' });
-              }
-            }}
-          >
-            {tab.label}
-          </button>
-        ))}
-      </div>
-
-      {/* FORM START */}
       <form onSubmit={handleSubmit}>
         {/* ======================================================== */}
-        {/* SECTION 1: BASIC INFORMATION                             */}
+        {/* SECTION 1: BASIC PRODUCT INFORMATION                     */}
         {/* ======================================================== */}
-        {(activeSection === 'all' || activeSection === 'sec-basic') && (
-          <div id="sec-basic" className="card border rounded-4 mb-4 shadow-sm">
-            <div className="card-header bg-white border-bottom py-3 px-4">
-              <h5 className="fw-bold mb-0 text-dark d-flex align-items-center gap-2">
-                <span className="badge bg-primary text-white rounded-circle p-2" style={{ width: '28px', height: '28px', display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}>
-                  1
-                </span>
-                Basic Information
-              </h5>
-              <small className="text-muted">Universal product identification, barcodes, brand, and classification.</small>
+        <div className="pf-section-card">
+          <div className="pf-section-header">
+            <div className="pf-section-badge">1</div>
+            <div className="pf-section-title-wrap">
+              <h5>Basic Product Information</h5>
+              <p>Essential identification, category classification, and measurement units.</p>
             </div>
-            <div className="card-body p-4">
-              <div className="row g-3">
-                {/* Product Name */}
-                <div className="col-12 col-md-8">
-                  <label className="form-label fw-bold small text-dark">
-                    Product Name <span className="text-danger">*</span>
-                  </label>
-                  <input
-                    type="text"
-                    className="form-control form-control-lg"
-                    placeholder="e.g. Aashirvaad Superior MP Atta, Cotton Slim Shirt, Paracetamol 500mg"
-                    value={productName}
-                    onChange={(e) => setProductName(e.target.value)}
-                    required
-                  />
-                </div>
+          </div>
+          <div className="pf-section-body">
+            <div className="row g-3">
+              {/* Product Name */}
+              <div className="col-12 col-md-8">
+                <label className="pf-label">
+                  Product Name <span className="pf-label-required">*</span>
+                </label>
+                <input
+                  type="text"
+                  className="pf-input"
+                  placeholder="e.g. Parle-G Gold Biscuit, Cotton Slim Fit Shirt, Paracetamol 500mg"
+                  value={productName}
+                  onChange={(e) => setProductName(e.target.value)}
+                  required
+                />
+              </div>
 
-                {/* Product Code */}
-                <div className="col-12 col-md-4">
-                  <label className="form-label fw-bold small text-dark">Product Code / Model Code</label>
-                  <input
-                    type="text"
-                    className="form-control"
-                    placeholder="e.g. PRD-1002"
-                    value={productCode}
-                    onChange={(e) => setProductCode(e.target.value)}
-                  />
-                </div>
-
-                {/* SKU */}
-                <div className="col-12 col-md-6">
-                  <div className="d-flex justify-content-between align-items-center">
-                    <label className="form-label fw-bold small text-dark mb-1">
-                      SKU (Stock Keeping Unit)
-                    </label>
-                    <button
-                      type="button"
-                      className="btn btn-link btn-sm p-0 text-primary small text-decoration-none"
-                      onClick={handleGenerateSku}
-                    >
-                      ⚡ Auto-Generate
-                    </button>
-                  </div>
-                  <input
-                    type="text"
-                    className="form-control font-monospace"
-                    placeholder="e.g. AASH-ATTA-5KG"
-                    value={sku}
-                    onChange={(e) => setSku(e.target.value)}
-                  />
-                  <small className="text-muted" style={{ fontSize: '11px' }}>
-                    Guaranteed unique within your store. Other stores can use identical SKU independently.
-                  </small>
-                </div>
-
-                {/* Barcode */}
-                <div className="col-12 col-md-6">
-                  <div className="d-flex justify-content-between align-items-center">
-                    <label className="form-label fw-bold small text-dark mb-1">Barcode / EAN-13 / UPC</label>
-                    <button
-                      type="button"
-                      className="btn btn-link btn-sm p-0 text-primary small text-decoration-none"
-                      onClick={handleGenerateBarcode}
-                    >
-                      ⚡ Generate Barcode
-                    </button>
-                  </div>
-                  <input
-                    type="text"
-                    className="form-control font-monospace"
-                    placeholder="e.g. 8901030012345"
-                    value={barcode}
-                    onChange={(e) => setBarcode(e.target.value)}
-                  />
-                </div>
-
-                {/* Category */}
-                <div className="col-12 col-md-4">
-                  <div className="d-flex justify-content-between align-items-center">
-                    <label className="form-label fw-bold small text-dark mb-1">Category</label>
-                    <button
-                      type="button"
-                      className="btn btn-link btn-sm p-0 text-primary small text-decoration-none"
-                      onClick={() => setShowQuickCategoryModal(true)}
-                    >
-                      + New
-                    </button>
-                  </div>
-                  <select
-                    className="form-select"
-                    value={categoryId}
-                    onChange={(e) => setCategoryId(e.target.value)}
+              {/* SKU */}
+              <div className="col-12 col-md-4">
+                <div className="d-flex justify-content-between align-items-center mb-1">
+                  <label className="pf-label mb-0">SKU / Item Code</label>
+                  <button
+                    type="button"
+                    className="btn btn-link btn-sm p-0 text-primary small text-decoration-none"
+                    onClick={handleGenerateSku}
                   >
-                    <option value="">Select Category...</option>
-                    {(formConfig?.categories || []).map((cat) => (
-                      <option key={cat.id} value={cat.id}>
-                        {cat.name}
-                      </option>
-                    ))}
-                  </select>
+                    ⚡ Auto-Generate
+                  </button>
                 </div>
+                <input
+                  type="text"
+                  className="pf-input font-monospace"
+                  placeholder="e.g. SKU-1002"
+                  value={sku}
+                  onChange={(e) => setSku(e.target.value)}
+                />
+              </div>
 
-                {/* Brand */}
-                <div className="col-12 col-md-4">
-                  <div className="d-flex justify-content-between align-items-center">
-                    <label className="form-label fw-bold small text-dark mb-1">Brand</label>
+              {/* Category */}
+              <div className="col-12 col-md-6">
+                <div className="d-flex justify-content-between align-items-center mb-1">
+                  <label className="pf-label mb-0">
+                    Category <span className="pf-label-required">*</span>
+                  </label>
+                  <button
+                    type="button"
+                    className="btn btn-link btn-sm p-0 text-primary small text-decoration-none"
+                    onClick={() => setShowQuickCategoryModal(true)}
+                  >
+                    + Add Category
+                  </button>
+                </div>
+                <select
+                  className="pf-select"
+                  value={categoryId}
+                  onChange={(e) => setCategoryId(e.target.value)}
+                  required
+                >
+                  <option value="">-- Select Category --</option>
+                  {categoriesList.map((cat) => (
+                    <option key={cat.id} value={cat.id}>
+                      {cat.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              {/* Brand (HIDDEN FOR GROCERY) */}
+              {hasBrand && (
+                <div className="col-12 col-md-6">
+                  <div className="d-flex justify-content-between align-items-center mb-1">
+                    <label className="pf-label mb-0">Brand</label>
                     <button
                       type="button"
                       className="btn btn-link btn-sm p-0 text-primary small text-decoration-none"
                       onClick={() => setShowQuickBrandModal(true)}
                     >
-                      + New
+                      + Add Brand
                     </button>
                   </div>
                   <select
-                    className="form-select"
+                    className="pf-select"
                     value={brandId}
                     onChange={(e) => setBrandId(e.target.value)}
                   >
-                    <option value="">No Brand / Generic</option>
-                    {(formConfig?.brands || []).map((b) => (
+                    <option value="">-- No Brand / Generic --</option>
+                    {brandsList.map((b) => (
                       <option key={b.id} value={b.id}>
                         {b.name}
                       </option>
                     ))}
                   </select>
                 </div>
+              )}
 
-                {/* Unit */}
-                <div className="col-12 col-md-4">
-                  <label className="form-label fw-bold small text-dark">Primary Unit of Measurement</label>
-                  <select
-                    className="form-select"
-                    value={unitId}
-                    onChange={(e) => setUnitId(e.target.value)}
-                  >
-                    {(formConfig?.units || []).map((u) => (
+              {/* Unit of Measure */}
+              <div className={`col-12 ${hasBrand ? 'col-md-6' : 'col-md-6'}`}>
+                <label className="pf-label">Unit of Measure</label>
+                <select
+                  className="pf-select"
+                  value={unitId}
+                  onChange={(e) => setUnitId(e.target.value)}
+                >
+                  {unitsList.length > 0 ? (
+                    unitsList.map((u) => (
                       <option key={u.id} value={u.id}>
                         {u.name} ({u.symbol})
                       </option>
-                    ))}
-                  </select>
-                </div>
+                    ))
+                  ) : (
+                    <>
+                      <option value="1">Pieces (pcs)</option>
+                      <option value="2">Kilograms (kg)</option>
+                      <option value="3">Grams (g)</option>
+                      <option value="4">Liters (L)</option>
+                      <option value="5">Meters (m)</option>
+                      <option value="6">Box (box)</option>
+                      <option value="7">Packet (pkt)</option>
+                      <option value="8">Pair (pair)</option>
+                    </>
+                  )}
+                </select>
+              </div>
 
-                {/* HSN Code */}
-                <div className="col-12 col-md-4">
-                  <label className="form-label fw-bold small text-dark">GST HSN / SAC Code</label>
-                  <input
-                    type="text"
-                    className="form-control"
-                    placeholder="e.g. 1001, 6109, 3004"
-                    value={hsnCode}
-                    onChange={(e) => setHsnCode(e.target.value)}
-                  />
-                </div>
-
-                {/* Short Description */}
-                <div className="col-12 col-md-8">
-                  <label className="form-label fw-bold small text-dark">Short Tagline / Summary</label>
-                  <input
-                    type="text"
-                    className="form-control"
-                    placeholder="1-line summary displayed on POS and receipt bill"
-                    value={shortDescription}
-                    onChange={(e) => setShortDescription(e.target.value)}
-                  />
-                </div>
-
-                {/* Detailed Description */}
+              {/* Image Upload/URL (ONLY FOR AGRO AND CLOTHING) */}
+              {hasImage && (
                 <div className="col-12">
-                  <label className="form-label fw-bold small text-dark">Detailed Product Description</label>
-                  <textarea
-                    className="form-control"
-                    rows="3"
-                    placeholder="Full product overview, features, usage and specifications..."
-                    value={description}
-                    onChange={(e) => setDescription(e.target.value)}
-                  ></textarea>
-                </div>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* ======================================================== */}
-        {/* SECTION 2: PRICING & TAX                                 */}
-        {/* ======================================================== */}
-        {(activeSection === 'all' || activeSection === 'sec-pricing') && (
-          <div id="sec-pricing" className="card border rounded-4 mb-4 shadow-sm">
-            <div className="card-header bg-white border-bottom py-3 px-4">
-              <h5 className="fw-bold mb-0 text-dark d-flex align-items-center gap-2">
-                <span className="badge bg-primary text-white rounded-circle p-2" style={{ width: '28px', height: '28px', display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}>
-                  2
-                </span>
-                Pricing & Tax Structure
-              </h5>
-              <small className="text-muted">Purchase cost, retail selling price, MRP, and GST tax treatment.</small>
-            </div>
-            <div className="card-body p-4">
-              <div className="row g-4">
-                <div className="col-12 col-lg-8">
-                  <div className="row g-3">
-                    {/* Purchase Price */}
-                    <div className="col-12 col-sm-6">
-                      <label className="form-label fw-bold small text-dark">
-                        Purchase Price (Cost) ₹
-                      </label>
-                      <div className="input-group">
-                        <span className="input-group-text bg-light">₹</span>
-                        <input
-                          type="number"
-                          step="0.01"
-                          min="0"
-                          className="form-control"
-                          placeholder="0.00"
-                          value={purchasePrice}
-                          onChange={(e) => setPurchasePrice(e.target.value)}
-                        />
-                      </div>
-                    </div>
-
-                    {/* Selling Price */}
-                    <div className="col-12 col-sm-6">
-                      <label className="form-label fw-bold small text-dark">
-                        Retail Selling Price ₹ <span className="text-danger">*</span>
-                      </label>
-                      <div className="input-group">
-                        <span className="input-group-text bg-primary text-white fw-bold">₹</span>
-                        <input
-                          type="number"
-                          step="0.01"
-                          min="0"
-                          className="form-control form-control-lg fw-bold"
-                          placeholder="0.00"
-                          value={sellingPrice}
-                          onChange={(e) => setSellingPrice(e.target.value)}
-                          required
-                        />
-                      </div>
-                    </div>
-
-                    {/* MRP */}
-                    <div className="col-12 col-sm-6">
-                      <label className="form-label fw-bold small text-dark">Maximum Retail Price (MRP) ₹</label>
-                      <div className="input-group">
-                        <span className="input-group-text bg-light">₹</span>
-                        <input
-                          type="number"
-                          step="0.01"
-                          min="0"
-                          className="form-control"
-                          placeholder="Printed packet MRP"
-                          value={mrp}
-                          onChange={(e) => setMrp(e.target.value)}
-                        />
-                      </div>
-                    </div>
-
-                    {/* Wholesale Price */}
-                    <div className="col-12 col-sm-6">
-                      <label className="form-label fw-bold small text-dark">Wholesale / Bulk Price ₹</label>
-                      <div className="input-group">
-                        <span className="input-group-text bg-light">₹</span>
-                        <input
-                          type="number"
-                          step="0.01"
-                          min="0"
-                          className="form-control"
-                          placeholder="Optional B2B rate"
-                          value={wholesalePrice}
-                          onChange={(e) => setWholesalePrice(e.target.value)}
-                        />
-                      </div>
-                    </div>
-
-                    {/* Tax Type */}
-                    <div className="col-12 col-sm-6">
-                      <label className="form-label fw-bold small text-dark">Tax Treatment</label>
-                      <select
-                        className="form-select"
-                        value={taxType}
-                        onChange={(e) => setTaxType(e.target.value)}
-                      >
-                        <option value="exclusive">Tax Exclusive (Tax added on top)</option>
-                        <option value="inclusive">Tax Inclusive (Selling price includes tax)</option>
-                        <option value="exempt">GST Exempt (0% Tax)</option>
-                      </select>
-                    </div>
-
-                    {/* GST Rate */}
-                    <div className="col-12 col-sm-6">
-                      <label className="form-label fw-bold small text-dark">GST Rate (%)</label>
-                      <select
-                        className="form-select"
-                        value={gstRate}
-                        onChange={(e) => setGstRate(Number(e.target.value))}
-                        disabled={taxType === 'exempt'}
-                      >
-                        <option value="0">0% (Nil Rated / Exempt)</option>
-                        <option value="5">5% (Essential Food / Garments &lt; ₹1000)</option>
-                        <option value="12">12% (Standard Goods / Packaged Food)</option>
-                        <option value="18">18% (Electronics, Plastics, General)</option>
-                        <option value="28">28% (Luxury / High-End Electronics)</option>
-                      </select>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Tax & Margin Live Preview Card */}
-                <div className="col-12 col-lg-4">
-                  <div className="bg-light rounded-4 p-3 border h-100 d-flex flex-column justify-content-between">
-                    <div>
-                      <h6 className="fw-bold text-dark mb-3">📊 Live Profit & Tax Preview</h6>
-                      <div className="d-flex justify-content-between py-1 border-bottom small">
-                        <span className="text-muted">Base Price (excl. Tax):</span>
-                        <span className="fw-bold">₹ {taxCalculations.basePrice}</span>
-                      </div>
-                      <div className="d-flex justify-content-between py-1 border-bottom small">
-                        <span className="text-muted">GST Rate Applied:</span>
-                        <span className="badge bg-secondary">{taxType === 'exempt' ? '0% Exempt' : `${gstRate}%`}</span>
-                      </div>
-                      <div className="d-flex justify-content-between py-1 border-bottom small">
-                        <span className="text-muted">CGST ({(gstRate / 2).toFixed(1)}%):</span>
-                        <span>₹ {taxCalculations.cgst}</span>
-                      </div>
-                      <div className="d-flex justify-content-between py-1 border-bottom small">
-                        <span className="text-muted">SGST ({(gstRate / 2).toFixed(1)}%):</span>
-                        <span>₹ {taxCalculations.sgst}</span>
-                      </div>
-                      <div className="d-flex justify-content-between py-1 border-bottom small">
-                        <span className="text-muted">Total Tax Amount:</span>
-                        <span className="text-primary fw-bold">₹ {taxCalculations.taxAmount}</span>
-                      </div>
-                      <div className="d-flex justify-content-between py-2 border-bottom">
-                        <span className="fw-bold text-dark">Customer Billing Price:</span>
-                        <span className="fw-bold text-primary fs-5">₹ {taxCalculations.finalCustomerPrice}</span>
-                      </div>
-                    </div>
-
-                    <div className="mt-3 p-2 rounded-3 bg-white border">
-                      <div className="d-flex justify-content-between align-items-center">
-                        <span className="small text-muted">Estimated Margin:</span>
-                        <span
-                          className={`badge ${
-                            parseFloat(taxCalculations.profitMargin) >= 15
-                              ? 'bg-success'
-                              : parseFloat(taxCalculations.profitMargin) > 0
-                              ? 'bg-warning text-dark'
-                              : 'bg-danger'
-                          }`}
-                        >
-                          {taxCalculations.profitMargin}% (₹ {taxCalculations.profit})
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* ======================================================== */}
-        {/* SECTION 3: STOCK & INVENTORY                             */}
-        {/* ======================================================== */}
-        {(activeSection === 'all' || activeSection === 'sec-stock') && (
-          <div id="sec-stock" className="card border rounded-4 mb-4 shadow-sm">
-            <div className="card-header bg-white border-bottom py-3 px-4">
-              <h5 className="fw-bold mb-0 text-dark d-flex align-items-center gap-2">
-                <span className="badge bg-primary text-white rounded-circle p-2" style={{ width: '28px', height: '28px', display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}>
-                  3
-                </span>
-                Stock & Inventory Controls
-              </h5>
-              <small className="text-muted">Current quantity, reorder alerts, and warehouse shelf assignment.</small>
-            </div>
-            <div className="card-body p-4">
-              <div className="row g-3">
-                {/* Opening Stock */}
-                <div className="col-12 col-sm-6 col-md-4">
-                  <label className="form-label fw-bold small text-dark">Opening Stock</label>
-                  <input
-                    type="number"
-                    step="0.01"
-                    className="form-control"
-                    value={openingStock}
-                    onChange={(e) => setOpeningStock(e.target.value)}
-                  />
-                </div>
-
-                {/* Current Stock */}
-                <div className="col-12 col-sm-6 col-md-4">
-                  <label className="form-label fw-bold small text-dark">
-                    Current Stock On Hand
+                  <label className="pf-label">
+                    Product Image <span className="pf-label-hint">(Agro & Clothing Stores Only)</span>
                   </label>
-                  <input
-                    type="number"
-                    step="0.01"
-                    className="form-control form-control-lg fw-bold text-success"
-                    value={currentStock}
-                    onChange={(e) => setCurrentStock(e.target.value)}
-                  />
-                </div>
-
-                {/* Minimum Stock Alert */}
-                <div className="col-12 col-sm-6 col-md-4">
-                  <label className="form-label fw-bold small text-dark">
-                    Minimum Stock Alert Level
-                  </label>
-                  <input
-                    type="number"
-                    step="0.01"
-                    className="form-control"
-                    value={minimumStock}
-                    onChange={(e) => setMinimumStock(e.target.value)}
-                  />
-                  <small className="text-muted" style={{ fontSize: '11px' }}>
-                    Alerts trigger when stock falls below this quantity.
-                  </small>
-                </div>
-
-                {/* Maximum Stock */}
-                <div className="col-12 col-sm-6 col-md-4">
-                  <label className="form-label fw-bold small text-dark">Maximum Stock Capacity</label>
-                  <input
-                    type="number"
-                    step="0.01"
-                    className="form-control"
-                    value={maximumStock}
-                    onChange={(e) => setMaximumStock(e.target.value)}
-                  />
-                </div>
-
-                {/* Reorder Level */}
-                <div className="col-12 col-sm-6 col-md-4">
-                  <label className="form-label fw-bold small text-dark">Auto Reorder Threshold</label>
-                  <input
-                    type="number"
-                    step="0.01"
-                    className="form-control"
-                    value={reorderLevel}
-                    onChange={(e) => setReorderLevel(e.target.value)}
-                  />
-                </div>
-
-                {/* Warehouse Location */}
-                <div className="col-12 col-sm-6 col-md-4">
-                  <label className="form-label fw-bold small text-dark">Warehouse / Rack Location</label>
-                  <input
-                    type="text"
-                    className="form-control"
-                    placeholder="e.g. Aisle 3, Shelf B-4"
-                    value={warehouseLocation}
-                    onChange={(e) => setWarehouseLocation(e.target.value)}
-                  />
-                </div>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* ======================================================== */}
-        {/* SECTION 4: STORE-SPECIFIC DETAILS                        */}
-        {/* ======================================================== */}
-        {(activeSection === 'all' || activeSection === 'sec-store') && (
-          <div id="sec-store" className="card border border-primary border-opacity-25 rounded-4 mb-4 shadow-sm">
-            <div className="card-header bg-primary bg-opacity-10 border-bottom py-3 px-4">
-              <div className="d-flex justify-content-between align-items-center">
-                <h5 className="fw-bold mb-0 text-primary d-flex align-items-center gap-2">
-                  <span className="badge bg-primary text-white rounded-circle p-2" style={{ width: '28px', height: '28px', display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}>
-                    4
-                  </span>
-                  {storeType?.name || 'Retail'} Specific Details
-                </h5>
-                <span className="badge bg-white text-primary border border-primary-subtle px-3 py-1 rounded-pill small">
-                  Tailored for {storeType?.name}
-                </span>
-              </div>
-              <small className="text-muted">
-                Fields shown here are strictly customized for your registered store type.
-              </small>
-            </div>
-            <div className="card-body p-4">
-              {storeFields.length === 0 ? (
-                <div className="text-muted small py-3">No custom fields defined for this store type.</div>
-              ) : (
-                <div className="row g-3">
-                  {storeFields.map((field) => {
-                    const fieldValue = storeDetails[field.name] !== undefined ? storeDetails[field.name] : '';
-
-                    if (field.type === 'select') {
-                      return (
-                        <div key={field.name} className="col-12 col-md-6 col-lg-4">
-                          <label className="form-label fw-bold small text-dark">
-                            {field.label} {field.required && <span className="text-danger">*</span>}
-                          </label>
-                          <select
-                            className="form-select"
-                            value={fieldValue}
-                            onChange={(e) => handleStoreDetailChange(field.name, e.target.value)}
-                            required={field.required}
-                          >
-                            <option value="">Choose option...</option>
-                            {(field.options || []).map((opt) => (
-                              <option key={opt} value={opt}>
-                                {opt}
-                              </option>
-                            ))}
-                          </select>
-                        </div>
-                      );
-                    }
-
-                    if (field.type === 'boolean') {
-                      return (
-                        <div key={field.name} className="col-12 col-md-6 col-lg-4 d-flex align-items-center pt-md-4">
-                          <div className="form-check form-switch p-2 bg-light rounded-3 border w-100">
-                            <input
-                              className="form-check-input ms-0 me-3"
-                              type="checkbox"
-                              role="switch"
-                              id={`switch-${field.name}`}
-                              checked={Boolean(fieldValue)}
-                              onChange={(e) => handleStoreDetailChange(field.name, e.target.checked)}
-                            />
-                            <label className="form-check-label fw-bold small text-dark cursor-pointer" htmlFor={`switch-${field.name}`}>
-                              {field.label}
-                            </label>
-                          </div>
-                        </div>
-                      );
-                    }
-
-                    if (field.type === 'date') {
-                      return (
-                        <div key={field.name} className="col-12 col-md-6 col-lg-4">
-                          <label className="form-label fw-bold small text-dark">
-                            {field.label} {field.required && <span className="text-danger">*</span>}
-                          </label>
-                          <input
-                            type="date"
-                            className="form-control"
-                            value={fieldValue ? fieldValue.toString().split('T')[0] : ''}
-                            onChange={(e) => handleStoreDetailChange(field.name, e.target.value)}
-                            required={field.required}
+                  <div className="row g-2 align-items-center">
+                    <div className="col-12 col-md-8">
+                      <input
+                        type="url"
+                        className="pf-input"
+                        placeholder="https://example.com/product-image.jpg"
+                        value={imageUrl}
+                        onChange={(e) => setImageUrl(e.target.value)}
+                      />
+                    </div>
+                    <div className="col-12 col-md-4">
+                      {imageUrl ? (
+                        <div className="d-flex align-items-center gap-2">
+                          <img
+                            src={imageUrl}
+                            alt="Preview"
+                            className="pf-image-preview"
+                            onError={(e) => {
+                              e.target.style.display = 'none';
+                            }}
                           />
+                          <button
+                            type="button"
+                            className="btn btn-sm btn-outline-danger"
+                            onClick={() => setImageUrl('')}
+                          >
+                            Remove
+                          </button>
                         </div>
-                      );
-                    }
-
-                    if (field.type === 'textarea') {
-                      return (
-                        <div key={field.name} className="col-12">
-                          <label className="form-label fw-bold small text-dark">
-                            {field.label} {field.required && <span className="text-danger">*</span>}
-                          </label>
-                          <textarea
-                            className="form-control"
-                            rows="2"
-                            placeholder={field.placeholder || ''}
-                            value={fieldValue}
-                            onChange={(e) => handleStoreDetailChange(field.name, e.target.value)}
-                            required={field.required}
-                          ></textarea>
-                        </div>
-                      );
-                    }
-
-                    // Default text or number
-                    return (
-                      <div key={field.name} className="col-12 col-md-6 col-lg-4">
-                        <label className="form-label fw-bold small text-dark">
-                          {field.label} {field.required && <span className="text-danger">*</span>}
-                        </label>
-                        <input
-                          type={field.type === 'number' ? 'number' : 'text'}
-                          className="form-control"
-                          placeholder={field.placeholder || ''}
-                          value={fieldValue}
-                          onChange={(e) => handleStoreDetailChange(field.name, e.target.value)}
-                          required={field.required}
-                        />
-                      </div>
-                    );
-                  })}
+                      ) : (
+                        <span className="small text-muted fst-italic">Paste an image link or leave blank</span>
+                      )}
+                    </div>
+                  </div>
                 </div>
               )}
             </div>
           </div>
-        )}
+        </div>
 
         {/* ======================================================== */}
-        {/* SECTION 5: VARIANTS                                      */}
+        {/* SECTION 2: PRICING INFORMATION                           */}
         {/* ======================================================== */}
-        {(activeSection === 'all' || activeSection === 'sec-variants') && (
-          <div id="sec-variants" className="card border rounded-4 mb-4 shadow-sm">
-            <div className="card-header bg-white border-bottom py-3 px-4 d-flex justify-content-between align-items-center">
-              <div>
-                <h5 className="fw-bold mb-0 text-dark d-flex align-items-center gap-2">
-                  <span className="badge bg-primary text-white rounded-circle p-2" style={{ width: '28px', height: '28px', display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}>
-                    5
-                  </span>
-                  Product Variants (Size, Color, Model Options)
-                </h5>
-                <small className="text-muted">Manage multi-variant SKU options with dedicated pricing and stock.</small>
-              </div>
-              <div className="form-check form-switch">
-                <input
-                  className="form-check-input cursor-pointer"
-                  type="checkbox"
-                  role="switch"
-                  id="toggleVariants"
-                  checked={hasVariants}
-                  onChange={(e) => {
-                    setHasVariants(e.target.checked);
-                    if (e.target.checked && variantsList.length === 0) {
-                      handleAddVariantRow();
-                    }
-                  }}
-                />
-                <label className="form-check-label fw-bold small cursor-pointer" htmlFor="toggleVariants">
-                  {hasVariants ? 'Variants Enabled' : 'Single Product'}
-                </label>
-              </div>
-            </div>
-
-            {hasVariants && (
-              <div className="card-body p-4">
-                <div className="table-responsive mb-3">
-                  <table className="table table-bordered align-middle">
-                    <thead className="table-light small">
-                      <tr>
-                        <th>Variant Option (Size/Color)</th>
-                        <th>Variant SKU</th>
-                        <th>Barcode</th>
-                        <th style={{ width: '130px' }}>Price (₹)</th>
-                        <th style={{ width: '110px' }}>Stock</th>
-                        <th style={{ width: '50px' }}></th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {variantsList.map((v, idx) => (
-                        <tr key={idx}>
-                          <td>
-                            <input
-                              type="text"
-                              className="form-control form-control-sm"
-                              placeholder="e.g. Size L / Navy Blue"
-                              value={v.variant_name}
-                              onChange={(e) => handleUpdateVariantRow(idx, 'variant_name', e.target.value)}
-                            />
-                          </td>
-                          <td>
-                            <input
-                              type="text"
-                              className="form-control form-control-sm font-monospace"
-                              placeholder="SKU-L-BLU"
-                              value={v.sku}
-                              onChange={(e) => handleUpdateVariantRow(idx, 'sku', e.target.value)}
-                            />
-                          </td>
-                          <td>
-                            <input
-                              type="text"
-                              className="form-control form-control-sm font-monospace"
-                              placeholder="Barcode"
-                              value={v.barcode}
-                              onChange={(e) => handleUpdateVariantRow(idx, 'barcode', e.target.value)}
-                            />
-                          </td>
-                          <td>
-                            <input
-                              type="number"
-                              step="0.01"
-                              className="form-control form-control-sm"
-                              value={v.selling_price}
-                              onChange={(e) => handleUpdateVariantRow(idx, 'selling_price', e.target.value)}
-                            />
-                          </td>
-                          <td>
-                            <input
-                              type="number"
-                              step="0.01"
-                              className="form-control form-control-sm"
-                              value={v.stock_quantity}
-                              onChange={(e) => handleUpdateVariantRow(idx, 'stock_quantity', e.target.value)}
-                            />
-                          </td>
-                          <td className="text-center">
-                            <button
-                              type="button"
-                              className="btn btn-outline-danger btn-sm p-1"
-                              onClick={() => handleRemoveVariantRow(idx)}
-                              title="Delete Variant"
-                            >
-                              ✕
-                            </button>
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-                <button
-                  type="button"
-                  className="btn btn-sm btn-outline-primary rounded-pill px-3"
-                  onClick={handleAddVariantRow}
-                >
-                  + Add Variant Option
-                </button>
-              </div>
-            )}
-          </div>
-        )}
-
-        {/* ======================================================== */}
-        {/* SECTION 6: BATCH & EXPIRY                                */}
-        {/* ======================================================== */}
-        {(activeSection === 'all' || activeSection === 'sec-batches') && (
-          <div id="sec-batches" className="card border rounded-4 mb-4 shadow-sm">
-            <div className="card-header bg-white border-bottom py-3 px-4 d-flex justify-content-between align-items-center">
-              <div>
-                <h5 className="fw-bold mb-0 text-dark d-flex align-items-center gap-2">
-                  <span className="badge bg-primary text-white rounded-circle p-2" style={{ width: '28px', height: '28px', display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}>
-                    6
-                  </span>
-                  Batch & Expiry Management
-                </h5>
-                <small className="text-muted">
-                  Essential for Pharmacy, Grocery & Agro retail sectors. Track lot numbers and expiry dates.
-                </small>
-              </div>
-              <div className="form-check form-switch">
-                <input
-                  className="form-check-input cursor-pointer"
-                  type="checkbox"
-                  role="switch"
-                  id="toggleBatches"
-                  checked={hasBatches}
-                  onChange={(e) => {
-                    setHasBatches(e.target.checked);
-                    if (e.target.checked && batchesList.length === 0) {
-                      handleAddBatchRow();
-                    }
-                  }}
-                />
-                <label className="form-check-label fw-bold small cursor-pointer" htmlFor="toggleBatches">
-                  {hasBatches ? 'Batch Tracking Active' : 'No Batches'}
-                </label>
-              </div>
-            </div>
-
-            {hasBatches && (
-              <div className="card-body p-4">
-                <div className="table-responsive mb-3">
-                  <table className="table table-bordered align-middle">
-                    <thead className="table-light small">
-                      <tr>
-                        <th>Batch Number</th>
-                        <th>Mfg Date</th>
-                        <th>Expiry Date</th>
-                        <th style={{ width: '100px' }}>Quantity</th>
-                        <th style={{ width: '110px' }}>MRP (₹)</th>
-                        <th style={{ width: '110px' }}>Cost (₹)</th>
-                        <th style={{ width: '50px' }}></th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {batchesList.map((b, idx) => (
-                        <tr key={idx}>
-                          <td>
-                            <input
-                              type="text"
-                              className="form-control form-control-sm font-monospace"
-                              placeholder="BATCH-101"
-                              value={b.batch_number}
-                              onChange={(e) => handleUpdateBatchRow(idx, 'batch_number', e.target.value)}
-                            />
-                          </td>
-                          <td>
-                            <input
-                              type="date"
-                              className="form-control form-control-sm"
-                              value={b.manufacturing_date}
-                              onChange={(e) => handleUpdateBatchRow(idx, 'manufacturing_date', e.target.value)}
-                            />
-                          </td>
-                          <td>
-                            <input
-                              type="date"
-                              className="form-control form-control-sm"
-                              value={b.expiry_date}
-                              onChange={(e) => handleUpdateBatchRow(idx, 'expiry_date', e.target.value)}
-                            />
-                          </td>
-                          <td>
-                            <input
-                              type="number"
-                              step="0.01"
-                              className="form-control form-control-sm"
-                              value={b.current_quantity}
-                              onChange={(e) => handleUpdateBatchRow(idx, 'current_quantity', e.target.value)}
-                            />
-                          </td>
-                          <td>
-                            <input
-                              type="number"
-                              step="0.01"
-                              className="form-control form-control-sm"
-                              value={b.mrp}
-                              onChange={(e) => handleUpdateBatchRow(idx, 'mrp', e.target.value)}
-                            />
-                          </td>
-                          <td>
-                            <input
-                              type="number"
-                              step="0.01"
-                              className="form-control form-control-sm"
-                              value={b.purchase_price}
-                              onChange={(e) => handleUpdateBatchRow(idx, 'purchase_price', e.target.value)}
-                            />
-                          </td>
-                          <td className="text-center">
-                            <button
-                              type="button"
-                              className="btn btn-outline-danger btn-sm p-1"
-                              onClick={() => handleRemoveBatchRow(idx)}
-                              title="Delete Batch"
-                            >
-                              ✕
-                            </button>
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-                <button
-                  type="button"
-                  className="btn btn-sm btn-outline-primary rounded-pill px-3"
-                  onClick={handleAddBatchRow}
-                >
-                  + Add New Batch
-                </button>
-              </div>
-            )}
-          </div>
-        )}
-
-        {/* ======================================================== */}
-        {/* SECTION 7: ALERTS & NOTIFICATIONS                        */}
-        {/* ======================================================== */}
-        {(activeSection === 'all' || activeSection === 'sec-alerts') && (
-          <div id="sec-alerts" className="card border rounded-4 mb-4 shadow-sm">
-            <div className="card-header bg-white border-bottom py-3 px-4">
-              <h5 className="fw-bold mb-0 text-dark d-flex align-items-center gap-2">
-                <span className="badge bg-primary text-white rounded-circle p-2" style={{ width: '28px', height: '28px', display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}>
-                  7
-                </span>
-                Automated Alerts & Notifications
-              </h5>
-              <small className="text-muted">Configure proactive warnings for low stock levels and expiring inventory.</small>
-            </div>
-            <div className="card-body p-4">
-              <div className="row g-4">
-                <div className="col-12 col-md-6">
-                  <div className="p-3 bg-light rounded-3 border">
-                    <div className="form-check form-switch mb-2">
-                      <input
-                        className="form-check-input cursor-pointer"
-                        type="checkbox"
-                        role="switch"
-                        id="enableLowStockSwitch"
-                        checked={enableLowStockAlert}
-                        onChange={(e) => setEnableLowStockAlert(e.target.checked)}
-                      />
-                      <label className="form-check-label fw-bold text-dark cursor-pointer" htmlFor="enableLowStockSwitch">
-                        Low Stock Alert
-                      </label>
-                    </div>
-                    <p className="text-muted small mb-0">
-                      Alerts dashboard and notification bell when current stock falls to or below{' '}
-                      <strong>{minimumStock || 5}</strong> units.
-                    </p>
-                  </div>
-                </div>
-
-                <div className="col-12 col-md-6">
-                  <div className="p-3 bg-light rounded-3 border">
-                    <div className="form-check form-switch mb-2">
-                      <input
-                        className="form-check-input cursor-pointer"
-                        type="checkbox"
-                        role="switch"
-                        id="enableExpirySwitch"
-                        checked={enableExpiryAlert}
-                        onChange={(e) => setEnableExpiryAlert(e.target.checked)}
-                      />
-                      <label className="form-check-label fw-bold text-dark cursor-pointer" htmlFor="enableExpirySwitch">
-                        Expiry Date Advance Warning
-                      </label>
-                    </div>
-                    <div className="d-flex align-items-center gap-2 mt-2">
-                      <span className="small text-muted">Warn</span>
-                      <select
-                        className="form-select form-select-sm w-auto"
-                        value={expiryWarningDays}
-                        onChange={(e) => setExpiryWarningDays(Number(e.target.value))}
-                        disabled={!enableExpiryAlert}
-                      >
-                        <option value="15">15 Days Before</option>
-                        <option value="30">30 Days Before</option>
-                        <option value="60">60 Days Before</option>
-                        <option value="90">90 Days Before</option>
-                      </select>
-                      <span className="small text-muted">prior to expiration.</span>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="col-12">
-                  <div className="d-flex gap-4">
-                    <div className="form-check">
-                      <input
-                        className="form-check-input"
-                        type="checkbox"
-                        id="notifyEmail"
-                        checked={notifyEmail}
-                        onChange={(e) => setNotifyEmail(e.target.checked)}
-                      />
-                      <label className="form-check-label small text-dark" htmlFor="notifyEmail">
-                        Send alerts to Store Owner Email
-                      </label>
-                    </div>
-                    <div className="form-check">
-                      <input
-                        className="form-check-input"
-                        type="checkbox"
-                        id="notifySms"
-                        checked={notifySms}
-                        onChange={(e) => setNotifySms(e.target.checked)}
-                      />
-                      <label className="form-check-label small text-dark" htmlFor="notifySms">
-                        Send SMS Notification
-                      </label>
-                    </div>
-                  </div>
-                </div>
-              </div>
+        <div className="pf-section-card">
+          <div className="pf-section-header">
+            <div className="pf-section-badge">2</div>
+            <div className="pf-section-title-wrap">
+              <h5>Pricing & Tax Information</h5>
+              <p>Configure purchase price, customer selling price, MRP, and GST rates.</p>
             </div>
           </div>
-        )}
-
-        {/* ======================================================== */}
-        {/* SECTION 8: ADDITIONAL INFORMATION                        */}
-        {/* ======================================================== */}
-        {(activeSection === 'all' || activeSection === 'sec-additional') && (
-          <div id="sec-additional" className="card border rounded-4 mb-4 shadow-sm">
-            <div className="card-header bg-white border-bottom py-3 px-4">
-              <h5 className="fw-bold mb-0 text-dark d-flex align-items-center gap-2">
-                <span className="badge bg-primary text-white rounded-circle p-2" style={{ width: '28px', height: '28px', display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}>
-                  8
-                </span>
-                Additional Information & Media
-              </h5>
-              <small className="text-muted">Product visual image, featured showcase, and active lifecycle status.</small>
-            </div>
-            <div className="card-body p-4">
-              <div className="row g-3">
-                {/* Image URL */}
-                <div className="col-12 col-md-8">
-                  <label className="form-label fw-bold small text-dark">Product Image URL</label>
+          <div className="pf-section-body">
+            <div className="row g-3">
+              {/* Purchase Price */}
+              <div className="col-12 col-md-4">
+                <label className="pf-label">Purchase Price</label>
+                <div className="pf-input-group">
+                  <span className="pf-input-prefix">₹</span>
                   <input
-                    type="url"
-                    className="form-control"
-                    placeholder="https://example.com/images/product.jpg"
-                    value={imageUrl}
-                    onChange={(e) => setImageUrl(e.target.value)}
+                    type="number"
+                    step="0.01"
+                    min="0"
+                    className="pf-input pf-input-has-prefix"
+                    placeholder="0.00"
+                    value={purchasePrice}
+                    onChange={(e) => setPurchasePrice(e.target.value)}
                   />
-                  <small className="text-muted" style={{ fontSize: '11px' }}>
-                    Enter web image URL or CDN link. Thumbnail preview renders below.
-                  </small>
                 </div>
+              </div>
 
-                {/* Status */}
-                <div className="col-12 col-md-4">
-                  <label className="form-label fw-bold small text-dark">Catalog Status</label>
-                  <select
-                    className="form-select"
-                    value={status}
-                    onChange={(e) => setStatus(e.target.value)}
-                  >
-                    <option value="active">Active (Available for Sale)</option>
-                    <option value="inactive">Inactive (Hidden from POS)</option>
-                    <option value="draft">Draft</option>
-                  </select>
+              {/* Selling Price */}
+              <div className="col-12 col-md-4">
+                <label className="pf-label">
+                  Selling Price <span className="pf-label-required">*</span>
+                </label>
+                <div className="pf-input-group">
+                  <span className="pf-input-prefix">₹</span>
+                  <input
+                    type="number"
+                    step="0.01"
+                    min="0"
+                    className="pf-input pf-input-has-prefix fw-bold text-primary"
+                    placeholder="0.00"
+                    value={sellingPrice}
+                    onChange={(e) => setSellingPrice(e.target.value)}
+                    required
+                  />
                 </div>
+              </div>
 
-                {/* Featured Checkbox */}
-                <div className="col-12">
-                  <div className="form-check form-switch p-2 bg-light rounded-3 border">
-                    <input
-                      className="form-check-input ms-0 me-3 cursor-pointer"
-                      type="checkbox"
-                      role="switch"
-                      id="isFeaturedSwitch"
-                      checked={isFeatured}
-                      onChange={(e) => setIsFeatured(e.target.checked)}
-                    />
-                    <label className="form-check-label fw-bold small text-dark cursor-pointer" htmlFor="isFeaturedSwitch">
-                      ⭐ Mark as Featured Item (Pinned prominently on POS quick-billing screen)
+              {/* MRP */}
+              <div className="col-12 col-md-4">
+                <label className="pf-label">Maximum Retail Price (MRP)</label>
+                <div className="pf-input-group">
+                  <span className="pf-input-prefix">₹</span>
+                  <input
+                    type="number"
+                    step="0.01"
+                    min="0"
+                    className="pf-input pf-input-has-prefix"
+                    placeholder="Optional MRP"
+                    value={mrp}
+                    onChange={(e) => setMrp(e.target.value)}
+                  />
+                </div>
+              </div>
+
+              {/* Tax Treatment */}
+              <div className="col-12 col-md-4">
+                <label className="pf-label">Tax Treatment</label>
+                <select
+                  className="pf-select"
+                  value={taxType}
+                  onChange={(e) => setTaxType(e.target.value)}
+                >
+                  <option value="exclusive">Tax Exclusive (Base + GST)</option>
+                  <option value="inclusive">Tax Inclusive (MRP includes GST)</option>
+                  <option value="exempt">Tax Exempt (0% GST)</option>
+                </select>
+              </div>
+
+              {/* GST Rate */}
+              <div className="col-12 col-md-4">
+                <label className="pf-label">GST Rate (%)</label>
+                <select
+                  className="pf-select"
+                  value={gstRate}
+                  onChange={(e) => setGstRate(Number(e.target.value))}
+                >
+                  <option value="0">0% (Nil / Exempt)</option>
+                  <option value="5">5% GST (CGST 2.5% + SGST 2.5%)</option>
+                  <option value="12">12% GST (CGST 6% + SGST 6%)</option>
+                  <option value="18">18% GST (CGST 9% + SGST 9%)</option>
+                  <option value="28">28% GST (CGST 14% + SGST 14%)</option>
+                </select>
+              </div>
+
+              {/* Current Stock Quantity */}
+              <div className="col-12 col-md-4">
+                <label className="pf-label">Current Stock on Hand</label>
+                <input
+                  type="number"
+                  step="1"
+                  min="0"
+                  className="pf-input"
+                  placeholder="0"
+                  value={currentStock}
+                  onChange={(e) => setCurrentStock(e.target.value)}
+                />
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* ======================================================== */}
+        {/* SECTION 3: STORE-SPECIFIC SPECIFICATIONS                 */}
+        {/* ======================================================== */}
+        <div className="pf-section-card">
+          <div className="pf-section-header">
+            <div className="pf-section-badge">3</div>
+            <div className="pf-section-title-wrap">
+              <h5>Store-Specific Specifications</h5>
+              <p>Tailored attributes for {storeType?.name || 'your store type'}.</p>
+            </div>
+          </div>
+          <div className="pf-section-body">
+            {isClothingStore ? (
+              /* CLOTHING STORE SMART PRODUCT SPECIFICATIONS */
+              <div className="pf-smart-specs">
+                <div className="row g-3 mb-4">
+                  <div className="col-12 col-md-6">
+                    <label className="pf-label">
+                      Select Specification Type <span className="pf-label-required">*</span>
                     </label>
+                    <select
+                      className="pf-select pf-smart-type-select"
+                      value={clothingSpecType}
+                      onChange={(e) => handleClothingTypeChange(e.target.value)}
+                    >
+                      <option value="T-Shirt">T-Shirt</option>
+                      <option value="Shirt">Shirt</option>
+                      <option value="Jeans">Jeans</option>
+                      <option value="Pants">Pants</option>
+                      <option value="Trousers">Trousers</option>
+                      <option value="Kurti">Kurti</option>
+                      <option value="Saree">Saree</option>
+                      <option value="Dress">Dress</option>
+                      <option value="Jacket">Jacket</option>
+                      <option value="Shorts">Shorts</option>
+                      <option value="Other">Other (Custom Specifications)</option>
+                    </select>
+                  </div>
+                  <div className="col-12 col-md-6 d-flex align-items-center">
+                    <span className="small text-muted">
+                      💡 Attributes update dynamically based on the selected apparel category.
+                    </span>
                   </div>
                 </div>
 
-                {/* Image Preview Thumbnail */}
-                {imageUrl && (
-                  <div className="col-12">
-                    <div className="p-2 border rounded-3 d-inline-block bg-white shadow-sm">
-                      <img
-                        src={imageUrl}
-                        alt="Product preview"
-                        style={{ height: '90px', width: '90px', objectFit: 'cover' }}
-                        className="rounded"
-                        onError={(e) => {
-                          e.target.style.display = 'none';
-                        }}
+                {/* TYPE 1: T-SHIRT */}
+                {clothingSpecType === 'T-Shirt' && (
+                  <div className="row g-3">
+                    <div className="col-12 col-md-4">
+                      <label className="pf-label">Pattern</label>
+                      <select
+                        className="pf-select"
+                        value={clothingSpecs.pattern}
+                        onChange={(e) => setClothingSpecs({ ...clothingSpecs, pattern: e.target.value })}
+                      >
+                        {CLOTHING_SPEC_OPTIONS.patterns.map((opt) => (
+                          <option key={opt} value={opt}>{opt}</option>
+                        ))}
+                      </select>
+                    </div>
+                    <div className="col-12 col-md-4">
+                      <label className="pf-label">Neck Type</label>
+                      <select
+                        className="pf-select"
+                        value={clothingSpecs.neck_type}
+                        onChange={(e) => setClothingSpecs({ ...clothingSpecs, neck_type: e.target.value })}
+                      >
+                        {CLOTHING_SPEC_OPTIONS.neckTypes.map((opt) => (
+                          <option key={opt} value={opt}>{opt}</option>
+                        ))}
+                      </select>
+                    </div>
+                    <div className="col-12 col-md-4">
+                      <label className="pf-label">Sleeve Type</label>
+                      <select
+                        className="pf-select"
+                        value={clothingSpecs.sleeve_type}
+                        onChange={(e) => setClothingSpecs({ ...clothingSpecs, sleeve_type: e.target.value })}
+                      >
+                        {CLOTHING_SPEC_OPTIONS.sleeveTypes.map((opt) => (
+                          <option key={opt} value={opt}>{opt}</option>
+                        ))}
+                      </select>
+                    </div>
+                    <div className="col-12 col-md-4">
+                      <label className="pf-label">Fabric</label>
+                      <select
+                        className="pf-select"
+                        value={clothingSpecs.fabric}
+                        onChange={(e) => setClothingSpecs({ ...clothingSpecs, fabric: e.target.value })}
+                      >
+                        {CLOTHING_SPEC_OPTIONS.fabrics.map((opt) => (
+                          <option key={opt} value={opt}>{opt}</option>
+                        ))}
+                      </select>
+                    </div>
+                    <div className="col-12 col-md-4">
+                      <label className="pf-label">Fit Type</label>
+                      <select
+                        className="pf-select"
+                        value={clothingSpecs.fit_type}
+                        onChange={(e) => setClothingSpecs({ ...clothingSpecs, fit_type: e.target.value })}
+                      >
+                        {CLOTHING_SPEC_OPTIONS.fitTypes.map((opt) => (
+                          <option key={opt} value={opt}>{opt}</option>
+                        ))}
+                      </select>
+                    </div>
+                    <div className="col-12 col-md-4">
+                      <label className="pf-label">Color</label>
+                      <input
+                        type="text"
+                        className="pf-input"
+                        placeholder="e.g. Navy Blue, Jet Black"
+                        value={clothingSpecs.color || ''}
+                        onChange={(e) => setClothingSpecs({ ...clothingSpecs, color: e.target.value })}
+                      />
+                    </div>
+                    <div className="col-12 col-md-4">
+                      <label className="pf-label">Material</label>
+                      <input
+                        type="text"
+                        className="pf-input"
+                        placeholder="e.g. 100% Combed Cotton"
+                        value={clothingSpecs.material || ''}
+                        onChange={(e) => setClothingSpecs({ ...clothingSpecs, material: e.target.value })}
+                      />
+                    </div>
+                    <div className="col-12 col-md-4">
+                      <label className="pf-label">Gender</label>
+                      <select
+                        className="pf-select"
+                        value={clothingSpecs.gender}
+                        onChange={(e) => setClothingSpecs({ ...clothingSpecs, gender: e.target.value })}
+                      >
+                        {CLOTHING_SPEC_OPTIONS.genders.map((opt) => (
+                          <option key={opt} value={opt}>{opt}</option>
+                        ))}
+                      </select>
+                    </div>
+                    <div className="col-12 col-md-4">
+                      <label className="pf-label">Occasion</label>
+                      <select
+                        className="pf-select"
+                        value={clothingSpecs.occasion}
+                        onChange={(e) => setClothingSpecs({ ...clothingSpecs, occasion: e.target.value })}
+                      >
+                        {CLOTHING_SPEC_OPTIONS.occasions.map((opt) => (
+                          <option key={opt} value={opt}>{opt}</option>
+                        ))}
+                      </select>
+                    </div>
+                  </div>
+                )}
+
+                {/* TYPE 2: SHIRT */}
+                {clothingSpecType === 'Shirt' && (
+                  <div className="row g-3">
+                    <div className="col-12 col-md-4">
+                      <label className="pf-label">Pattern</label>
+                      <select
+                        className="pf-select"
+                        value={clothingSpecs.pattern}
+                        onChange={(e) => setClothingSpecs({ ...clothingSpecs, pattern: e.target.value })}
+                      >
+                        {CLOTHING_SPEC_OPTIONS.patterns.map((opt) => (
+                          <option key={opt} value={opt}>{opt}</option>
+                        ))}
+                      </select>
+                    </div>
+                    <div className="col-12 col-md-4">
+                      <label className="pf-label">Collar Type</label>
+                      <select
+                        className="pf-select"
+                        value={clothingSpecs.collar_type || 'Regular Spread'}
+                        onChange={(e) => setClothingSpecs({ ...clothingSpecs, collar_type: e.target.value })}
+                      >
+                        {CLOTHING_SPEC_OPTIONS.collarTypes.map((opt) => (
+                          <option key={opt} value={opt}>{opt}</option>
+                        ))}
+                      </select>
+                    </div>
+                    <div className="col-12 col-md-4">
+                      <label className="pf-label">Sleeve Type</label>
+                      <select
+                        className="pf-select"
+                        value={clothingSpecs.sleeve_type}
+                        onChange={(e) => setClothingSpecs({ ...clothingSpecs, sleeve_type: e.target.value })}
+                      >
+                        {CLOTHING_SPEC_OPTIONS.sleeveTypes.map((opt) => (
+                          <option key={opt} value={opt}>{opt}</option>
+                        ))}
+                      </select>
+                    </div>
+                    <div className="col-12 col-md-4">
+                      <label className="pf-label">Fabric</label>
+                      <select
+                        className="pf-select"
+                        value={clothingSpecs.fabric}
+                        onChange={(e) => setClothingSpecs({ ...clothingSpecs, fabric: e.target.value })}
+                      >
+                        {CLOTHING_SPEC_OPTIONS.fabrics.map((opt) => (
+                          <option key={opt} value={opt}>{opt}</option>
+                        ))}
+                      </select>
+                    </div>
+                    <div className="col-12 col-md-4">
+                      <label className="pf-label">Fit Type</label>
+                      <select
+                        className="pf-select"
+                        value={clothingSpecs.fit_type}
+                        onChange={(e) => setClothingSpecs({ ...clothingSpecs, fit_type: e.target.value })}
+                      >
+                        {CLOTHING_SPEC_OPTIONS.fitTypes.map((opt) => (
+                          <option key={opt} value={opt}>{opt}</option>
+                        ))}
+                      </select>
+                    </div>
+                    <div className="col-12 col-md-4">
+                      <label className="pf-label">Closure Type</label>
+                      <select
+                        className="pf-select"
+                        value={clothingSpecs.closure_type || 'Button Down'}
+                        onChange={(e) => setClothingSpecs({ ...clothingSpecs, closure_type: e.target.value })}
+                      >
+                        {CLOTHING_SPEC_OPTIONS.closureTypes.map((opt) => (
+                          <option key={opt} value={opt}>{opt}</option>
+                        ))}
+                      </select>
+                    </div>
+                    <div className="col-12 col-md-4">
+                      <label className="pf-label">Pocket Type</label>
+                      <select
+                        className="pf-select"
+                        value={clothingSpecs.pocket_type || 'Single Pocket'}
+                        onChange={(e) => setClothingSpecs({ ...clothingSpecs, pocket_type: e.target.value })}
+                      >
+                        {CLOTHING_SPEC_OPTIONS.pocketTypes.map((opt) => (
+                          <option key={opt} value={opt}>{opt}</option>
+                        ))}
+                      </select>
+                    </div>
+                    <div className="col-12 col-md-4">
+                      <label className="pf-label">Color</label>
+                      <input
+                        type="text"
+                        className="pf-input"
+                        placeholder="e.g. Sky Blue, Crisp White"
+                        value={clothingSpecs.color || ''}
+                        onChange={(e) => setClothingSpecs({ ...clothingSpecs, color: e.target.value })}
+                      />
+                    </div>
+                    <div className="col-12 col-md-4">
+                      <label className="pf-label">Gender</label>
+                      <select
+                        className="pf-select"
+                        value={clothingSpecs.gender}
+                        onChange={(e) => setClothingSpecs({ ...clothingSpecs, gender: e.target.value })}
+                      >
+                        {CLOTHING_SPEC_OPTIONS.genders.map((opt) => (
+                          <option key={opt} value={opt}>{opt}</option>
+                        ))}
+                      </select>
+                    </div>
+                  </div>
+                )}
+
+                {/* TYPE 3: JEANS */}
+                {clothingSpecType === 'Jeans' && (
+                  <div className="row g-3">
+                    <div className="col-12 col-md-4">
+                      <label className="pf-label">Fit Type</label>
+                      <select
+                        className="pf-select"
+                        value={clothingSpecs.fit_type}
+                        onChange={(e) => setClothingSpecs({ ...clothingSpecs, fit_type: e.target.value })}
+                      >
+                        {CLOTHING_SPEC_OPTIONS.fitTypes.map((opt) => (
+                          <option key={opt} value={opt}>{opt}</option>
+                        ))}
+                      </select>
+                    </div>
+                    <div className="col-12 col-md-4">
+                      <label className="pf-label">Waist Type</label>
+                      <select
+                        className="pf-select"
+                        value={clothingSpecs.waist_type || 'Mid Rise'}
+                        onChange={(e) => setClothingSpecs({ ...clothingSpecs, waist_type: e.target.value })}
+                      >
+                        {CLOTHING_SPEC_OPTIONS.waistTypes.map((opt) => (
+                          <option key={opt} value={opt}>{opt}</option>
+                        ))}
+                      </select>
+                    </div>
+                    <div className="col-12 col-md-4">
+                      <label className="pf-label">Rise Type</label>
+                      <select
+                        className="pf-select"
+                        value={clothingSpecs.rise_type || 'Mid Rise'}
+                        onChange={(e) => setClothingSpecs({ ...clothingSpecs, rise_type: e.target.value })}
+                      >
+                        <option value="Mid Rise">Mid Rise</option>
+                        <option value="High Rise">High Rise</option>
+                        <option value="Low Rise">Low Rise</option>
+                      </select>
+                    </div>
+                    <div className="col-12 col-md-4">
+                      <label className="pf-label">Wash Type</label>
+                      <select
+                        className="pf-select"
+                        value={clothingSpecs.wash_type || 'Medium Wash'}
+                        onChange={(e) => setClothingSpecs({ ...clothingSpecs, wash_type: e.target.value })}
+                      >
+                        {CLOTHING_SPEC_OPTIONS.washTypes.map((opt) => (
+                          <option key={opt} value={opt}>{opt}</option>
+                        ))}
+                      </select>
+                    </div>
+                    <div className="col-12 col-md-4">
+                      <label className="pf-label">Pattern</label>
+                      <select
+                        className="pf-select"
+                        value={clothingSpecs.pattern}
+                        onChange={(e) => setClothingSpecs({ ...clothingSpecs, pattern: e.target.value })}
+                      >
+                        <option value="Solid / Plain">Solid / Plain</option>
+                        <option value="Faded">Faded</option>
+                        <option value="Distressed / Ripped">Distressed / Ripped</option>
+                      </select>
+                    </div>
+                    <div className="col-12 col-md-4">
+                      <label className="pf-label">Fabric</label>
+                      <select
+                        className="pf-select"
+                        value={clothingSpecs.fabric}
+                        onChange={(e) => setClothingSpecs({ ...clothingSpecs, fabric: e.target.value })}
+                      >
+                        <option value="Stretch Denim">Stretch Denim</option>
+                        <option value="100% Cotton Denim">100% Cotton Denim</option>
+                        <option value="Poly-Spandex Denim">Poly-Spandex Denim</option>
+                      </select>
+                    </div>
+                    <div className="col-12 col-md-4">
+                      <label className="pf-label">Closure Type</label>
+                      <select
+                        className="pf-select"
+                        value={clothingSpecs.closure_type || 'Zip Fly with Button'}
+                        onChange={(e) => setClothingSpecs({ ...clothingSpecs, closure_type: e.target.value })}
+                      >
+                        <option value="Zip Fly with Button">Zip Fly with Button</option>
+                        <option value="Button Fly">Button Fly</option>
+                        <option value="Drawstring">Drawstring</option>
+                      </select>
+                    </div>
+                    <div className="col-12 col-md-4">
+                      <label className="pf-label">Color</label>
+                      <input
+                        type="text"
+                        className="pf-input"
+                        placeholder="e.g. Indigo Dark Blue, Light Washed"
+                        value={clothingSpecs.color || ''}
+                        onChange={(e) => setClothingSpecs({ ...clothingSpecs, color: e.target.value })}
+                      />
+                    </div>
+                    <div className="col-12 col-md-4">
+                      <label className="pf-label">Gender</label>
+                      <select
+                        className="pf-select"
+                        value={clothingSpecs.gender}
+                        onChange={(e) => setClothingSpecs({ ...clothingSpecs, gender: e.target.value })}
+                      >
+                        {CLOTHING_SPEC_OPTIONS.genders.map((opt) => (
+                          <option key={opt} value={opt}>{opt}</option>
+                        ))}
+                      </select>
+                    </div>
+                  </div>
+                )}
+
+                {/* TYPE 4 & 5: PANTS / TROUSERS */}
+                {(clothingSpecType === 'Pants' || clothingSpecType === 'Trousers') && (
+                  <div className="row g-3">
+                    <div className="col-12 col-md-4">
+                      <label className="pf-label">Fit Type</label>
+                      <select
+                        className="pf-select"
+                        value={clothingSpecs.fit_type}
+                        onChange={(e) => setClothingSpecs({ ...clothingSpecs, fit_type: e.target.value })}
+                      >
+                        <option value="Slim Fit">Slim Fit</option>
+                        <option value="Regular Fit">Regular Fit</option>
+                        <option value="Straight Fit">Straight Fit</option>
+                        <option value="Chino">Chino</option>
+                        <option value="Formal">Formal</option>
+                      </select>
+                    </div>
+                    <div className="col-12 col-md-4">
+                      <label className="pf-label">Waist Type</label>
+                      <select
+                        className="pf-select"
+                        value={clothingSpecs.waist_type || 'Mid Rise'}
+                        onChange={(e) => setClothingSpecs({ ...clothingSpecs, waist_type: e.target.value })}
+                      >
+                        {CLOTHING_SPEC_OPTIONS.waistTypes.map((opt) => (
+                          <option key={opt} value={opt}>{opt}</option>
+                        ))}
+                      </select>
+                    </div>
+                    <div className="col-12 col-md-4">
+                      <label className="pf-label">Length</label>
+                      <select
+                        className="pf-select"
+                        value={clothingSpecs.length || 'Full Length'}
+                        onChange={(e) => setClothingSpecs({ ...clothingSpecs, length: e.target.value })}
+                      >
+                        <option value="Full Length">Full Length</option>
+                        <option value="Ankle Length">Ankle Length</option>
+                        <option value="Cropped">Cropped</option>
+                      </select>
+                    </div>
+                    <div className="col-12 col-md-4">
+                      <label className="pf-label">Pattern</label>
+                      <select
+                        className="pf-select"
+                        value={clothingSpecs.pattern}
+                        onChange={(e) => setClothingSpecs({ ...clothingSpecs, pattern: e.target.value })}
+                      >
+                        {CLOTHING_SPEC_OPTIONS.patterns.map((opt) => (
+                          <option key={opt} value={opt}>{opt}</option>
+                        ))}
+                      </select>
+                    </div>
+                    <div className="col-12 col-md-4">
+                      <label className="pf-label">Fabric</label>
+                      <select
+                        className="pf-select"
+                        value={clothingSpecs.fabric}
+                        onChange={(e) => setClothingSpecs({ ...clothingSpecs, fabric: e.target.value })}
+                      >
+                        <option value="Cotton Chino">Cotton Chino</option>
+                        <option value="Poly-Viscose">Poly-Viscose</option>
+                        <option value="Linen Blend">Linen Blend</option>
+                        <option value="Wool Blend">Wool Blend</option>
+                        <option value="100% Cotton">100% Cotton</option>
+                      </select>
+                    </div>
+                    <div className="col-12 col-md-4">
+                      <label className="pf-label">Closure Type</label>
+                      <select
+                        className="pf-select"
+                        value={clothingSpecs.closure_type || 'Zip Fly with Button'}
+                        onChange={(e) => setClothingSpecs({ ...clothingSpecs, closure_type: e.target.value })}
+                      >
+                        <option value="Zip Fly with Button">Zip Fly with Button</option>
+                        <option value="Zip Fly with Hook">Zip Fly with Hook</option>
+                        <option value="Elastic Waistband">Elastic Waistband</option>
+                      </select>
+                    </div>
+                    <div className="col-12 col-md-4">
+                      <label className="pf-label">Color</label>
+                      <input
+                        type="text"
+                        className="pf-input"
+                        placeholder="e.g. Khaki, Charcoal Grey, Navy"
+                        value={clothingSpecs.color || ''}
+                        onChange={(e) => setClothingSpecs({ ...clothingSpecs, color: e.target.value })}
+                      />
+                    </div>
+                    <div className="col-12 col-md-4">
+                      <label className="pf-label">Gender</label>
+                      <select
+                        className="pf-select"
+                        value={clothingSpecs.gender}
+                        onChange={(e) => setClothingSpecs({ ...clothingSpecs, gender: e.target.value })}
+                      >
+                        {CLOTHING_SPEC_OPTIONS.genders.map((opt) => (
+                          <option key={opt} value={opt}>{opt}</option>
+                        ))}
+                      </select>
+                    </div>
+                  </div>
+                )}
+
+                {/* TYPE 6: KURTI */}
+                {clothingSpecType === 'Kurti' && (
+                  <div className="row g-3">
+                    <div className="col-12 col-md-4">
+                      <label className="pf-label">Pattern</label>
+                      <select
+                        className="pf-select"
+                        value={clothingSpecs.pattern}
+                        onChange={(e) => setClothingSpecs({ ...clothingSpecs, pattern: e.target.value })}
+                      >
+                        {CLOTHING_SPEC_OPTIONS.patterns.map((opt) => (
+                          <option key={opt} value={opt}>{opt}</option>
+                        ))}
+                      </select>
+                    </div>
+                    <div className="col-12 col-md-4">
+                      <label className="pf-label">Neck Type</label>
+                      <select
+                        className="pf-select"
+                        value={clothingSpecs.neck_type}
+                        onChange={(e) => setClothingSpecs({ ...clothingSpecs, neck_type: e.target.value })}
+                      >
+                        {CLOTHING_SPEC_OPTIONS.neckTypes.map((opt) => (
+                          <option key={opt} value={opt}>{opt}</option>
+                        ))}
+                      </select>
+                    </div>
+                    <div className="col-12 col-md-4">
+                      <label className="pf-label">Sleeve Type</label>
+                      <select
+                        className="pf-select"
+                        value={clothingSpecs.sleeve_type}
+                        onChange={(e) => setClothingSpecs({ ...clothingSpecs, sleeve_type: e.target.value })}
+                      >
+                        {CLOTHING_SPEC_OPTIONS.sleeveTypes.map((opt) => (
+                          <option key={opt} value={opt}>{opt}</option>
+                        ))}
+                      </select>
+                    </div>
+                    <div className="col-12 col-md-4">
+                      <label className="pf-label">Length</label>
+                      <select
+                        className="pf-select"
+                        value={clothingSpecs.length || 'Calf Length'}
+                        onChange={(e) => setClothingSpecs({ ...clothingSpecs, length: e.target.value })}
+                      >
+                        {CLOTHING_SPEC_OPTIONS.kurtiLengths.map((opt) => (
+                          <option key={opt} value={opt}>{opt}</option>
+                        ))}
+                      </select>
+                    </div>
+                    <div className="col-12 col-md-4">
+                      <label className="pf-label">Fabric</label>
+                      <select
+                        className="pf-select"
+                        value={clothingSpecs.fabric}
+                        onChange={(e) => setClothingSpecs({ ...clothingSpecs, fabric: e.target.value })}
+                      >
+                        {CLOTHING_SPEC_OPTIONS.fabrics.map((opt) => (
+                          <option key={opt} value={opt}>{opt}</option>
+                        ))}
+                      </select>
+                    </div>
+                    <div className="col-12 col-md-4">
+                      <label className="pf-label">Fit Type</label>
+                      <select
+                        className="pf-select"
+                        value={clothingSpecs.fit_type}
+                        onChange={(e) => setClothingSpecs({ ...clothingSpecs, fit_type: e.target.value })}
+                      >
+                        <option value="Straight">Straight</option>
+                        <option value="A-Line">A-Line</option>
+                        <option value="Anarkali">Anarkali</option>
+                        <option value="Flared">Flared</option>
+                      </select>
+                    </div>
+                    <div className="col-12 col-md-4">
+                      <label className="pf-label">Work Type</label>
+                      <select
+                        className="pf-select"
+                        value={clothingSpecs.work_type || 'Plain / Minimal'}
+                        onChange={(e) => setClothingSpecs({ ...clothingSpecs, work_type: e.target.value })}
+                      >
+                        {CLOTHING_SPEC_OPTIONS.kurtiWorks.map((opt) => (
+                          <option key={opt} value={opt}>{opt}</option>
+                        ))}
+                      </select>
+                    </div>
+                    <div className="col-12 col-md-4">
+                      <label className="pf-label">Occasion</label>
+                      <select
+                        className="pf-select"
+                        value={clothingSpecs.occasion}
+                        onChange={(e) => setClothingSpecs({ ...clothingSpecs, occasion: e.target.value })}
+                      >
+                        {CLOTHING_SPEC_OPTIONS.occasions.map((opt) => (
+                          <option key={opt} value={opt}>{opt}</option>
+                        ))}
+                      </select>
+                    </div>
+                    <div className="col-12 col-md-4">
+                      <label className="pf-label">Color</label>
+                      <input
+                        type="text"
+                        className="pf-input"
+                        placeholder="e.g. Mustard Yellow, Coral Pink"
+                        value={clothingSpecs.color || ''}
+                        onChange={(e) => setClothingSpecs({ ...clothingSpecs, color: e.target.value })}
                       />
                     </div>
                   </div>
                 )}
+
+                {/* TYPE 7: SAREE */}
+                {clothingSpecType === 'Saree' && (
+                  <div className="row g-3">
+                    <div className="col-12 col-md-4">
+                      <label className="pf-label">Fabric</label>
+                      <select
+                        className="pf-select"
+                        value={clothingSpecs.fabric}
+                        onChange={(e) => setClothingSpecs({ ...clothingSpecs, fabric: e.target.value })}
+                      >
+                        <option value="Pure Silk">Pure Silk</option>
+                        <option value="Cotton Silk">Cotton Silk</option>
+                        <option value="Georgette">Georgette</option>
+                        <option value="Chiffon">Chiffon</option>
+                        <option value="Banarasi Silk">Banarasi Silk</option>
+                        <option value="Kanjivaram Silk">Kanjivaram Silk</option>
+                        <option value="Linen">Linen</option>
+                      </select>
+                    </div>
+                    <div className="col-12 col-md-4">
+                      <label className="pf-label">Pattern</label>
+                      <select
+                        className="pf-select"
+                        value={clothingSpecs.pattern}
+                        onChange={(e) => setClothingSpecs({ ...clothingSpecs, pattern: e.target.value })}
+                      >
+                        {CLOTHING_SPEC_OPTIONS.patterns.map((opt) => (
+                          <option key={opt} value={opt}>{opt}</option>
+                        ))}
+                      </select>
+                    </div>
+                    <div className="col-12 col-md-4">
+                      <label className="pf-label">Border Type</label>
+                      <select
+                        className="pf-select"
+                        value={clothingSpecs.border_type || 'Zari Border'}
+                        onChange={(e) => setClothingSpecs({ ...clothingSpecs, border_type: e.target.value })}
+                      >
+                        {CLOTHING_SPEC_OPTIONS.sareeBorders.map((opt) => (
+                          <option key={opt} value={opt}>{opt}</option>
+                        ))}
+                      </select>
+                    </div>
+                    <div className="col-12 col-md-4">
+                      <label className="pf-label">Work Type</label>
+                      <select
+                        className="pf-select"
+                        value={clothingSpecs.work_type || 'Woven Zari'}
+                        onChange={(e) => setClothingSpecs({ ...clothingSpecs, work_type: e.target.value })}
+                      >
+                        {CLOTHING_SPEC_OPTIONS.sareeWorks.map((opt) => (
+                          <option key={opt} value={opt}>{opt}</option>
+                        ))}
+                      </select>
+                    </div>
+                    <div className="col-12 col-md-4">
+                      <label className="pf-label">Occasion</label>
+                      <select
+                        className="pf-select"
+                        value={clothingSpecs.occasion}
+                        onChange={(e) => setClothingSpecs({ ...clothingSpecs, occasion: e.target.value })}
+                      >
+                        {CLOTHING_SPEC_OPTIONS.occasions.map((opt) => (
+                          <option key={opt} value={opt}>{opt}</option>
+                        ))}
+                      </select>
+                    </div>
+                    <div className="col-12 col-md-4">
+                      <label className="pf-label">Length</label>
+                      <select
+                        className="pf-select"
+                        value={clothingSpecs.length || '5.5 Metres'}
+                        onChange={(e) => setClothingSpecs({ ...clothingSpecs, length: e.target.value })}
+                      >
+                        <option value="5.5 Metres">5.5 Metres</option>
+                        <option value="6 Metres">6 Metres</option>
+                        <option value="6.3 Metres (with Blouse)">6.3 Metres (with Blouse)</option>
+                      </select>
+                    </div>
+                    <div className="col-12 col-md-4">
+                      <label className="pf-label">Color</label>
+                      <input
+                        type="text"
+                        className="pf-input"
+                        placeholder="e.g. Royal Blue, Emerald Green"
+                        value={clothingSpecs.color || ''}
+                        onChange={(e) => setClothingSpecs({ ...clothingSpecs, color: e.target.value })}
+                      />
+                    </div>
+                    <div className="col-12 col-md-8">
+                      <label className="pf-label">Blouse Piece Availability</label>
+                      <select
+                        className="pf-select"
+                        value={clothingSpecs.blouse_piece || 'Available (Attached)'}
+                        onChange={(e) => setClothingSpecs({ ...clothingSpecs, blouse_piece: e.target.value })}
+                      >
+                        {CLOTHING_SPEC_OPTIONS.blousePieceOptions.map((opt) => (
+                          <option key={opt} value={opt}>{opt}</option>
+                        ))}
+                      </select>
+                    </div>
+                  </div>
+                )}
+
+                {/* TYPE 8: DRESS */}
+                {clothingSpecType === 'Dress' && (
+                  <div className="row g-3">
+                    <div className="col-12 col-md-4">
+                      <label className="pf-label">Dress Type</label>
+                      <select
+                        className="pf-select"
+                        value={clothingSpecs.dress_type || 'A-Line Dress'}
+                        onChange={(e) => setClothingSpecs({ ...clothingSpecs, dress_type: e.target.value })}
+                      >
+                        {CLOTHING_SPEC_OPTIONS.dressTypes.map((opt) => (
+                          <option key={opt} value={opt}>{opt}</option>
+                        ))}
+                      </select>
+                    </div>
+                    <div className="col-12 col-md-4">
+                      <label className="pf-label">Neck Type</label>
+                      <select
+                        className="pf-select"
+                        value={clothingSpecs.neck_type}
+                        onChange={(e) => setClothingSpecs({ ...clothingSpecs, neck_type: e.target.value })}
+                      >
+                        {CLOTHING_SPEC_OPTIONS.neckTypes.map((opt) => (
+                          <option key={opt} value={opt}>{opt}</option>
+                        ))}
+                      </select>
+                    </div>
+                    <div className="col-12 col-md-4">
+                      <label className="pf-label">Sleeve Type</label>
+                      <select
+                        className="pf-select"
+                        value={clothingSpecs.sleeve_type}
+                        onChange={(e) => setClothingSpecs({ ...clothingSpecs, sleeve_type: e.target.value })}
+                      >
+                        {CLOTHING_SPEC_OPTIONS.sleeveTypes.map((opt) => (
+                          <option key={opt} value={opt}>{opt}</option>
+                        ))}
+                      </select>
+                    </div>
+                    <div className="col-12 col-md-4">
+                      <label className="pf-label">Length</label>
+                      <select
+                        className="pf-select"
+                        value={clothingSpecs.length || 'Midi'}
+                        onChange={(e) => setClothingSpecs({ ...clothingSpecs, length: e.target.value })}
+                      >
+                        <option value="Maxi Length">Maxi Length</option>
+                        <option value="Midi Length">Midi Length</option>
+                        <option value="Knee Length">Knee Length</option>
+                        <option value="Above Knee">Above Knee</option>
+                      </select>
+                    </div>
+                    <div className="col-12 col-md-4">
+                      <label className="pf-label">Pattern</label>
+                      <select
+                        className="pf-select"
+                        value={clothingSpecs.pattern}
+                        onChange={(e) => setClothingSpecs({ ...clothingSpecs, pattern: e.target.value })}
+                      >
+                        {CLOTHING_SPEC_OPTIONS.patterns.map((opt) => (
+                          <option key={opt} value={opt}>{opt}</option>
+                        ))}
+                      </select>
+                    </div>
+                    <div className="col-12 col-md-4">
+                      <label className="pf-label">Fabric</label>
+                      <select
+                        className="pf-select"
+                        value={clothingSpecs.fabric}
+                        onChange={(e) => setClothingSpecs({ ...clothingSpecs, fabric: e.target.value })}
+                      >
+                        {CLOTHING_SPEC_OPTIONS.fabrics.map((opt) => (
+                          <option key={opt} value={opt}>{opt}</option>
+                        ))}
+                      </select>
+                    </div>
+                    <div className="col-12 col-md-4">
+                      <label className="pf-label">Fit Type</label>
+                      <select
+                        className="pf-select"
+                        value={clothingSpecs.fit_type}
+                        onChange={(e) => setClothingSpecs({ ...clothingSpecs, fit_type: e.target.value })}
+                      >
+                        {CLOTHING_SPEC_OPTIONS.fitTypes.map((opt) => (
+                          <option key={opt} value={opt}>{opt}</option>
+                        ))}
+                      </select>
+                    </div>
+                    <div className="col-12 col-md-4">
+                      <label className="pf-label">Occasion</label>
+                      <select
+                        className="pf-select"
+                        value={clothingSpecs.occasion}
+                        onChange={(e) => setClothingSpecs({ ...clothingSpecs, occasion: e.target.value })}
+                      >
+                        {CLOTHING_SPEC_OPTIONS.occasions.map((opt) => (
+                          <option key={opt} value={opt}>{opt}</option>
+                        ))}
+                      </select>
+                    </div>
+                    <div className="col-12 col-md-4">
+                      <label className="pf-label">Color</label>
+                      <input
+                        type="text"
+                        className="pf-input"
+                        placeholder="e.g. Lavender, Maroon, Black"
+                        value={clothingSpecs.color || ''}
+                        onChange={(e) => setClothingSpecs({ ...clothingSpecs, color: e.target.value })}
+                      />
+                    </div>
+                  </div>
+                )}
+
+                {/* TYPE 9: JACKET */}
+                {clothingSpecType === 'Jacket' && (
+                  <div className="row g-3">
+                    <div className="col-12 col-md-4">
+                      <label className="pf-label">Fit Type</label>
+                      <select
+                        className="pf-select"
+                        value={clothingSpecs.fit_type}
+                        onChange={(e) => setClothingSpecs({ ...clothingSpecs, fit_type: e.target.value })}
+                      >
+                        <option value="Regular Fit">Regular Fit</option>
+                        <option value="Slim Fit">Slim Fit</option>
+                        <option value="Bomber">Bomber</option>
+                        <option value="Oversized Fit">Oversized Fit</option>
+                      </select>
+                    </div>
+                    <div className="col-12 col-md-4">
+                      <label className="pf-label">Closure Type</label>
+                      <select
+                        className="pf-select"
+                        value={clothingSpecs.closure_type || 'Zipper'}
+                        onChange={(e) => setClothingSpecs({ ...clothingSpecs, closure_type: e.target.value })}
+                      >
+                        <option value="Zipper">Zipper</option>
+                        <option value="Button Down">Button Down</option>
+                        <option value="Snap Button">Snap Button</option>
+                      </select>
+                    </div>
+                    <div className="col-12 col-md-4">
+                      <label className="pf-label">Fabric</label>
+                      <select
+                        className="pf-select"
+                        value={clothingSpecs.fabric}
+                        onChange={(e) => setClothingSpecs({ ...clothingSpecs, fabric: e.target.value })}
+                      >
+                        <option value="Denim">Denim</option>
+                        <option value="Leather / Faux Leather">Leather / Faux Leather</option>
+                        <option value="Fleece / Polyester">Fleece / Polyester</option>
+                        <option value="100% Cotton">100% Cotton</option>
+                      </select>
+                    </div>
+                    <div className="col-12 col-md-4">
+                      <label className="pf-label">Pattern</label>
+                      <select
+                        className="pf-select"
+                        value={clothingSpecs.pattern}
+                        onChange={(e) => setClothingSpecs({ ...clothingSpecs, pattern: e.target.value })}
+                      >
+                        <option value="Solid / Plain">Solid / Plain</option>
+                        <option value="Quilted">Quilted</option>
+                        <option value="Colorblock">Colorblock</option>
+                      </select>
+                    </div>
+                    <div className="col-12 col-md-4">
+                      <label className="pf-label">Sleeve Type</label>
+                      <select
+                        className="pf-select"
+                        value={clothingSpecs.sleeve_type}
+                        onChange={(e) => setClothingSpecs({ ...clothingSpecs, sleeve_type: e.target.value })}
+                      >
+                        <option value="Full Sleeve">Full Sleeve</option>
+                        <option value="Sleeveless / Vest">Sleeveless / Vest</option>
+                      </select>
+                    </div>
+                    <div className="col-12 col-md-4">
+                      <label className="pf-label">Color</label>
+                      <input
+                        type="text"
+                        className="pf-input"
+                        placeholder="e.g. Jet Black, Olive Green"
+                        value={clothingSpecs.color || ''}
+                        onChange={(e) => setClothingSpecs({ ...clothingSpecs, color: e.target.value })}
+                      />
+                    </div>
+                    <div className="col-12 col-md-4">
+                      <label className="pf-label">Gender</label>
+                      <select
+                        className="pf-select"
+                        value={clothingSpecs.gender}
+                        onChange={(e) => setClothingSpecs({ ...clothingSpecs, gender: e.target.value })}
+                      >
+                        {CLOTHING_SPEC_OPTIONS.genders.map((opt) => (
+                          <option key={opt} value={opt}>{opt}</option>
+                        ))}
+                      </select>
+                    </div>
+                    <div className="col-12 col-md-4">
+                      <label className="pf-label">Occasion</label>
+                      <select
+                        className="pf-select"
+                        value={clothingSpecs.occasion}
+                        onChange={(e) => setClothingSpecs({ ...clothingSpecs, occasion: e.target.value })}
+                      >
+                        {CLOTHING_SPEC_OPTIONS.occasions.map((opt) => (
+                          <option key={opt} value={opt}>{opt}</option>
+                        ))}
+                      </select>
+                    </div>
+                  </div>
+                )}
+
+                {/* TYPE 10: SHORTS */}
+                {clothingSpecType === 'Shorts' && (
+                  <div className="row g-3">
+                    <div className="col-12 col-md-4">
+                      <label className="pf-label">Fit Type</label>
+                      <select
+                        className="pf-select"
+                        value={clothingSpecs.fit_type}
+                        onChange={(e) => setClothingSpecs({ ...clothingSpecs, fit_type: e.target.value })}
+                      >
+                        <option value="Regular Fit">Regular Fit</option>
+                        <option value="Slim Fit">Slim Fit</option>
+                        <option value="Bermuda">Bermuda</option>
+                        <option value="Athletic / Running">Athletic / Running</option>
+                      </select>
+                    </div>
+                    <div className="col-12 col-md-4">
+                      <label className="pf-label">Waist Type</label>
+                      <select
+                        className="pf-select"
+                        value={clothingSpecs.waist_type || 'Elasticated Waist'}
+                        onChange={(e) => setClothingSpecs({ ...clothingSpecs, waist_type: e.target.value })}
+                      >
+                        <option value="Elastic with Drawstring">Elastic with Drawstring</option>
+                        <option value="Button & Zip Fly">Button & Zip Fly</option>
+                      </select>
+                    </div>
+                    <div className="col-12 col-md-4">
+                      <label className="pf-label">Length</label>
+                      <select
+                        className="pf-select"
+                        value={clothingSpecs.length || 'Above Knee'}
+                        onChange={(e) => setClothingSpecs({ ...clothingSpecs, length: e.target.value })}
+                      >
+                        <option value="Above Knee">Above Knee</option>
+                        <option value="Mid-Thigh">Mid-Thigh</option>
+                        <option value="Knee Length">Knee Length</option>
+                      </select>
+                    </div>
+                    <div className="col-12 col-md-4">
+                      <label className="pf-label">Fabric</label>
+                      <select
+                        className="pf-select"
+                        value={clothingSpecs.fabric}
+                        onChange={(e) => setClothingSpecs({ ...clothingSpecs, fabric: e.target.value })}
+                      >
+                        <option value="100% Cotton">100% Cotton</option>
+                        <option value="Denim">Denim</option>
+                        <option value="French Terry">French Terry</option>
+                        <option value="Polyester">Polyester</option>
+                      </select>
+                    </div>
+                    <div className="col-12 col-md-4">
+                      <label className="pf-label">Pattern</label>
+                      <select
+                        className="pf-select"
+                        value={clothingSpecs.pattern}
+                        onChange={(e) => setClothingSpecs({ ...clothingSpecs, pattern: e.target.value })}
+                      >
+                        {CLOTHING_SPEC_OPTIONS.patterns.map((opt) => (
+                          <option key={opt} value={opt}>{opt}</option>
+                        ))}
+                      </select>
+                    </div>
+                    <div className="col-12 col-md-4">
+                      <label className="pf-label">Color</label>
+                      <input
+                        type="text"
+                        className="pf-input"
+                        placeholder="e.g. Navy Blue, Grey Marl"
+                        value={clothingSpecs.color || ''}
+                        onChange={(e) => setClothingSpecs({ ...clothingSpecs, color: e.target.value })}
+                      />
+                    </div>
+                    <div className="col-12 col-md-4">
+                      <label className="pf-label">Gender</label>
+                      <select
+                        className="pf-select"
+                        value={clothingSpecs.gender}
+                        onChange={(e) => setClothingSpecs({ ...clothingSpecs, gender: e.target.value })}
+                      >
+                        {CLOTHING_SPEC_OPTIONS.genders.map((opt) => (
+                          <option key={opt} value={opt}>{opt}</option>
+                        ))}
+                      </select>
+                    </div>
+                  </div>
+                )}
+
+                {/* TYPE 11: OTHER (CUSTOM SPECIFICATIONS) */}
+                {clothingSpecType === 'Other' && (
+                  <div>
+                    <div className="d-flex justify-content-between align-items-center mb-3">
+                      <span className="fw-bold small text-dark">Custom Product Specifications</span>
+                      <button
+                        type="button"
+                        className="pf-btn-add-spec"
+                        onClick={handleAddCustomSpec}
+                      >
+                        + Add More Specification
+                      </button>
+                    </div>
+
+                    {customSpecs.map((spec, idx) => (
+                      <div key={idx} className="pf-custom-spec-row">
+                        <input
+                          type="text"
+                          className="pf-input"
+                          placeholder="Specification Name (e.g. Sleeve Cut, Embroidery)"
+                          value={spec.name}
+                          onChange={(e) => handleCustomSpecChange(idx, 'name', e.target.value)}
+                        />
+                        <input
+                          type="text"
+                          className="pf-input"
+                          placeholder="Specification Value (e.g. Raglan, Gold Thread)"
+                          value={spec.value}
+                          onChange={(e) => handleCustomSpecChange(idx, 'value', e.target.value)}
+                        />
+                        {customSpecs.length > 1 && (
+                          <button
+                            type="button"
+                            className="pf-btn-remove-spec"
+                            onClick={() => handleRemoveCustomSpec(idx)}
+                            title="Remove specification"
+                          >
+                            ✕
+                          </button>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
+            ) : (
+              /* OTHER 7 STORE TYPES: CLEAN STREAMLINED FORM */
+              <div className="row g-3">
+                {storeFields.length === 0 ? (
+                  <div className="col-12 text-muted fst-italic py-2">
+                    Standard retail item. No additional technical specifications required.
+                  </div>
+                ) : (
+                  storeFields.map((field) => (
+                    <div key={field.name} className="col-12 col-md-6">
+                      <label className="pf-label">
+                        {field.label} {field.required && <span className="pf-label-required">*</span>}
+                      </label>
+                      {field.type === 'select' ? (
+                        <select
+                          className="pf-select"
+                          value={storeDetails[field.name] ?? field.default ?? ''}
+                          onChange={(e) =>
+                            setStoreDetails({ ...storeDetails, [field.name]: e.target.value })
+                          }
+                          required={field.required}
+                        >
+                          {(field.options || []).map((opt) => (
+                            <option key={opt} value={opt}>
+                              {opt}
+                            </option>
+                          ))}
+                        </select>
+                      ) : field.type === 'boolean' ? (
+                        <div className="form-check form-switch pt-2">
+                          <input
+                            type="checkbox"
+                            className="form-check-input"
+                            id={`chk-${field.name}`}
+                            checked={Boolean(storeDetails[field.name])}
+                            onChange={(e) =>
+                              setStoreDetails({ ...storeDetails, [field.name]: e.target.checked })
+                            }
+                          />
+                          <label className="form-check-label small" htmlFor={`chk-${field.name}`}>
+                            {storeDetails[field.name] ? 'Yes (Enabled)' : 'No (Disabled)'}
+                          </label>
+                        </div>
+                      ) : (
+                        <input
+                          type={field.type === 'number' ? 'number' : 'text'}
+                          className="pf-input"
+                          placeholder={field.placeholder || `Enter ${field.label}`}
+                          value={storeDetails[field.name] ?? ''}
+                          onChange={(e) =>
+                            setStoreDetails({ ...storeDetails, [field.name]: e.target.value })
+                          }
+                          required={field.required}
+                        />
+                      )}
+                    </div>
+                  ))
+                )}
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* ======================================================== */}
+        {/* SECTION 4: STOCK ALERT SETTINGS                          */}
+        {/* ======================================================== */}
+        <div className="pf-section-card">
+          <div className="pf-section-header">
+            <div className="pf-section-badge">4</div>
+            <div className="pf-section-title-wrap">
+              <h5>Stock Alert Settings</h5>
+              <p>Configure automated proactive notifications for low inventory and expiry thresholds.</p>
             </div>
           </div>
-        )}
+          <div className="pf-section-body">
+            {/* TOGGLE A: LOW STOCK ALERT */}
+            <div className={`pf-toggle-card ${lowStockAlertEnabled ? 'active' : ''}`}>
+              <div
+                className="pf-toggle-header"
+                onClick={() => setLowStockAlertEnabled(!lowStockAlertEnabled)}
+              >
+                <div className="pf-toggle-meta">
+                  <div className="pf-toggle-icon">🔔</div>
+                  <div>
+                    <h6 className="pf-toggle-title">Low Stock Alert</h6>
+                    <p className="pf-toggle-desc">
+                      Get real-time notification alerts when inventory hits a minimum reorder threshold.
+                    </p>
+                  </div>
+                </div>
+                <label className="pf-switch" onClick={(e) => e.stopPropagation()}>
+                  <input
+                    type="checkbox"
+                    checked={lowStockAlertEnabled}
+                    onChange={(e) => setLowStockAlertEnabled(e.target.checked)}
+                  />
+                  <span className="pf-slider"></span>
+                </label>
+              </div>
 
-        {/* BOTTOM ACTION BAR */}
-        <div className="d-flex justify-content-between align-items-center p-3 bg-white border rounded-4 shadow-sm mt-4">
-          <Button
-            type="button"
-            variant="outline"
-            onClick={onCancel}
+              {/* Dynamic field reveal when Low Stock Alert is ON */}
+              {lowStockAlertEnabled && (
+                <div className="pf-toggle-content">
+                  <div className="row g-3 align-items-center">
+                    <div className="col-12 col-md-6">
+                      <label className="pf-label">
+                        Low Stock Alert Quantity / Threshold <span className="pf-label-required">*</span>
+                      </label>
+                      <input
+                        type="number"
+                        min="1"
+                        step="1"
+                        className="pf-input"
+                        placeholder="e.g. 10"
+                        value={lowStockThreshold}
+                        onChange={(e) => setLowStockThreshold(e.target.value)}
+                        required={lowStockAlertEnabled}
+                      />
+                      <small className="text-muted" style={{ fontSize: '11px' }}>
+                        You will be notified whenever product stock reaches this quantity or falls below it.
+                      </small>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* TOGGLE B: EXPIRY ALERT (ONLY FOR STORES WITH EXPIRY TRACKING) */}
+            {hasExpiry && (
+              <div className={`pf-toggle-card ${expiryAlertEnabled ? 'active' : ''}`}>
+                <div
+                  className="pf-toggle-header"
+                  onClick={() => setExpiryAlertEnabled(!expiryAlertEnabled)}
+                >
+                  <div className="pf-toggle-meta">
+                    <div className="pf-toggle-icon">⏳</div>
+                    <div>
+                      <h6 className="pf-toggle-title">Expiry Alert</h6>
+                      <p className="pf-toggle-desc">
+                        Track expiration dates and receive advance warnings before products expire.
+                      </p>
+                    </div>
+                  </div>
+                  <label className="pf-switch" onClick={(e) => e.stopPropagation()}>
+                    <input
+                      type="checkbox"
+                      checked={expiryAlertEnabled}
+                      onChange={(e) => setExpiryAlertEnabled(e.target.checked)}
+                    />
+                    <span className="pf-slider"></span>
+                  </label>
+                </div>
+
+                {/* Dynamic fields reveal when Expiry Alert is ON */}
+                {expiryAlertEnabled && (
+                  <div className="pf-toggle-content">
+                    <div className="row g-3">
+                      <div className="col-12 col-md-6">
+                        <label className="pf-label">
+                          Expiry Date <span className="pf-label-required">*</span>
+                        </label>
+                        <input
+                          type="date"
+                          className="pf-input"
+                          value={expiryDate}
+                          onChange={(e) => setExpiryDate(e.target.value)}
+                          required={expiryAlertEnabled}
+                        />
+                      </div>
+                      <div className="col-12 col-md-6">
+                        <label className="pf-label">
+                          Alert Before Expiry (Days) <span className="pf-label-required">*</span>
+                        </label>
+                        <input
+                          type="number"
+                          min="1"
+                          step="1"
+                          className="pf-input"
+                          placeholder="e.g. 7"
+                          value={alertDaysBefore}
+                          onChange={(e) => setAlertDaysBefore(e.target.value)}
+                          required={expiryAlertEnabled}
+                        />
+                        <small className="text-muted" style={{ fontSize: '11px' }}>
+                          Example: 7 days warning before the product reaches expiry date.
+                        </small>
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Action Buttons Footer */}
+        <div className="pf-form-footer">
+          {onCancel && (
+            <button
+              type="button"
+              className="pf-btn-cancel"
+              onClick={onCancel}
+              disabled={submitting}
+            >
+              Cancel
+            </button>
+          )}
+          <button
+            type="submit"
+            className="pf-btn-submit ms-auto"
             disabled={submitting}
           >
-            Cancel
-          </Button>
-
-          <div className="d-flex gap-2">
-            <Button
-              type="submit"
-              variant="primary"
-              disabled={submitting}
-              className="px-4 py-2 fw-bold"
-            >
-              {submitting ? (
-                <>
-                  <span className="spinner-border spinner-border-sm me-2" role="status"></span>
-                  Saving Product...
-                </>
-              ) : isEditing ? (
-                '✓ Update Product'
-              ) : (
-                '✓ Save & Add Product'
-              )}
-            </Button>
-          </div>
+            {submitting ? 'Saving Product...' : isEditing ? '✓ Update Product' : '+ Add Product'}
+          </button>
         </div>
       </form>
 
@@ -1748,8 +2213,8 @@ export const ProductForm = ({
         <div className="modal show d-block" style={{ backgroundColor: 'rgba(0,0,0,0.5)' }}>
           <div className="modal-dialog modal-dialog-centered">
             <div className="modal-content rounded-4 border-0 shadow">
-              <div className="modal-header border-bottom">
-                <h5 className="modal-title fw-bold">Add Store Category</h5>
+              <div className="modal-header border-bottom py-3 px-4">
+                <h5 className="modal-title fw-bold text-dark">Add New Category</h5>
                 <button
                   type="button"
                   className="btn-close"
@@ -1758,24 +2223,21 @@ export const ProductForm = ({
               </div>
               <form onSubmit={handleCreateQuickCategory}>
                 <div className="modal-body p-4">
-                  <label className="form-label fw-bold small">Category Name</label>
+                  <label className="pf-label">Category Name</label>
                   <input
                     type="text"
-                    className="form-control"
-                    placeholder="e.g. Organic Pulses, Winter Jackets, Antibiotics"
+                    className="pf-input"
+                    placeholder="e.g. Beverages, Men's Wear, Antibiotics"
                     value={newCategoryName}
                     onChange={(e) => setNewCategoryName(e.target.value)}
                     autoFocus
                     required
                   />
-                  <small className="text-muted mt-1 d-block">
-                    This category will strictly belong to your authenticated store.
-                  </small>
                 </div>
-                <div className="modal-footer border-top">
+                <div className="modal-footer border-top py-2 px-4">
                   <button
                     type="button"
-                    className="btn btn-outline-secondary btn-sm rounded-pill"
+                    className="btn btn-secondary btn-sm rounded-pill"
                     onClick={() => setShowQuickCategoryModal(false)}
                   >
                     Cancel
@@ -1785,7 +2247,7 @@ export const ProductForm = ({
                     className="btn btn-primary btn-sm rounded-pill px-3"
                     disabled={creatingCategory}
                   >
-                    {creatingCategory ? 'Creating...' : 'Save Category'}
+                    {creatingCategory ? 'Creating...' : '+ Create Category'}
                   </button>
                 </div>
               </form>
@@ -1799,8 +2261,8 @@ export const ProductForm = ({
         <div className="modal show d-block" style={{ backgroundColor: 'rgba(0,0,0,0.5)' }}>
           <div className="modal-dialog modal-dialog-centered">
             <div className="modal-content rounded-4 border-0 shadow">
-              <div className="modal-header border-bottom">
-                <h5 className="modal-title fw-bold">Add Store Brand</h5>
+              <div className="modal-header border-bottom py-3 px-4">
+                <h5 className="modal-title fw-bold text-dark">Add New Brand</h5>
                 <button
                   type="button"
                   className="btn-close"
@@ -1809,24 +2271,21 @@ export const ProductForm = ({
               </div>
               <form onSubmit={handleCreateQuickBrand}>
                 <div className="modal-body p-4">
-                  <label className="form-label fw-bold small">Brand Name</label>
+                  <label className="pf-label">Brand Name</label>
                   <input
                     type="text"
-                    className="form-control"
-                    placeholder="e.g. Tata Sampann, Raymond, Cipla"
+                    className="pf-input"
+                    placeholder="e.g. Nike, Levi's, Cipla"
                     value={newBrandName}
                     onChange={(e) => setNewBrandName(e.target.value)}
                     autoFocus
                     required
                   />
-                  <small className="text-muted mt-1 d-block">
-                    This brand will be available only to your store.
-                  </small>
                 </div>
-                <div className="modal-footer border-top">
+                <div className="modal-footer border-top py-2 px-4">
                   <button
                     type="button"
-                    className="btn btn-outline-secondary btn-sm rounded-pill"
+                    className="btn btn-secondary btn-sm rounded-pill"
                     onClick={() => setShowQuickBrandModal(false)}
                   >
                     Cancel
@@ -1836,7 +2295,7 @@ export const ProductForm = ({
                     className="btn btn-primary btn-sm rounded-pill px-3"
                     disabled={creatingBrand}
                   >
-                    {creatingBrand ? 'Creating...' : 'Save Brand'}
+                    {creatingBrand ? 'Creating...' : '+ Create Brand'}
                   </button>
                 </div>
               </form>

@@ -134,8 +134,6 @@ export const AppRoutes = ({ brandName = 'NEXORA MART' }) => {
             tab = 'settings';
           } else if (normalizedPath === '/inventory' || normalizedPath === '/stock') {
             tab = 'inventory';
-          } else if (normalizedPath === '/categories') {
-            tab = 'categories';
           } else if (normalizedPath === '/more' || normalizedPath === '/menu') {
             tab = 'more';
           } else if (normalizedPath !== '/dashboard') {

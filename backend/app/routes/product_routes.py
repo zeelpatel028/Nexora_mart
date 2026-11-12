@@ -35,6 +35,24 @@ def _serialize_product(p) -> ProductResponse:
     tax_type = p.pricing.tax_type if getattr(p, 'pricing', None) else "exclusive"
     gst_rate = float(p.pricing.gst_rate) if getattr(p, 'pricing', None) and p.pricing.gst_rate is not None else 0.0
 
+    low_alert = None
+    expiry_alert = None
+    if getattr(p, 'alerts', None):
+        for a in p.alerts:
+            atype = str(a.alert_type).lower()
+            if 'low' in atype and a.is_enabled:
+                low_alert = a
+            elif 'expir' in atype and a.is_enabled:
+                expiry_alert = a
+
+    low_stock_alert_enabled = low_alert is not None
+    low_stock_threshold = float(low_alert.threshold_value) if (low_alert and low_alert.threshold_value is not None) else min_stock
+    expiry_alert_enabled = expiry_alert is not None
+    alert_days = expiry_alert.alert_days_before if expiry_alert else None
+    p_expiry_date = getattr(p, 'expiry_date', None) or (expiry_alert.expiry_date if expiry_alert else None)
+
+    is_low = bool(low_stock_alert_enabled and stock_val <= low_stock_threshold)
+
     return ProductResponse(
         id=str(p.id),
         store_id=str(p.store_id),
@@ -55,13 +73,18 @@ def _serialize_product(p) -> ProductResponse:
         gst_rate=gst_rate,
         current_stock=stock_val,
         min_stock_level=min_stock,
-        is_low_stock=(stock_val > 0 and stock_val <= min_stock),
+        is_low_stock=is_low,
         is_out_of_stock=(stock_val <= 0),
         status=str(p.status or "ACTIVE"),
         is_active=bool(p.is_active if p.is_active is not None else True),
         is_featured=bool(p.is_featured or False),
         has_variants=bool(p.has_variants or False),
         image_url=p.image_url,
+        expiry_date=p_expiry_date,
+        low_stock_alert_enabled=low_stock_alert_enabled,
+        low_stock_threshold=low_stock_threshold,
+        expiry_alert_enabled=expiry_alert_enabled,
+        alert_days_before=alert_days,
         created_at=p.created_at,
         updated_at=p.updated_at,
     )
@@ -112,6 +135,7 @@ def _serialize_product_detail(p) -> ProductDetailResponse:
             alert_type=a.alert_type,
             threshold_value=float(a.threshold_value) if a.threshold_value is not None else None,
             alert_days_before=a.alert_days_before,
+            expiry_date=a.expiry_date,
             is_enabled=a.is_enabled,
             notify_email=a.notify_email,
             notify_sms=a.notify_sms,
@@ -197,6 +221,18 @@ def get_product_form_config(
     Automatically identifies merchant's store type and provides only relevant fields.
     """
     return ProductService.get_form_config(db, ctx)
+
+
+# --- 1B. ACTIVE REAL-TIME PRODUCT ALERTS ---
+@router.get("/alerts/active")
+def get_active_product_alerts(
+    db: Session = Depends(get_db),
+    ctx: StoreContext = Depends(get_current_store_context)
+):
+    """
+    Returns deduplicated, real-time Low Stock and Expiry alerts for current store.
+    """
+    return ProductService.get_active_alerts(db, ctx)
 
 
 # --- 2. LIST PRODUCTS (Strict Store Isolation) ---

@@ -70,9 +70,9 @@ export const InventoryManager = () => {
           product_id: selectedItem.product_id,
           quantity: qty,
           batch_number: actionBatch || null,
-          notes: actionNotes || 'Manual Stock Inward'
+          notes: actionNotes || 'Manual Stock Entry'
         });
-        setStatusMsg(`Stock Inward completed for ${selectedItem.product_name}!`);
+        setStatusMsg(`Stock Entry completed for ${selectedItem.product_name}!`);
       } else if (modalType === 'out') {
         await inventoryService.stockOut({
           product_id: selectedItem.product_id,
@@ -189,7 +189,7 @@ export const InventoryManager = () => {
             <EmptyState
               type={search ? 'no-search-results' : 'no-inventory'}
               onAction={search ? () => setSearch('') : () => setModalType('in')}
-              actionLabel={search ? 'Clear Filter' : '+ Record Stock Inward'}
+              actionLabel={search ? 'Clear Filter' : '+ Add Stock Entry'}
             />
           ) : (
             <div className="table-responsive bg-white rounded-3 border shadow-sm">

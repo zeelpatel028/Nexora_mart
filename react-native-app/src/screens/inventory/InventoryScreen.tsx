@@ -105,16 +105,9 @@ export const InventoryScreen: React.FC = () => {
           <View style={styles.btnRow}>
             <TouchableOpacity
               style={[styles.smallBtn, { backgroundColor: brandColors.primaryLight }]}
-              onPress={() => navigation.navigate('StockInward', { productId: item.product_id })}
-            >
-              <Text style={[styles.smallBtnText, { color: brandColors.primary }]}>+ Stock In</Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              style={[styles.smallBtn, { backgroundColor: '#F1F5F9' }]}
               onPress={() => navigation.navigate('StockAdjustment', { productId: item.product_id })}
             >
-              <Text style={[styles.smallBtnText, { color: colors.textPrimary }]}>Adjust</Text>
+              <Text style={[styles.smallBtnText, { color: brandColors.primary }]}>⚖️ Adjust</Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -160,8 +153,8 @@ export const InventoryScreen: React.FC = () => {
         showBack
         onBack={() => navigation.goBack()}
         rightAction={{
-          icon: '📥',
-          onPress: () => navigation.navigate('StockInward', {}),
+          icon: '⚖️',
+          onPress: () => navigation.navigate('StockAdjustment', {}),
         }}
       />
 
@@ -263,8 +256,8 @@ export const InventoryScreen: React.FC = () => {
             icon="📋"
             title="No Inventory Records"
             description={filterMode === 'low' ? 'No low stock warnings! Your inventory is healthy.' : 'No stock items match your filter.'}
-            actionTitle="Record Stock In"
-            onAction={() => navigation.navigate('StockInward', {})}
+            actionTitle="Adjust Stock"
+            onAction={() => navigation.navigate('StockAdjustment', {})}
           />
         ) : (
           <FlatList

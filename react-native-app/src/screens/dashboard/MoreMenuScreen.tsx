@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import {
   View,
   Text,
@@ -8,11 +8,15 @@ import {
   Alert,
   Image,
   Platform,
+  ActivityIndicator,
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
-import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { RootStackParamList } from '../../navigation/types';
+import {
+  MoreScreenNavigationProp,
+  MainTabParamList,
+  RootStackParamList,
+} from '../../navigation/types';
 import { useTheme } from '../../hooks/useTheme';
 import { useAuth } from '../../hooks/useAuth';
 import { useScreenSystemBar } from '../../utils/systemBar';
@@ -36,33 +40,44 @@ import {
   MoonIcon,
 } from '../../components/branding/Icons';
 
-type MoreNavProp = NativeStackNavigationProp<RootStackParamList>;
+export type MenuItemTarget =
+  | { type: 'tab'; screen: keyof MainTabParamList }
+  | { type: 'stack'; screen: keyof RootStackParamList; params?: any }
+  | { type: 'action' };
 
-interface MenuListItem {
+export interface MenuListItem {
   id: string;
   title: string;
   subtitle: string;
   color: string;
   icon: (color: string) => React.ReactNode;
-  screen?: keyof RootStackParamList | 'DashboardTab';
-  params?: any;
+  target: MenuItemTarget;
   isDanger?: boolean;
+  accessibilityHint?: string;
+}
+
+export interface MenuSection {
+  id: string;
+  title: string;
+  items: MenuListItem[];
 }
 
 export const MoreMenuScreen: React.FC = () => {
-  const navigation = useNavigation<MoreNavProp>();
+  const navigation = useNavigation<MoreScreenNavigationProp>();
   const { colors, brandColors, isDark, toggleTheme } = useTheme();
   const { logout, user } = useAuth();
   const insets = useSafeAreaInsets();
+  const [isLoggingOut, setIsLoggingOut] = useState<boolean>(false);
 
-  // Dynamic status bar (Orange top banner) and bottom navigation bar (white/theme)
-  useScreenSystemBar('orange');
+  // Dynamic status bar adapting to light (brand orange banner) or dark (surface theme)
+  useScreenSystemBar(isDark ? 'white' : 'orange');
 
   const topPadding = insets.top > 0 ? insets.top + 6 : 8;
 
-  // Categorized Sections
-  const categorizedSections: { title: string; items: MenuListItem[] }[] = [
+  // Categorized Sections with strictly-typed navigation destinations
+  const categorizedSections: MenuSection[] = [
     {
+      id: 'sec_main_nav',
       title: 'Main Store Navigation',
       items: [
         {
@@ -71,11 +86,13 @@ export const MoreMenuScreen: React.FC = () => {
           subtitle: 'Store overview, live sales metrics & recent activities',
           color: '#FF6A1A',
           icon: (c) => <HomeIcon size={20} color={c} />,
-          screen: 'DashboardTab',
+          target: { type: 'tab', screen: 'DashboardTab' },
+          accessibilityHint: 'Switches to the Home Dashboard tab',
         },
       ],
     },
     {
+      id: 'sec_pos_operations',
       title: 'Billing & POS Operations',
       items: [
         {
@@ -84,7 +101,8 @@ export const MoreMenuScreen: React.FC = () => {
           subtitle: 'Create fast retail invoices & barcode checkout',
           color: '#FF6A1A',
           icon: (c) => <ShoppingCartIcon size={20} color={c} />,
-          screen: 'PosBilling',
+          target: { type: 'tab', screen: 'PosTab' },
+          accessibilityHint: 'Switches to Make Bills POS terminal tab',
         },
         {
           id: 'pos_view_bill',
@@ -92,7 +110,8 @@ export const MoreMenuScreen: React.FC = () => {
           subtitle: 'Audit completed customer orders & receipts',
           color: '#3B82F6',
           icon: (c) => <ReceiptIcon size={20} color={c} />,
-          screen: 'SalesList',
+          target: { type: 'stack', screen: 'SalesList' },
+          accessibilityHint: 'Opens completed customer orders and receipts',
         },
         {
           id: 'pos_debit_customer',
@@ -100,11 +119,13 @@ export const MoreMenuScreen: React.FC = () => {
           subtitle: 'Customer ledger, outstanding balance & credit',
           color: '#F59E0B',
           icon: (c) => <UsersIcon size={20} color={c} />,
-          screen: 'CustomerList',
+          target: { type: 'tab', screen: 'CustomerTab' },
+          accessibilityHint: 'Switches to Customer ledger and directory tab',
         },
       ],
     },
     {
+      id: 'sec_product_inventory',
       title: 'Product & Stock Management',
       items: [
         {
@@ -113,7 +134,8 @@ export const MoreMenuScreen: React.FC = () => {
           subtitle: 'View, edit, search and filter all products',
           color: '#10B981',
           icon: (c) => <PackageIcon size={20} color={c} />,
-          screen: 'ProductList',
+          target: { type: 'tab', screen: 'ProductsTab' },
+          accessibilityHint: 'Switches to Products catalog tab',
         },
         {
           id: 'nav_add_product',
@@ -121,7 +143,8 @@ export const MoreMenuScreen: React.FC = () => {
           subtitle: 'Register barcode, pricing, MRP & stock',
           color: '#059669',
           icon: (c) => <PlusIcon size={20} color={c} />,
-          screen: 'AddProduct',
+          target: { type: 'stack', screen: 'AddProduct' },
+          accessibilityHint: 'Opens form to add a new product',
         },
         {
           id: 'nav_inventory',
@@ -129,23 +152,8 @@ export const MoreMenuScreen: React.FC = () => {
           subtitle: 'Live stock quantities, reorder levels & alerts',
           color: '#0D9488',
           icon: (c) => <BoxesIcon size={20} color={c} />,
-          screen: 'Inventory',
-        },
-        {
-          id: 'nav_categories',
-          title: 'Category Manager',
-          subtitle: 'Store categories, units & dynamic specifications',
-          color: '#6366F1',
-          icon: (c) => <BoxesIcon size={20} color={c} />,
-          screen: 'CategoryManager',
-        },
-        {
-          id: 'nav_stock_inward',
-          title: 'Stock Inward (Add Stock)',
-          subtitle: 'Receive inventory shipments and restock products',
-          color: '#0284C7',
-          icon: (c) => <BoxesIcon size={20} color={c} />,
-          screen: 'StockInward',
+          target: { type: 'stack', screen: 'Inventory' },
+          accessibilityHint: 'Opens inventory and stock management',
         },
         {
           id: 'nav_stock_adjustment',
@@ -153,20 +161,23 @@ export const MoreMenuScreen: React.FC = () => {
           subtitle: 'Audit count corrections & damaged stock',
           color: '#F59E0B',
           icon: (c) => <BoxesIcon size={20} color={c} />,
-          screen: 'StockAdjustment',
+          target: { type: 'stack', screen: 'StockAdjustment' },
+          accessibilityHint: 'Opens stock adjustment form',
         },
       ],
     },
     {
+      id: 'sec_suppliers_purchases',
       title: 'Suppliers & Purchases',
       items: [
         {
-          id: 'nav_supper',
-          title: 'Supper (Supplier Directory)',
+          id: 'nav_supplier',
+          title: 'Supplier (Vendor Directory)',
           subtitle: 'Vendor contact information & payables',
           color: '#8B5CF6',
           icon: (c) => <TruckIcon size={20} color={c} />,
-          screen: 'SupplierList',
+          target: { type: 'stack', screen: 'SupplierList' },
+          accessibilityHint: 'Opens vendor directory and payables',
         },
         {
           id: 'nav_order',
@@ -174,7 +185,8 @@ export const MoreMenuScreen: React.FC = () => {
           subtitle: 'Manage supplier purchases & purchase history',
           color: '#EC4899',
           icon: (c) => <ShoppingBagIcon size={20} color={c} />,
-          screen: 'PurchaseList',
+          target: { type: 'stack', screen: 'PurchaseList' },
+          accessibilityHint: 'Opens supplier purchase orders history',
         },
         {
           id: 'nav_create_purchase',
@@ -182,11 +194,13 @@ export const MoreMenuScreen: React.FC = () => {
           subtitle: 'Procure goods from suppliers & record bills',
           color: '#8B5CF6',
           icon: (c) => <PlusIcon size={20} color={c} />,
-          screen: 'CreatePurchase',
+          target: { type: 'stack', screen: 'CreatePurchase' },
+          accessibilityHint: 'Opens form to create a new purchase order',
         },
       ],
     },
     {
+      id: 'sec_finance_analytics',
       title: 'Finance & Analytics',
       items: [
         {
@@ -195,15 +209,17 @@ export const MoreMenuScreen: React.FC = () => {
           subtitle: 'Record store daily expenses & cashbook',
           color: '#06B6D4',
           icon: (c) => <IndianRupeeIcon size={20} color={c} />,
-          screen: 'Finance',
+          target: { type: 'stack', screen: 'Finance' },
+          accessibilityHint: 'Opens store daily expenses and cashbook',
         },
         {
-          id: 'nav_sales_analicis',
-          title: 'Sales Analicis',
+          id: 'nav_sales_analytics',
+          title: 'Sales Analytics',
           subtitle: 'Sales reports, revenue trend & profit margins',
           color: '#3B82F6',
           icon: (c) => <ChartColumnIcon size={20} color={c} />,
-          screen: 'Reports',
+          target: { type: 'stack', screen: 'Reports' },
+          accessibilityHint: 'Opens sales reports and analytics',
         },
         {
           id: 'nav_valuation',
@@ -211,11 +227,13 @@ export const MoreMenuScreen: React.FC = () => {
           subtitle: 'Current total inventory asset valuation',
           color: '#10B981',
           icon: (c) => <BoxesIcon size={20} color={c} />,
-          screen: 'InventoryValuation',
+          target: { type: 'stack', screen: 'InventoryValuation' },
+          accessibilityHint: 'Opens inventory asset valuation report',
         },
       ],
     },
     {
+      id: 'sec_settings_account',
       title: 'App Settings & Store Account',
       items: [
         {
@@ -224,7 +242,8 @@ export const MoreMenuScreen: React.FC = () => {
           subtitle: 'Store profile, GSTIN, address & business info',
           color: '#FF6A1A',
           icon: (c) => <StoreIcon size={20} color={c} />,
-          screen: 'AccountDetail',
+          target: { type: 'stack', screen: 'AccountDetail' },
+          accessibilityHint: 'Opens store profile and business details',
         },
         {
           id: 'nav_settings',
@@ -232,7 +251,8 @@ export const MoreMenuScreen: React.FC = () => {
           subtitle: 'System dark/light theme & preferences',
           color: '#475569',
           icon: (c) => <SettingsIcon size={20} color={c} />,
-          screen: 'Settings',
+          target: { type: 'stack', screen: 'Settings' },
+          accessibilityHint: 'Opens application settings and preferences',
         },
         {
           id: 'nav_logout',
@@ -240,60 +260,80 @@ export const MoreMenuScreen: React.FC = () => {
           subtitle: `Currently logged in as ${user?.email || 'Merchant'}`,
           color: '#EF4444',
           icon: (c) => <LogOutIcon size={20} color={c} />,
+          target: { type: 'action' },
           isDanger: true,
+          accessibilityHint: 'Logs out of the current session',
         },
       ],
     },
   ];
 
-  const handleItemPress = (item: MenuListItem) => {
-    if (item.isDanger || item.id === 'nav_logout') {
-      Alert.alert('Sign Out', 'Are you sure you want to log out of your session?', [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Sign Out',
-          style: 'destructive',
-          onPress: async () => {
+  const handleLogout = () => {
+    if (isLoggingOut) return;
+
+    Alert.alert('Sign Out', 'Are you sure you want to log out of your session?', [
+      { text: 'Cancel', style: 'cancel' },
+      {
+        text: 'Sign Out',
+        style: 'destructive',
+        onPress: async () => {
+          try {
+            setIsLoggingOut(true);
             await logout();
-          },
+          } catch (error: any) {
+            Alert.alert(
+              'Sign Out Failed',
+              error?.message || 'Unable to log out. Please check your network and try again.'
+            );
+          } finally {
+            setIsLoggingOut(false);
+          }
         },
-      ]);
-      return;
-    }
+      },
+    ]);
+  };
 
-    const tabTarget =
-      item.screen === 'DashboardTab' || item.id === 'nav_home'
-        ? 'DashboardTab'
-        : item.screen === 'PosBilling' || item.id === 'pos_make_bill'
-        ? 'PosTab'
-        : item.screen === 'ProductList' || item.id === 'nav_product'
-        ? 'ProductsTab'
-        : item.screen === 'CustomerList' || item.id === 'pos_debit_customer'
-        ? 'CustomerTab'
-        : null;
-
-    if (tabTarget) {
-      (navigation as any).navigate(tabTarget);
-      return;
-    }
-
-    if (item.screen) {
-      const parent = navigation.getParent();
-      if (parent) {
-        (parent as any).navigate(item.screen, item.params);
-      } else {
-        (navigation as any).navigate(item.screen, item.params);
+  const handleItemPress = (item: MenuListItem) => {
+    if (item.target.type === 'action') {
+      if (item.id === 'nav_logout') {
+        handleLogout();
       }
+      return;
+    }
+
+    if (item.target.type === 'tab') {
+      navigation.navigate(item.target.screen);
+      return;
+    }
+
+    if (item.target.type === 'stack') {
+      navigation.navigate(item.target.screen as any, item.target.params);
+      return;
     }
   };
 
   return (
     <View style={[styles.root, { backgroundColor: colors.background }]}>
-      {/* Top Header Bar with Seamless Orange Status Bar Space and White Circle Brand Logo */}
-      <View style={[styles.headerTopContainer, { paddingTop: topPadding }]}>
+      {/* Top Header Bar - Dynamically adapts to theme (Orange brand in Light, Slate Surface in Dark) */}
+      <View
+        style={[
+          styles.headerTopContainer,
+          {
+            paddingTop: topPadding,
+            backgroundColor: isDark ? colors.surface : brandColors.primary,
+            borderBottomWidth: isDark ? 1 : 0,
+            borderBottomColor: colors.border,
+          },
+        ]}
+      >
         <View style={styles.topHeader}>
           <View style={styles.headerLeft}>
-            <View style={styles.headerLogoCircle}>
+            <View
+              style={[
+                styles.headerLogoCircle,
+                { backgroundColor: isDark ? colors.surfaceSubtle : '#FFFFFF' },
+              ]}
+            >
               <Image
                 source={require('../../assets/m-logo-3d.png')}
                 style={styles.headerLogoImg}
@@ -301,19 +341,43 @@ export const MoreMenuScreen: React.FC = () => {
               />
             </View>
             <View>
-              <Text style={styles.headerBrandTitle}>NEXORA MART</Text>
-              <Text style={styles.headerSubTitle}>All Store Operations</Text>
+              <Text
+                style={[
+                  styles.headerBrandTitle,
+                  { color: isDark ? colors.textPrimary : '#FFFFFF' },
+                ]}
+              >
+                NEXORA MART
+              </Text>
+              <Text
+                style={[
+                  styles.headerSubTitle,
+                  { color: isDark ? colors.textSecondary : 'rgba(255, 255, 255, 0.88)' },
+                ]}
+              >
+                All Store Operations
+              </Text>
             </View>
           </View>
 
           <TouchableOpacity
-            style={styles.themeToggleBtn}
+            style={[
+              styles.themeToggleBtn,
+              {
+                backgroundColor: isDark
+                  ? colors.surfaceSubtle
+                  : 'rgba(255, 255, 255, 0.22)',
+              },
+            ]}
             onPress={toggleTheme}
             activeOpacity={0.7}
+            accessible={true}
+            accessibilityRole="button"
             accessibilityLabel="Toggle Theme Mode"
+            accessibilityHint="Toggles between dark and light appearance"
           >
             {isDark ? (
-              <MoonIcon size={18} color="#FFFFFF" strokeWidth={2} />
+              <MoonIcon size={18} color={colors.textPrimary} strokeWidth={2} />
             ) : (
               <SunIcon size={18} color="#FFFFFF" strokeWidth={2} />
             )}
@@ -326,9 +390,9 @@ export const MoreMenuScreen: React.FC = () => {
         showsVerticalScrollIndicator={false}
       >
         {/* Categorized Detailed Menu Lists */}
-        {categorizedSections.map((section, sIdx) => (
-          <View key={sIdx} style={styles.categorySection}>
-            <Text style={[styles.sectionHeading, { color: isDark ? '#9CA3AF' : '#6B7280' }]}>
+        {categorizedSections.map((section) => (
+          <View key={section.id} style={styles.categorySection}>
+            <Text style={[styles.sectionHeading, { color: colors.textSecondary }]}>
               {section.title.toUpperCase()}
             </Text>
 
@@ -336,14 +400,17 @@ export const MoreMenuScreen: React.FC = () => {
               style={[
                 styles.cardBox,
                 {
-                  backgroundColor: isDark ? '#1C1F26' : '#FFFFFF',
-                  borderColor: isDark ? '#2D323E' : '#E5E7EB',
+                  backgroundColor: colors.surface,
+                  borderColor: colors.border,
                 },
               ]}
             >
               {section.items.map((item, iIdx) => {
                 const isLast = iIdx === section.items.length - 1;
-                const iconColor = item.isDanger ? '#EF4444' : item.color || brandColors.primary;
+                const iconColor = item.isDanger
+                  ? brandColors.error || '#EF4444'
+                  : item.color || brandColors.primary;
+                const isItemLoggingOut = isLoggingOut && item.id === 'nav_logout';
 
                 return (
                   <TouchableOpacity
@@ -351,12 +418,18 @@ export const MoreMenuScreen: React.FC = () => {
                     style={[
                       styles.itemRow,
                       !isLast && {
-                        borderBottomColor: isDark ? '#262A34' : '#F1F5F9',
+                        borderBottomColor: colors.borderLight,
                         borderBottomWidth: 1,
                       },
                     ]}
                     onPress={() => handleItemPress(item)}
                     activeOpacity={0.7}
+                    disabled={isItemLoggingOut}
+                    accessible={true}
+                    accessibilityRole="button"
+                    accessibilityLabel={item.title}
+                    accessibilityHint={item.accessibilityHint || item.subtitle}
+                    accessibilityState={{ disabled: isItemLoggingOut }}
                   >
                     <View
                       style={[
@@ -371,28 +444,39 @@ export const MoreMenuScreen: React.FC = () => {
                       {item.icon(iconColor)}
                     </View>
 
-                    <View style={{ flex: 1, marginHorizontal: 12 }}>
+                    <View style={styles.itemTextContainer}>
                       <Text
                         style={[
                           styles.itemTitle,
-                          { color: item.isDanger ? '#EF4444' : isDark ? '#FFFFFF' : '#111827' },
+                          {
+                            color: item.isDanger
+                              ? brandColors.error || '#EF4444'
+                              : colors.textPrimary,
+                          },
                         ]}
                       >
                         {item.title}
                       </Text>
                       <Text
-                        style={[styles.itemSub, { color: isDark ? '#8A909D' : '#6B7280' }]}
-                        numberOfLines={1}
+                        style={[styles.itemSub, { color: colors.textSecondary }]}
+                        numberOfLines={2}
                       >
                         {item.subtitle}
                       </Text>
                     </View>
 
-                    <ChevronRightIcon
-                      size={18}
-                      color={isDark ? '#4B5563' : '#9CA3AF'}
-                      strokeWidth={2}
-                    />
+                    {isItemLoggingOut ? (
+                      <ActivityIndicator
+                        size="small"
+                        color={brandColors.error || '#EF4444'}
+                      />
+                    ) : (
+                      <ChevronRightIcon
+                        size={18}
+                        color={colors.textMuted}
+                        strokeWidth={2}
+                      />
+                    )}
                   </TouchableOpacity>
                 );
               })}
@@ -409,7 +493,7 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   headerTopContainer: {
-    backgroundColor: '#FF6A1A',
+    width: '100%',
   },
   topHeader: {
     flexDirection: 'row',
@@ -426,7 +510,6 @@ const styles = StyleSheet.create({
     width: 36,
     height: 36,
     borderRadius: 18,
-    backgroundColor: '#FFFFFF',
     alignItems: 'center',
     justifyContent: 'center',
     marginRight: 10,
@@ -447,13 +530,11 @@ const styles = StyleSheet.create({
     height: 20,
   },
   headerBrandTitle: {
-    color: '#FFFFFF',
     fontSize: 17,
     fontWeight: '800',
     letterSpacing: 0.5,
   },
   headerSubTitle: {
-    color: 'rgba(255, 255, 255, 0.88)',
     fontSize: 11,
     fontWeight: '500',
   },
@@ -461,7 +542,6 @@ const styles = StyleSheet.create({
     width: 36,
     height: 36,
     borderRadius: 18,
-    backgroundColor: 'rgba(255, 255, 255, 0.22)',
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -508,6 +588,10 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
+  itemTextContainer: {
+    flex: 1,
+    marginHorizontal: 12,
+  },
   itemTitle: {
     fontSize: 14.5,
     fontWeight: '600',
@@ -515,6 +599,7 @@ const styles = StyleSheet.create({
   itemSub: {
     fontSize: 11.5,
     marginTop: 2,
+    lineHeight: 16,
   },
 });
 

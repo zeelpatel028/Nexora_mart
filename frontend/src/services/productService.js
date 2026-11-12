@@ -6,6 +6,10 @@ export const productService = {
     return await api.get(API_ENDPOINTS.PRODUCTS.FORM_CONFIG);
   },
 
+  getActiveAlerts: async () => {
+    return await api.get(API_ENDPOINTS.PRODUCTS.ALERTS_ACTIVE);
+  },
+
   getProducts: async ({
     categoryId = null,
     brandId = null,

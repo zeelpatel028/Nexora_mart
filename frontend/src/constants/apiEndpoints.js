@@ -82,6 +82,7 @@ export const API_ENDPOINTS = {
   PRODUCTS: {
     LIST: '/products',
     FORM_CONFIG: '/products/form-config',
+    ALERTS_ACTIVE: '/products/alerts/active',
     DETAILS: (id) => `/products/${id}`,
     CREATE: '/products',
     UPDATE: (id) => `/products/${id}`,

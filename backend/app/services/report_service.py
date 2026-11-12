@@ -195,29 +195,52 @@ class ReportService:
                     "id": item.id,
                     "name": p_name,
                     "stock": f"{int(qty)} units",
-                    "status": "Low Stock" if is_crit else "Running Low",
+                    "status": "Critical" if is_crit else "Low Stock",
                     "status_color": "danger" if is_crit else "warning",
                     "category": item.product.category.name if (item.product and item.product.category) else "General"
                 })
 
-        # Fallback to authentic design snapshot items if table is sparse
-        if len(low_stock_list) < 5:
-            fallback_items = [
-                {"id": 101, "name": "Rice (5kg)", "stock": "8 units", "status": "Low Stock", "status_color": "danger", "category": "Grocery"},
-                {"id": 102, "name": "Cooking Oil (1L)", "stock": "12 units", "status": "Low Stock", "status_color": "danger", "category": "Grocery"},
-                {"id": 103, "name": "Sugar (1kg)", "stock": "15 units", "status": "Running Low", "status_color": "warning", "category": "Grocery"},
-                {"id": 104, "name": "Toor Dal (1kg)", "stock": "20 units", "status": "Running Low", "status_color": "warning", "category": "Grocery"},
-                {"id": 105, "name": "Tea (250g)", "stock": "28 units", "status": "Running Low", "status_color": "warning", "category": "Beverages"},
-            ]
-            for fb in fallback_items:
-                if len(low_stock_list) >= 5:
-                    break
-                if not any(x["name"] == fb["name"] for x in low_stock_list):
-                    low_stock_list.append(fb)
+        today_sales_display = f"₹ {today_sales_sum:,.2f}"
+        orders_display = str(total_orders_count)
+        products_display = f"{total_products_count:,}"
 
-        today_sales_display = f"₹ {today_sales_sum:,.0f}" if today_sales_sum > 0 else "₹ 45,850"
-        orders_display = str(total_orders_count) if total_orders_count > 0 else "248"
-        products_display = f"{total_products_count:,}" if total_products_count > 0 else "1,250"
+        # Real 7-day sales overview
+        weekly_analytics = ReportService.get_sales_analytics(db, store, days=7)
+        sales_overview_points = []
+        for item in weekly_analytics.get("items", []):
+            try:
+                dt = datetime.datetime.strptime(f"{now.year} {item['date']}", "%Y %b %d")
+                day_label = dt.strftime("%a")
+            except Exception:
+                day_label = item["date"]
+            sales_overview_points.append({
+                "day": day_label,
+                "sales": float(item.get("sales", 0.0)),
+                "orders": int(item.get("orders", 0))
+            })
+
+        # Real recent activities from Sales and Purchases
+        recent_sales = db.query(Sale).filter(Sale.store_id == store.id).order_by(Sale.sale_date.desc()).limit(5).all()
+        recent_acts = []
+        for s in recent_sales:
+            recent_acts.append({
+                "id": f"sale-{s.id}",
+                "title": f"Invoice #{s.invoice_number or s.id}",
+                "description": f"Sale completed • ₹ {s.total_amount:,.2f}",
+                "timestamp": s.sale_date.strftime("%I:%M %p") if s.sale_date else "Today",
+                "icon": "cart"
+            })
+
+        if len(recent_acts) < 5:
+            recent_purchases = db.query(Purchase).filter(Purchase.store_id == store.id).order_by(Purchase.purchase_date.desc()).limit(5 - len(recent_acts)).all()
+            for pur in recent_purchases:
+                recent_acts.append({
+                    "id": f"pur-{pur.id}",
+                    "title": f"Purchase #{pur.invoice_number or pur.id}",
+                    "description": f"Supplier purchase • ₹ {pur.total_amount:,.2f}",
+                    "timestamp": pur.purchase_date.strftime("%b %d") if pur.purchase_date else "Recent",
+                    "icon": "box"
+                })
 
         day_num = now.day
         date_str = f"{now.strftime('%a')}, {day_num} {now.strftime('%b %Y')}"
@@ -230,7 +253,7 @@ class ReportService:
                     "id": "sales",
                     "title": "Today's Sales",
                     "value": today_sales_display,
-                    "trend": "↑ +12.5%",
+                    "trend": None,
                     "is_positive": True,
                     "subtitle": None,
                     "color_scheme": "orange"
@@ -239,7 +262,7 @@ class ReportService:
                     "id": "orders",
                     "title": "Total Orders",
                     "value": orders_display,
-                    "trend": "↑ +8.2%",
+                    "trend": None,
                     "is_positive": True,
                     "subtitle": None,
                     "color_scheme": "red"
@@ -250,67 +273,23 @@ class ReportService:
                     "value": products_display,
                     "trend": None,
                     "is_positive": True,
-                    "subtitle": "Active stock",
+                    "subtitle": "Active catalog",
                     "color_scheme": "blue"
                 },
                 {
-                    "id": "employees",
-                    "title": "Employees",
-                    "value": "12",
+                    "id": "customers",
+                    "title": "Customers",
+                    "value": str(db.query(Customer).filter(Customer.store_id == store.id).count()),
                     "trend": None,
                     "is_positive": True,
-                    "subtitle": "Active staff",
+                    "subtitle": "Registered partners",
                     "color_scheme": "green"
                 }
             ],
-            "sales_overview": [
-                {"day": "Mon", "sales": 18500, "orders": 85},
-                {"day": "Tue", "sales": 22400, "orders": 110},
-                {"day": "Wed", "sales": 19800, "orders": 78},
-                {"day": "Thu", "sales": 27900, "orders": 135},
-                {"day": "Fri", "sales": 34100, "orders": 162},
-                {"day": "Sat", "sales": 38900, "orders": 178},
-                {"day": "Sun", "sales": 36200, "orders": 164}
-            ],
-            "category_sales": [
-                {"name": "Grocery", "percentage": 28, "color": "#FF6A1A", "sales": 51917.6},
-                {"name": "Beverages", "percentage": 18, "color": "#FFB82E", "sales": 33375.6},
-                {"name": "Snacks", "percentage": 15, "color": "#0EA5E9", "sales": 27813.0},
-                {"name": "Personal Care", "percentage": 12, "color": "#10B981", "sales": 22250.4},
-                {"name": "Household", "percentage": 10, "color": "#F43F5E", "sales": 18542.0},
-                {"name": "Others", "percentage": 17, "color": "#6366F1", "sales": 31521.4}
-            ],
-            "category_total_sales": "₹ 1,85,420",
-            "recent_activities": [
-                {
-                    "id": "act-1",
-                    "title": "New sale completed",
-                    "description": "Order #1025 • ₹ 850",
-                    "timestamp": "5 minutes ago",
-                    "icon": "cart"
-                },
-                {
-                    "id": "act-2",
-                    "title": "Product added",
-                    "description": "Rice 1kg added to inventory",
-                    "timestamp": "20 minutes ago",
-                    "icon": "box"
-                },
-                {
-                    "id": "act-3",
-                    "title": "Employee login",
-                    "description": "Rahul logged in",
-                    "timestamp": "30 minutes ago",
-                    "icon": "user"
-                },
-                {
-                    "id": "act-4",
-                    "title": "Stock updated",
-                    "description": "Wheat Flour stock updated (50 units)",
-                    "timestamp": "1 hour ago",
-                    "icon": "refresh"
-                }
-            ],
+            "sales_overview": sales_overview_points,
+            "category_sales": [],
+            "category_total_sales": f"₹ {today_sales_sum:,.2f}",
+            "recent_activities": recent_acts,
             "low_stock_products": low_stock_list
         }
 

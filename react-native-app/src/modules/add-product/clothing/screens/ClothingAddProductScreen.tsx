@@ -149,13 +149,7 @@ export const ClothingAddProductScreen: React.FC = () => {
         baseMrp={pricingInfo.mrp}
       />
 
-      {/* 4. Measurements & Size Chart */}
-      <ClothingMeasurementSection
-        measurements={measurements}
-        onChange={handleUpdateMeasurements}
-      />
-
-      {/* 5. Pricing & Taxes */}
+      {/* 4. Pricing & Taxes */}
       <CommonPricingSection
         data={pricingInfo}
         onChange={updatePricingInfo}

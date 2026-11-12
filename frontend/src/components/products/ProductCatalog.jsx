@@ -69,8 +69,8 @@ export const ProductCatalog = ({ onSelectProductForSale }) => {
   const getStoreDetailEntries = (product) => {
     if (!product) return [];
     const possibleKeys = [
-      'grocery_details',
       'clothing_details',
+      'grocery_details',
       'medicine_details',
       'electronics_details',
       'plastic_details',
@@ -80,18 +80,33 @@ export const ProductCatalog = ({ onSelectProductForSale }) => {
       'store_details',
       'attributes'
     ];
+    const excludedKeys = [
+      'id', 'store_id', 'product_id', 'created_at', 'updated_at',
+      'fssai_license', 'fssai_license_no', 'shelf_life_days', 'storage_condition',
+      'storage_temperature', 'rack_number', 'bin_number', 'warehouse_location',
+      'barcode', 'hsn_code', 'short_description'
+    ];
+
+    const entries = [];
     for (const key of possibleKeys) {
       if (product[key] && typeof product[key] === 'object' && Object.keys(product[key]).length > 0) {
-        return Object.entries(product[key]).filter(
-          ([k, v]) =>
-            v !== null &&
-            v !== undefined &&
-            v !== '' &&
-            !['id', 'store_id', 'product_id', 'created_at', 'updated_at'].includes(k)
-        );
+        Object.entries(product[key]).forEach(([k, v]) => {
+          if (excludedKeys.includes(k) || v === null || v === undefined || v === '') return;
+          // Unpack nested clothing specifications
+          if (k === 'specifications' && typeof v === 'object') {
+            Object.entries(v).forEach(([subK, subV]) => {
+              if (subV !== null && subV !== undefined && subV !== '') {
+                entries.push([subK, subV]);
+              }
+            });
+          } else if (typeof v !== 'object') {
+            entries.push([k, v]);
+          }
+        });
+        if (entries.length > 0) break;
       }
     }
-    return [];
+    return entries;
   };
 
   return (
@@ -311,9 +326,18 @@ export const ProductCatalog = ({ onSelectProductForSale }) => {
                         {p.is_featured && <span title="Featured Product">⭐</span>}
                         <div>
                           <div className="fw-bold text-dark">{pName}</div>
-                          <div className="small text-muted font-monospace">
+                          <div className="small text-muted font-monospace d-flex align-items-center gap-1 flex-wrap">
                             {p.sku && <span>SKU: {p.sku}</span>}
-                            {p.barcode && <span> • 🏷️ {p.barcode}</span>}
+                            {p.low_stock_alert_enabled && (
+                              <span className="badge bg-warning-subtle text-warning-emphasis border border-warning-subtle px-1 py-0" style={{ fontSize: '10px' }} title="Low Stock Alert Active">
+                                🔔 ≤{p.low_stock_threshold || p.min_stock_level}
+                              </span>
+                            )}
+                            {p.expiry_alert_enabled && p.expiry_date && (
+                              <span className="badge bg-danger-subtle text-danger-emphasis border border-danger-subtle px-1 py-0" style={{ fontSize: '10px' }} title="Expiry Alert Active">
+                                ⏳ Exp: {p.expiry_date.split('T')[0]}
+                              </span>
+                            )}
                           </div>
                         </div>
                       </div>
@@ -461,6 +485,17 @@ export const ProductCatalog = ({ onSelectProductForSale }) => {
               </div>
 
               <div className="modal-body p-4">
+                {/* Product Image preview if available (Agro / Clothing) */}
+                {(viewingProduct.images?.length > 0 || viewingProduct.image_url) && (
+                  <div className="mb-3 text-center">
+                    <img
+                      src={viewingProduct.images?.[0]?.image_url || viewingProduct.image_url}
+                      alt={viewingProduct.product_name}
+                      style={{ maxHeight: '160px', maxWidth: '100%', objectFit: 'contain', borderRadius: '12px' }}
+                      className="border shadow-sm"
+                    />
+                  </div>
+                )}
                 <div className="row g-4">
                   {/* Left Column: Pricing & Inventory */}
                   <div className="col-12 col-md-6">
@@ -500,7 +535,7 @@ export const ProductCatalog = ({ onSelectProductForSale }) => {
                       )}
                     </div>
 
-                    <h6 className="fw-bold text-dark border-bottom pb-2 mt-4">📦 Inventory & Stock</h6>
+                    <h6 className="fw-bold text-dark border-bottom pb-2 mt-4">📦 Inventory & Alerts</h6>
                     <div className="small">
                       <div className="d-flex justify-content-between py-1">
                         <span className="text-muted">Current Stock:</span>
@@ -510,15 +545,21 @@ export const ProductCatalog = ({ onSelectProductForSale }) => {
                         </span>
                       </div>
                       <div className="d-flex justify-content-between py-1">
-                        <span className="text-muted">Min Alert Threshold:</span>
-                        <span>{viewingProduct.inventory_record?.minimum_stock ?? viewingProduct.min_stock_level ?? 5}</span>
+                        <span className="text-muted">Low Stock Alert:</span>
+                        <span className="fw-semibold">
+                          {viewingProduct.low_stock_alert_enabled
+                            ? `🔔 Enabled (Threshold: ≤ ${viewingProduct.low_stock_threshold || viewingProduct.min_stock_level || 5} units)`
+                            : 'Disabled'}
+                        </span>
                       </div>
-                      {viewingProduct.inventory_record?.warehouse_location && (
-                        <div className="d-flex justify-content-between py-1">
-                          <span className="text-muted">Location:</span>
-                          <span>{viewingProduct.inventory_record.warehouse_location}</span>
-                        </div>
-                      )}
+                      <div className="d-flex justify-content-between py-1">
+                        <span className="text-muted">Expiry Alert:</span>
+                        <span className="fw-semibold">
+                          {viewingProduct.expiry_alert_enabled && viewingProduct.expiry_date
+                            ? `⏳ Enabled (${viewingProduct.expiry_date.split('T')[0]}, alert ${viewingProduct.alert_days_before || 7} days prior)`
+                            : 'Disabled / N/A'}
+                        </span>
+                      </div>
                     </div>
                   </div>
 
