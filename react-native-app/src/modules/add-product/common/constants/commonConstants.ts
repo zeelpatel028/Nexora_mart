@@ -164,10 +164,13 @@ export const DEFAULT_INVENTORY_INFO: BaseProductInventoryInfo = {
   currentStock: '0',
   minimumStock: '5',
   maximumStock: '',
-  reorderLevel: '10',
+  reorderLevel: '',
   warehouseLocation: '',
   trackInventory: true,
   allowNegativeStock: false,
+  enableLowStockAlert: false,
+  enableExpiryAlert: false,
+  expiryDate: '',
 };
 
 export const DEFAULT_UNIT_INFO: BaseProductUnitInfo = {

@@ -41,10 +41,26 @@ export function validateCommonPricingInfo(pricing: BaseProductPricingInfo): Reco
 
 export function validateCommonInventoryInfo(inventory: BaseProductInventoryInfo): Record<string, string> {
   const errors: Record<string, string> = {};
-  const stockVal = parseFloat(inventory.openingStock);
-  if (!isNaN(stockVal) && stockVal < 0 && !inventory.allowNegativeStock) {
-    errors.openingStock = 'Opening stock cannot be negative.';
+  const currentVal = parseFloat(inventory.currentStock);
+  if (isNaN(currentVal) || currentVal < 0) {
+    if (!inventory.allowNegativeStock) {
+      errors.currentStock = 'Available stock quantity cannot be negative.';
+    }
   }
+
+  if (inventory.enableLowStockAlert) {
+    const minVal = parseFloat(inventory.minimumStock);
+    if (isNaN(minVal) || minVal < 0) {
+      errors.minimumStock = 'Please enter a valid low stock alert quantity.';
+    }
+  }
+
+  if (inventory.enableExpiryAlert) {
+    if (!inventory.expiryDate || !inventory.expiryDate.trim()) {
+      errors.expiryDate = 'Please enter an expiry date or shelf life days.';
+    }
+  }
+
   return errors;
 }
 

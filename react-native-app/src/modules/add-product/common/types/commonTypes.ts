@@ -50,14 +50,17 @@ export interface BaseProductPricingInfo {
 }
 
 export interface BaseProductInventoryInfo {
-  openingStock: string;
+  openingStock?: string;
   currentStock: string;
   minimumStock: string;
   maximumStock?: string;
-  reorderLevel: string;
+  reorderLevel?: string;
   warehouseLocation?: string;
-  trackInventory: boolean;
-  allowNegativeStock: boolean;
+  trackInventory?: boolean;
+  allowNegativeStock?: boolean;
+  enableLowStockAlert?: boolean;
+  enableExpiryAlert?: boolean;
+  expiryDate?: string;
 }
 
 export interface ProductUnitOption {

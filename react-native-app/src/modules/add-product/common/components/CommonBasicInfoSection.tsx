@@ -2,26 +2,26 @@ import React from 'react';
 import { View, Text, StyleSheet, TextInput, TouchableOpacity, Switch } from 'react-native';
 import { useTheme } from '../../../../hooks/useTheme';
 import { BaseProductBasicInfo } from '../types';
-import { CommonDropdown } from './CommonDropdown';
-import { CommonImagePicker } from './CommonImagePicker';
-import { generateProductSku, generateBarcode } from '../utils/skuGenerator';
+import { generateProductSku } from '../utils/skuGenerator';
 import { Category, Brand } from '../../../../models/types';
 
 interface CommonBasicInfoSectionProps {
   data: BaseProductBasicInfo;
   onChange: (updated: Partial<BaseProductBasicInfo>) => void;
-  categories: Category[];
-  brands: Brand[];
+  categories?: Category[];
+  brands?: Brand[];
   errors?: Record<string, string>;
   storeCode?: string;
   skuPrefix?: string;
 }
 
+/**
+ * Ultra-clean, modern basic info section.
+ * Streamlined: only Product Name, SKU (with auto-generator), and Active toggle.
+ */
 export const CommonBasicInfoSection: React.FC<CommonBasicInfoSectionProps> = ({
   data,
   onChange,
-  categories,
-  brands,
   errors = {},
   storeCode = 'STR001',
   skuPrefix = 'PRD',
@@ -33,13 +33,8 @@ export const CommonBasicInfoSection: React.FC<CommonBasicInfoSectionProps> = ({
     onChange({ sku: newSku });
   };
 
-  const handleGenerateBarcode = () => {
-    const newBarcode = generateBarcode();
-    onChange({ barcode: newBarcode });
-  };
-
   return (
-    <View>
+    <View style={styles.container}>
       {/* Product Name */}
       <View style={styles.fieldGroup}>
         <Text style={[styles.label, { color: colors.textSecondary }]}>
@@ -54,7 +49,7 @@ export const CommonBasicInfoSection: React.FC<CommonBasicInfoSectionProps> = ({
               color: colors.textPrimary,
             },
           ]}
-          placeholder="e.g. Premium Cotton T-Shirt, Basmati Rice"
+          placeholder="e.g. Premium Cotton Shirt, Basmati Rice 1kg"
           placeholderTextColor={colors.textMuted}
           value={data.productName}
           onChangeText={(val) => onChange({ productName: val })}
@@ -66,11 +61,11 @@ export const CommonBasicInfoSection: React.FC<CommonBasicInfoSectionProps> = ({
         ) : null}
       </View>
 
-      {/* SKU & Auto Generate */}
+      {/* SKU & Auto Generate in one sleek card */}
       <View style={styles.fieldGroup}>
         <View style={styles.labelRow}>
-          <Text style={[styles.label, { color: colors.textSecondary }]}>Product SKU</Text>
-          <TouchableOpacity onPress={handleGenerateSku}>
+          <Text style={[styles.label, { color: colors.textSecondary }]}>Product SKU / Item Code</Text>
+          <TouchableOpacity onPress={handleGenerateSku} activeOpacity={0.7} style={styles.autoSkuBtn}>
             <Text style={[styles.actionLink, { color: brandColors.primary }]}>⚡ Auto Generate</Text>
           </TouchableOpacity>
         </View>
@@ -91,101 +86,12 @@ export const CommonBasicInfoSection: React.FC<CommonBasicInfoSectionProps> = ({
         />
       </View>
 
-      {/* Barcode & Auto Generate */}
-      <View style={styles.fieldGroup}>
-        <View style={styles.labelRow}>
-          <Text style={[styles.label, { color: colors.textSecondary }]}>Barcode / EAN</Text>
-          <TouchableOpacity onPress={handleGenerateBarcode}>
-            <Text style={[styles.actionLink, { color: brandColors.primary }]}>⚡ Generate</Text>
-          </TouchableOpacity>
-        </View>
-        <TextInput
-          style={[
-            styles.input,
-            {
-              backgroundColor: colors.surface,
-              borderColor: colors.border,
-              color: colors.textPrimary,
-            },
-          ]}
-          placeholder="Scan or enter barcode"
-          placeholderTextColor={colors.textMuted}
-          value={data.barcode || ''}
-          onChangeText={(val) => onChange({ barcode: val })}
-          keyboardType="numeric"
-        />
-      </View>
-
-      {/* Category Dropdown */}
-      <CommonDropdown
-        label="Category"
-        placeholder="Select category..."
-        options={categories.map((c) => ({ label: c.name, value: c.id }))}
-        selectedValue={data.categoryId}
-        onSelect={(val) => onChange({ categoryId: val })}
-      />
-
-      {/* Brand Dropdown */}
-      <CommonDropdown
-        label="Brand / Manufacturer"
-        placeholder="Select brand..."
-        options={brands.map((b) => ({ label: b.name, value: b.id }))}
-        selectedValue={data.brandId}
-        onSelect={(val) => onChange({ brandId: val })}
-      />
-
-      {/* Images */}
-      <CommonImagePicker
-        images={data.images}
-        onChange={(imgs) => onChange({ images: imgs })}
-      />
-
-      {/* Short Description */}
-      <View style={styles.fieldGroup}>
-        <Text style={[styles.label, { color: colors.textSecondary }]}>Short Tagline</Text>
-        <TextInput
-          style={[
-            styles.input,
-            {
-              backgroundColor: colors.surface,
-              borderColor: colors.border,
-              color: colors.textPrimary,
-            },
-          ]}
-          placeholder="Brief highlight or summary"
-          placeholderTextColor={colors.textMuted}
-          value={data.shortDescription || ''}
-          onChangeText={(val) => onChange({ shortDescription: val })}
-        />
-      </View>
-
-      {/* Full Description */}
-      <View style={styles.fieldGroup}>
-        <Text style={[styles.label, { color: colors.textSecondary }]}>Description</Text>
-        <TextInput
-          style={[
-            styles.textArea,
-            {
-              backgroundColor: colors.surface,
-              borderColor: colors.border,
-              color: colors.textPrimary,
-            },
-          ]}
-          placeholder="Detailed product features, materials, care, and usage instructions..."
-          placeholderTextColor={colors.textMuted}
-          value={data.description || ''}
-          onChangeText={(val) => onChange({ description: val })}
-          multiline
-          numberOfLines={3}
-        />
-      </View>
-
       {/* Product Status Switch */}
-      <View style={styles.switchRow}>
-        <View>
+      <View style={[styles.switchRow, { borderTopColor: colors.border }]}>
+        <View style={styles.switchInfo}>
           <Text style={[styles.switchLabel, { color: colors.textPrimary }]}>Active Status</Text>
           <Text style={[styles.switchHint, { color: colors.textSecondary }]}>
-            Enable to make this product visible in store catalog and POS billing
+            Enable to make this product immediately active for sales and POS
           </Text>
         </View>
         <Switch
@@ -200,8 +106,11 @@ export const CommonBasicInfoSection: React.FC<CommonBasicInfoSectionProps> = ({
 };
 
 const styles = StyleSheet.create({
+  container: {
+    paddingVertical: 4,
+  },
   fieldGroup: {
-    marginBottom: 12,
+    marginBottom: 14,
   },
   label: {
     fontSize: 13,
@@ -214,6 +123,10 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginBottom: 6,
   },
+  autoSkuBtn: {
+    paddingVertical: 2,
+    paddingHorizontal: 4,
+  },
   actionLink: {
     fontSize: 12,
     fontWeight: '700',
@@ -225,15 +138,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: 14,
     fontSize: 14,
   },
-  textArea: {
-    minHeight: 80,
-    borderRadius: 12,
-    borderWidth: 1,
-    paddingHorizontal: 14,
-    paddingTop: 10,
-    fontSize: 14,
-    textAlignVertical: 'top',
-  },
   errorText: {
     fontSize: 12,
     marginTop: 4,
@@ -242,7 +146,13 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingVertical: 12,
+    paddingTop: 12,
+    marginTop: 4,
+    borderTopWidth: 1,
+  },
+  switchInfo: {
+    flex: 1,
+    paddingRight: 12,
   },
   switchLabel: {
     fontSize: 14,
@@ -251,7 +161,5 @@ const styles = StyleSheet.create({
   switchHint: {
     fontSize: 12,
     marginTop: 2,
-    maxWidth: 240,
   },
 });
-

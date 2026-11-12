@@ -9,15 +9,11 @@ import {
   CommonInventorySection,
   CommonUnitsSection,
 } from '../../common/components';
-import {
-  GrocerySpecificationsSection,
-  GroceryBatchSection,
-} from '../components';
+import { GrocerySpecificationsSection } from '../components';
 import {
   GrocerySpecifications,
   GroceryProductFormData,
 } from '../types';
-import { ProductBatchItem } from '../../common/types';
 import { validateGroceryProduct } from '../validations';
 import { groceryProductService } from '../services';
 
@@ -48,13 +44,11 @@ export const GroceryAddProductScreen: React.FC = () => {
     itemType: 'Packaged Food',
     packagingType: 'Packet / Pouch',
     netWeight: '1 kg',
-    shelfLifeDays: '180',
+    shelfLifeDays: '',
     isVegetarian: true,
     isOrganic: false,
-    storageType: 'Cool & Dry Place',
+    storageType: '',
   });
-
-  const [batches, setBatches] = useState<ProductBatchItem[]>([]);
 
   const handleSaveProduct = async () => {
     const isCommonValid = validateCommonForm();
@@ -64,13 +58,13 @@ export const GroceryAddProductScreen: React.FC = () => {
       inventory: inventoryInfo,
       units: unitInfo,
       specifications,
-      batches,
+      batches: [],
     };
 
     const storeValidation = validateGroceryProduct(fullFormData);
     if (!isCommonValid || !storeValidation.isValid) {
       setErrors((prev) => ({ ...prev, ...storeValidation.errors }));
-      Alert.alert('Validation Error', 'Please check highlighted grocery fields.');
+      Alert.alert('Validation Error', 'Please check highlighted fields.');
       return;
     }
 
@@ -92,7 +86,7 @@ export const GroceryAddProductScreen: React.FC = () => {
     <AddProductLayout
       storeType="grocery"
       title="Add Grocery Product"
-      subtitle="Register FMCG, staples, food items with weights and shelf life"
+      subtitle="Fast retail registration with smart stock & expiry alerts"
       isLoading={isSubmitting}
       onBack={() => navigation.goBack()}
       onSave={handleSaveProduct}
@@ -110,14 +104,6 @@ export const GroceryAddProductScreen: React.FC = () => {
         specifications={specifications}
         onChange={(up) => setSpecifications((p) => ({ ...p, ...up }))}
         errors={errors}
-      />
-
-      <GroceryBatchSection
-        batches={batches}
-        onChangeBatches={setBatches}
-        basePurchasePrice={pricingInfo.purchasePrice}
-        baseSellingPrice={pricingInfo.sellingPrice}
-        baseMrp={pricingInfo.mrp}
       />
 
       <CommonPricingSection
@@ -141,4 +127,3 @@ export const GroceryAddProductScreen: React.FC = () => {
     </AddProductLayout>
   );
 };
-

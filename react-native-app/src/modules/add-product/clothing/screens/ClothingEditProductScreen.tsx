@@ -11,7 +11,6 @@ import {
 } from '../../common/components';
 import {
   ClothingSpecificationsSection,
-  ClothingMeasurementSection,
   ClothingVariantSection,
 } from '../components';
 import {

@@ -571,12 +571,6 @@ export const DashboardScreen: React.FC = () => {
         action: () => closeSidebar(() => navigateRoot('Inventory')),
       },
       {
-        id: 'stock_inward',
-        label: 'Stock Inward (Purchase)',
-        icon: (c: string) => <PlusIcon size={20} color={c} />,
-        action: () => closeSidebar(() => navigateRoot('CreatePurchase')),
-      },
-      {
         id: 'debit_customer',
         label: 'Customer Khata',
         icon: (c: string) => <UsersIcon size={20} color={c} />,

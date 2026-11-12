@@ -11,7 +11,6 @@ import {
 } from '../../common/components';
 import {
   GrocerySpecificationsSection,
-  GroceryBatchSection,
 } from '../components';
 import {
   GrocerySpecifications,
@@ -213,14 +212,6 @@ export const GroceryEditProductScreen: React.FC = () => {
         specifications={specifications}
         onChange={(up) => setSpecifications((p) => ({ ...p, ...up }))}
         errors={errors}
-      />
-
-      <GroceryBatchSection
-        batches={batches}
-        onChangeBatches={setBatches}
-        basePurchasePrice={pricingInfo.purchasePrice}
-        baseSellingPrice={pricingInfo.sellingPrice}
-        baseMrp={pricingInfo.mrp}
       />
 
       <CommonPricingSection
