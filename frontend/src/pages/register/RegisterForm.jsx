@@ -23,7 +23,7 @@ import { useAuth } from '../../hooks/useAuth';
  * - Bulletproof autofill handling (never turns white!)
  */
 export const RegisterForm = ({ 
-  brandName: _brandName = 'NEXORA MART',
+  brandName: _brandName = 'TULSI MART',
   onRegisterSuccess, 
   onNavigateToLogin
 }) => {

@@ -46,7 +46,7 @@ export const SettingsView = () => {
         setTestResult({
           ok: true,
           status: json.status || 'OK',
-          service: json.service || 'Nexora Mart FastAPI',
+          service: json.service || 'Tulsi Mart FastAPI',
           latency: `${latency}ms`
         });
       } else {
@@ -163,7 +163,7 @@ export const SettingsView = () => {
 
         <div className="row g-2 small">
           <div className="col-6 text-muted">Application Name:</div>
-          <div className="col-6 fw-semibold text-dark text-end">Nexora Mart</div>
+          <div className="col-6 fw-semibold text-dark text-end">Tulsi Mart</div>
 
           <div className="col-6 text-muted">Client Platform:</div>
           <div className="col-6 fw-semibold text-dark text-end">React 18 + Vite (Web)</div>

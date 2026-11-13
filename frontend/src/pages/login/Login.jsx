@@ -15,7 +15,7 @@ import './Login.css';
  * - Mobile (< 768px): Top logo branding + bottom sheet semi-transparent blurred card
  */
 export const Login = ({ 
-  brandName = 'NEXORA MART',
+  brandName = 'TULSI MART',
   authMode: propAuthMode,
   onLoginSuccess: propOnLoginSuccess,
   onNavigateToDashboard,

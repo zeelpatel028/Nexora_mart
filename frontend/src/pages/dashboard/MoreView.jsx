@@ -8,7 +8,7 @@ export const MoreView = ({ user, storeData, onNavigateTab, onLogout }) => {
     user?.name ||
     (user?.email ? user.email.split('@')[0] : 'Store Owner');
 
-  const storeName = storeData?.name || 'Nexora Retail Outlet';
+  const storeName = storeData?.name || 'Tulsi Retail Outlet';
   const categoryName = storeData?.category?.name || user?.storeType || 'Retail Store';
   const categoryIcon = storeData?.category?.icon || '🏬';
 
@@ -412,7 +412,7 @@ export const MoreView = ({ user, storeData, onNavigateTab, onLogout }) => {
                 </svg>
               </div>
               <div>
-                <h6 className="fw-bold mb-0 text-dark">Sign Out of Nexora Mart</h6>
+                <h6 className="fw-bold mb-0 text-dark">Sign Out of Tulsi Mart</h6>
                 <p className="text-muted small mb-0">
                   Currently active as <span className="fw-semibold text-dark">{user?.email || 'Merchant'}</span>.
                 </p>

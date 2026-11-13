@@ -9,7 +9,7 @@ import React from 'react';
  * - Centered horizontally and vertically as ONE group
  */
 export const BrandLogo = ({ 
-  brandName = 'NEXORA MART', 
+  brandName = 'TULSI MART', 
   tagline = 'Smart Shopping, Delivered Fresh',
   size = 92,
   textSize = 26,
@@ -17,8 +17,8 @@ export const BrandLogo = ({
   showTagline = true,
   className = ''
 }) => {
-  const parts = (brandName || 'NEXORA MART').split(' ');
-  const firstWord = parts[0] || 'NEXORA';
+  const parts = (brandName || 'TULSI MART').split(' ');
+  const firstWord = parts[0] || 'TULSI';
   const restWords = parts.slice(1).join(' ') || 'MART';
 
   return (

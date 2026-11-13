@@ -245,7 +245,7 @@ class ReportService:
         day_num = now.day
         date_str = f"{now.strftime('%a')}, {day_num} {now.strftime('%b %Y')}"
         return {
-            "store_name": store.name or "NEXORA MART",
+            "store_name": store.name or "TULSI MART",
             "greeting": f"Good Morning, {user_name}!",
             "date_display": date_str,
             "stats": [

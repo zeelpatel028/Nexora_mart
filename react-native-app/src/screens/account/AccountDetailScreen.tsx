@@ -43,7 +43,7 @@ export const AccountDetailScreen: React.FC = () => {
 
   // Form State
   const [storeId, setStoreId] = useState('STR001');
-  const [storeName, setStoreName] = useState('Nexora Mart');
+  const [storeName, setStoreName] = useState('Tulsi Mart');
   const [storeCode, setStoreCode] = useState('NXM001');
   const [storeType, setStoreType] = useState('Supermarket');
   const [storeCategory, setStoreCategory] = useState('Retail');
@@ -75,7 +75,7 @@ export const AccountDetailScreen: React.FC = () => {
   const [gstin, setGstin] = useState('24ABCDE1234F1Z5');
   const [panNumber, setPanNumber] = useState('ABCDE1234F');
   const [businessRegNo, setBusinessRegNo] = useState('ACT/2026/8892');
-  const [businessEmail, setBusinessEmail] = useState('contact@nexoramart.com');
+  const [businessEmail, setBusinessEmail] = useState('contact@tulsimart.com');
   const [businessPhone, setBusinessPhone] = useState('079-26889900');
 
   // Configuration
@@ -129,7 +129,7 @@ export const AccountDetailScreen: React.FC = () => {
   const populateFields = (d: any) => {
     if (d.basic_store_info) {
       setStoreId(d.basic_store_info.store_id || 'STR001');
-      setStoreName(d.basic_store_info.store_name || 'Nexora Mart');
+      setStoreName(d.basic_store_info.store_name || 'Tulsi Mart');
       setStoreCode(d.basic_store_info.store_code || 'NXM001');
       setStoreType(d.basic_store_info.store_type || 'Supermarket');
       setStoreCategory(d.basic_store_info.store_category || 'Retail');

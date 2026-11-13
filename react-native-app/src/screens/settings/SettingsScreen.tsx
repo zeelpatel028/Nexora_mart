@@ -163,7 +163,7 @@ export const SettingsScreen: React.FC = () => {
           <View style={[styles.infoRow, { borderBottomColor: colors.borderLight }]}>
             <Text style={{ color: colors.textSecondary, fontSize: 13 }}>Login Email</Text>
             <Text style={{ color: colors.textPrimary, fontWeight: '600' }}>
-              {user?.email || 'owner@nexoramart.com'}
+              {user?.email || 'owner@tulsimart.com'}
             </Text>
           </View>
 

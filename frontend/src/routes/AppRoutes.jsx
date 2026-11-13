@@ -9,7 +9,7 @@ import { SplashScreen } from '../pages/splash/SplashScreen';
 import { Loader } from '../components/common/Loader';
 import { ErrorBoundary } from '../components/common/ErrorBoundary';
 
-export const AppRoutes = ({ brandName = 'NEXORA MART' }) => {
+export const AppRoutes = ({ brandName = 'TULSI MART' }) => {
   const { currentPath, navigate } = useRouter();
   const { user, logout, isInitializing } = useAuth();
 
@@ -57,7 +57,7 @@ export const AppRoutes = ({ brandName = 'NEXORA MART' }) => {
   if (isInitializing) {
     return (
       <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: '#FFF9F3' }}>
-        <Loader size={36} text="Connecting to Nexora Mart..." />
+        <Loader size={36} text="Connecting to Tulsi Mart..." />
       </div>
     );
   }

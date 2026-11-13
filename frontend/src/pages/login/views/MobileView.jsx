@@ -10,7 +10,7 @@ import { RegisterForm } from '../RegisterForm';
  * - Part 2 (Second Half, ~62% height): Docked Frosted Glass Card sized so no vertical scrolling occurs
  */
 export const MobileView = ({
-  brandName = 'NEXORA MART',
+  brandName = 'TULSI MART',
   authMode = 'login',
   onLoginSuccess,
   onRegisterSuccess,

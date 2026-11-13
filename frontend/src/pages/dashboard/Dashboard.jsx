@@ -317,7 +317,7 @@ export const Dashboard = ({ user, onLogout, initialTab = 'overview' }) => {
               </svg>
             </div>
             <div className="brand-text-group">
-              <span className="brand-title-main">NEXORA MART</span>
+              <span className="brand-title-main">TULSI MART</span>
               <span className="brand-store-tag">
                 {storeCategoryIcon} {storeData?.name || 'Retail Outlet'}
               </span>
@@ -518,7 +518,7 @@ export const Dashboard = ({ user, onLogout, initialTab = 'overview' }) => {
                   <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"></path>
                 </svg>
               </div>
-              <div className="sidebar-footer-title">NEXORA MART</div>
+              <div className="sidebar-footer-title">TULSI MART</div>
               <div className="sidebar-footer-version">v1.0.0 • Multi-Store</div>
             </div>
           </div>

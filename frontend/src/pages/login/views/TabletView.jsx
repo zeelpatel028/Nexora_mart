@@ -9,7 +9,7 @@ import { RegisterForm } from '../RegisterForm';
  * Responsive layout with adjusted spacing, brand header, and rounded login card
  */
 export const TabletView = ({
-  brandName = 'NEXORA MART',
+  brandName = 'TULSI MART',
   authMode = 'login',
   onLoginSuccess,
   onRegisterSuccess,

@@ -171,7 +171,7 @@ def create_application() -> FastAPI:
     app = FastAPI(
         title=settings.PROJECT_NAME,
         version="2.0.0",
-        description="Nexora All-in-One Multi-Category Store Management API"
+        description="Tulsi Mart All-in-One Multi-Category Store Management API"
     )
 
     # Setup Cross-Origin Resource Sharing
@@ -329,7 +329,7 @@ def create_application() -> FastAPI:
         """API Root & Health Check: Supports GET and HEAD requests for Render deployment health checks"""
         return {
             "status": "success",
-            "message": "Nexora Mart API Running",
+            "message": "Tulsi Mart API Running",
             "service": settings.PROJECT_NAME,
             "version": "2.0.0",
             "environment": settings.ENVIRONMENT,
@@ -347,7 +347,7 @@ def create_application() -> FastAPI:
     def health_check():
         return {
             "status": "success",
-            "message": "Nexora Mart API Healthy",
+            "message": "Tulsi Mart API Healthy",
             "service": settings.PROJECT_NAME,
             "environment": settings.ENVIRONMENT,
             "redis": redis_client.get_status()

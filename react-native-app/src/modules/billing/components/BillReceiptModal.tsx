@@ -39,7 +39,7 @@ export const BillReceiptModal: React.FC<BillReceiptModalProps> = ({
         )
         .join('\n');
 
-      const message = `🧾 *NEXORA MART - INVOICE #${sale.invoice_number}*\n` +
+      const message = `🧾 *TULSI MART - INVOICE #${sale.invoice_number}*\n` +
         `Date: ${formatDateTime(sale.created_at || sale.sale_date)}\n` +
         `Customer: ${sale.customer_name || 'Walk-in Customer'}\n` +
         `Payment Mode: ${sale.payment_method}\n` +
@@ -52,7 +52,7 @@ export const BillReceiptModal: React.FC<BillReceiptModalProps> = ({
         `*Grand Total: ₹${sale.total_amount}*\n` +
         `Paid: ₹${sale.paid_amount}\n` +
         (sale.balance_amount ? `*Khata Balance: ₹${sale.balance_amount}*\n` : '') +
-        `\nThank you for shopping with Nexora Mart!`;
+        `\nThank you for shopping with Tulsi Mart!`;
 
       await Share.share({ message });
     } catch (err: any) {
@@ -87,7 +87,7 @@ export const BillReceiptModal: React.FC<BillReceiptModalProps> = ({
             <View style={[styles.paper, { backgroundColor: colors.background, borderColor: colors.border }]}>
               {/* Brand Header */}
               <View style={styles.storeHeader}>
-                <Text style={[styles.storeName, { color: brandColors.primary }]}>NEXORA MART</Text>
+                <Text style={[styles.storeName, { color: brandColors.primary }]}>TULSI MART</Text>
                 <Text style={[styles.storeMeta, { color: colors.textMuted }]}>
                   Retail & Smart Store Management
                 </Text>
@@ -222,7 +222,7 @@ export const BillReceiptModal: React.FC<BillReceiptModalProps> = ({
                   Thank you for your business! Visit Again.
                 </Text>
                 <Text style={[styles.footerSub, { color: colors.textPlaceholder }]}>
-                  Software Powered by Nexora Mart
+                  Software Powered by Tulsi Mart
                 </Text>
               </View>
             </View>

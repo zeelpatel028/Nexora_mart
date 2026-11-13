@@ -1,5 +1,5 @@
 /**
- * Nexora Mart - Brand-New Login Screen
+ * Tulsi Mart - Brand-New Login Screen
  * Pixel-Perfect Implementation from Provided Reference Specification (Login Ui.png)
  * Supports full Light Mode & Dark Mode with exact layout, proportions, and orange branding.
  */
@@ -197,10 +197,10 @@ export const LoginScreen: React.FC = () => {
               />
             </View>
 
-            {/* Wordmark: Nexora Mart */}
+            {/* Wordmark: Tulsi Mart */}
             <View style={styles.wordmarkRow}>
-              <Text style={[styles.wordNexora, { color: isDark ? '#FFFFFF' : '#111827' }]}>
-                Nexora{' '}
+              <Text style={[styles.wordTulsi, { color: isDark ? '#FFFFFF' : '#111827' }]}>
+                Tulsi{' '}
               </Text>
               <Text style={[styles.wordMart, { color: primaryOrange }]}>Mart</Text>
             </View>
@@ -238,7 +238,7 @@ export const LoginScreen: React.FC = () => {
               Welcome Back
             </Text>
             <Text style={[styles.welcomeSubtitle, { color: isDark ? '#9CA3AF' : '#6B7280' }]}>
-              Login to continue to Nexora Mart
+              Login to continue to Tulsi Mart
             </Text>
           </View>
 
@@ -563,7 +563,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  wordNexora: {
+  wordTulsi: {
     fontSize: 23,
     fontWeight: '800',
     letterSpacing: -0.4,

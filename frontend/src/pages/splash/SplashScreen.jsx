@@ -14,7 +14,7 @@ import './Splash.css';
  */
 export const SplashScreen = ({
   onComplete,
-  brandName = 'NEXORA MART',
+  brandName = 'TULSI MART',
   autoNavigateDelay = 2200
 }) => {
   const [isExiting, setIsExiting] = useState(false);
@@ -38,8 +38,8 @@ export const SplashScreen = ({
     }, 200);
   };
 
-  const parts = (brandName || 'NEXORA MART').split(' ');
-  const firstWord = parts[0] || 'NEXORA';
+  const parts = (brandName || 'TULSI MART').split(' ');
+  const firstWord = parts[0] || 'TULSI';
   const restWords = parts.slice(1).join(' ') || 'MART';
 
   return (

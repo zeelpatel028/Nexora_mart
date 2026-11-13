@@ -11,7 +11,7 @@ export function App() {
       <RouterProvider>
         <AuthProvider>
           <MainLayout>
-            <AppRoutes brandName="NEXORA MART" />
+            <AppRoutes brandName="TULSI MART" />
           </MainLayout>
         </AuthProvider>
       </RouterProvider>

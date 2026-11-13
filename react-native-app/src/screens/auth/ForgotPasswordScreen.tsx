@@ -206,8 +206,8 @@ export const ForgotPasswordScreen: React.FC = () => {
               />
             </View>
             <View style={styles.wordmarkRow}>
-              <Text style={[styles.wordNexora, { color: isDark ? '#FFFFFF' : '#111827' }]}>
-                Nexora{' '}
+              <Text style={[styles.wordTulsi, { color: isDark ? '#FFFFFF' : '#111827' }]}>
+                Tulsi{' '}
               </Text>
               <Text style={[styles.wordMart, { color: primaryOrange }]}>Mart</Text>
             </View>
@@ -630,7 +630,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  wordNexora: {
+  wordTulsi: {
     fontSize: 23,
     fontWeight: '800',
     letterSpacing: -0.4,

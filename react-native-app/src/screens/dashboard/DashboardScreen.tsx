@@ -676,7 +676,7 @@ export const DashboardScreen: React.FC = () => {
                 { color: isDark ? colors.textPrimary : '#FFFFFF' },
               ]}
             >
-              NEXORA MART
+              TULSI MART
             </Text>
           </View>
 
@@ -1288,17 +1288,19 @@ export const DashboardScreen: React.FC = () => {
                 { borderBottomColor: colors.borderLight },
               ]}
             >
-              <View style={[styles.drawerAvatar, { backgroundColor: brandColors.primary }]}>
-                <Text style={styles.drawerAvatarText}>
-                  {merchantName.charAt(0).toUpperCase()}
-                </Text>
+              <View style={[styles.drawerAvatar, { backgroundColor: '#FFF5F0', overflow: 'hidden' }]}>
+                <Image
+                  source={require('../../assets/logo.png')}
+                  style={{ width: 44, height: 44 }}
+                  resizeMode="contain"
+                />
               </View>
               <View style={{ flex: 1, marginLeft: 12 }}>
                 <Text style={[styles.drawerUserName, { color: colors.textPrimary }]}>
                   {merchantName}
                 </Text>
                 <Text style={[styles.drawerUserSub, { color: brandColors.primary }]}>
-                  {store?.name || 'Nexora Mart'} • Owner
+                  {store?.name || 'Tulsi Mart'} (TM Mart) • Owner
                 </Text>
               </View>
             </View>

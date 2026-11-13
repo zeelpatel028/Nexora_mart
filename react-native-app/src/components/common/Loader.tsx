@@ -8,7 +8,7 @@ interface LoaderProps {
 }
 
 export const Loader: React.FC<LoaderProps> = ({
-  message = 'Loading Nexora Mart...',
+  message = 'Loading Tulsi Mart...',
   size = 'large',
 }) => {
   const { brandColors, colors } = useTheme();

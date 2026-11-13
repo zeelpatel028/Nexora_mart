@@ -9,7 +9,7 @@ import { Login } from '../login/Login';
  * - Mobile: Top branding + bottom sheet frosted card
  */
 export const Register = ({
-  brandName = 'NEXORA MART',
+  brandName = 'TULSI MART',
   onRegisterSuccess,
   onNavigateToLogin,
   onNavigateToDashboard

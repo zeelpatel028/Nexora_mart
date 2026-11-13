@@ -90,7 +90,7 @@ class ApiClient {
         if (!error.response) {
           const message = error.message?.includes('timeout')
             ? 'Connection timed out. Please check if your FastAPI backend is running.'
-            : 'Unable to reach Nexora Mart server. Check network connection.';
+            : 'Unable to reach Tulsi Mart server. Check network connection.';
           return Promise.reject(new Error(message));
         }
 

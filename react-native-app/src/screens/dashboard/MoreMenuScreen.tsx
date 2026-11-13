@@ -347,7 +347,7 @@ export const MoreMenuScreen: React.FC = () => {
                   { color: isDark ? colors.textPrimary : '#FFFFFF' },
                 ]}
               >
-                NEXORA MART
+                TULSI MART
               </Text>
               <Text
                 style={[

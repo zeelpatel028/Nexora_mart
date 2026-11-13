@@ -11,7 +11,7 @@ export const LOCAL_API_URL = Platform.select({
 }) as string;
 
 export const Config = {
-  APP_NAME: 'Nexora Mart',
+  APP_NAME: 'Tulsi Mart',
   APP_VERSION: '1.0.0',
   SLOGAN: 'Cloud Retail Commerce & Merchant Platform',
 

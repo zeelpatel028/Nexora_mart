@@ -10,7 +10,7 @@ import { RegisterForm } from '../RegisterForm';
  * - Right: Floating rounded semi-transparent frosted card
  */
 export const WebsiteView = ({
-  brandName = 'NEXORA MART',
+  brandName = 'TULSI MART',
   authMode = 'login',
   onLoginSuccess,
   onRegisterSuccess,

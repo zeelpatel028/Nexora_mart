@@ -216,7 +216,7 @@ export const RegisterScreen: React.FC = () => {
   const showTermsModal = () => {
     Alert.alert(
       'Terms & Conditions',
-      'By using Nexora Mart, you agree to adhere to all terms of service, merchant compliance rules, and safe store operation guidelines.',
+      'By using Tulsi Mart, you agree to adhere to all terms of service, merchant compliance rules, and safe store operation guidelines.',
       [{ text: 'Understood' }]
     );
   };
@@ -224,7 +224,7 @@ export const RegisterScreen: React.FC = () => {
   const showPrivacyModal = () => {
     Alert.alert(
       'Privacy Policy',
-      'Nexora Mart respects your privacy. Your data, store transactions, and customer details are encrypted and securely stored.',
+      'Tulsi Mart respects your privacy. Your data, store transactions, and customer details are encrypted and securely stored.',
       [{ text: 'Understood' }]
     );
   };
@@ -294,8 +294,8 @@ export const RegisterScreen: React.FC = () => {
             </View>
 
             <View style={styles.wordmarkRow}>
-              <Text style={[styles.wordNexora, { color: isDark ? '#FFFFFF' : '#111827' }]}>
-                Nexora{' '}
+              <Text style={[styles.wordTulsi, { color: isDark ? '#FFFFFF' : '#111827' }]}>
+                Tulsi{' '}
               </Text>
               <Text style={[styles.wordMart, { color: primaryOrange }]}>Mart</Text>
             </View>
@@ -327,7 +327,7 @@ export const RegisterScreen: React.FC = () => {
               Create Account
             </Text>
             <Text style={[styles.subtitle, { color: isDark ? '#9CA3AF' : '#6B7280' }]}>
-              Join Nexora Mart and manage your store easily
+              Join Tulsi Mart and manage your store easily
             </Text>
           </View>
 
@@ -827,7 +827,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  wordNexora: {
+  wordTulsi: {
     fontSize: 22,
     fontWeight: '800',
     letterSpacing: -0.4,

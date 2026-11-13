@@ -33,7 +33,7 @@ class Settings(BaseSettings):
     from environment variables / .env file. No sensitive secrets are stored statically in code.
     """
     # General API Configuration
-    PROJECT_NAME: str = "NMART API"
+    PROJECT_NAME: str = "Tulsi Mart API"
     ENVIRONMENT: str = "development"
     API_V1_PREFIX: str = "/api"
 

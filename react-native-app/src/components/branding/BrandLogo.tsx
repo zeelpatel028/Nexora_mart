@@ -97,19 +97,19 @@ export const BrandLogo: React.FC<BrandLogoProps> = ({
         </View>
       )}
 
-      {/* NEXORA MART Wordmark */}
+      {/* TULSI MART Wordmark */}
       {showTitle && (
         <View style={styles.titleRow}>
           <Text
             style={[
-              styles.brandNexora,
+              styles.brandTulsi,
               {
                 fontSize: textSize,
                 color: isDark ? '#FFFFFF' : '#111827',
               },
             ]}
           >
-            Nexora{' '}
+            Tulsi{' '}
           </Text>
           <Text
             style={[
@@ -185,7 +185,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  brandNexora: {
+  brandTulsi: {
     fontWeight: '800',
     letterSpacing: -0.5,
   },
