@@ -369,11 +369,9 @@ class ProductService:
         # Atomic transaction execution block
         try:
             # Step 7: Insert products record
-            new_product_id = str(uuid.uuid4())
             product_code = request.product_code or f"PRD-{ctx.store_id:03d}-{int(datetime.datetime.now().timestamp()) % 1000000:06d}"
 
             product = Product(
-                id=new_product_id,
                 store_id=ctx.store_id,
                 category_id=request.category_id,
                 brand_id=request.brand_id,

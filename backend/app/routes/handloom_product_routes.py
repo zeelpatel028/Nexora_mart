@@ -111,7 +111,6 @@ def create_handloom_product(
         opening_stock = Decimal(str(data.get("opening_stock") or 0.0))
 
         core_product = Product(
-            id=str(uuid.uuid4()),
             store_id=ctx.store_id,
             category_id=data.get("category_id"),
             brand_id=data.get("brand_id"),

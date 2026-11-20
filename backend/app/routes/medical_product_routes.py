@@ -194,7 +194,6 @@ def create_medical_product(
 
         # Core product sync
         core_product = Product(
-            id=str(uuid.uuid4()),
             store_id=ctx.store_id,
             category_id=category_id,
             brand_id=brand_id,

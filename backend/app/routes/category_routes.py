@@ -2,7 +2,7 @@ from typing import List, Optional
 from fastapi import APIRouter, Depends, status
 from sqlalchemy.orm import Session
 from ..database.connection import get_db
-from ..middleware.store_auth import get_current_store_context, StoreContext
+from ..middleware.store_auth import get_current_store_context, get_optional_store_context, StoreContext
 from ..schemas.category_schema import (
     CategoryResponse,
     CategoryCreate,
@@ -10,6 +10,7 @@ from ..schemas.category_schema import (
 )
 from ..services.category_service import CategoryService
 
+from ..models.category import Category
 from ..models.store import ShopCategory
 from ..models.product import ProductAttribute
 
@@ -20,13 +21,17 @@ router = APIRouter(prefix="/categories", tags=["Categories"])
 def get_categories(
     active_only: bool = True,
     db: Session = Depends(get_db),
-    ctx: Optional[StoreContext] = Depends(lambda: None)
+    ctx: Optional[StoreContext] = Depends(get_optional_store_context)
 ):
     """List all categories belonging to current merchant's store, or global shop categories if public."""
     if isinstance(ctx, StoreContext) and ctx.store_id:
         store_cats = CategoryService.get_all_categories(db, store_id=ctx.store_id, active_only=active_only)
-        if store_cats:
-            return store_cats
+        if not store_cats:
+            for c_name in ["General", "Premium", "Special"]:
+                db.add(Category(store_id=ctx.store_id, name=c_name, code=c_name.lower(), is_active=True))
+            db.commit()
+            store_cats = CategoryService.get_all_categories(db, store_id=ctx.store_id, active_only=active_only)
+        return store_cats
     # Fallback to ShopCategory master list
     query = db.query(ShopCategory)
     if active_only:

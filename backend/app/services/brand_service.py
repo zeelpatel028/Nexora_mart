@@ -7,10 +7,17 @@ from ..schemas.brand_schema import BrandCreate, BrandUpdate
 class BrandService:
     @staticmethod
     def get_brands(db: Session, store_id: int) -> List[Brand]:
-        return db.query(Brand).filter(
+        brands = db.query(Brand).filter(
             Brand.store_id == store_id,
             Brand.is_active == True
         ).order_by(Brand.name.asc()).all()
+        if not brands:
+            gen_brand = Brand(store_id=store_id, name="General Brand", code="gen", is_active=True)
+            db.add(gen_brand)
+            db.commit()
+            db.refresh(gen_brand)
+            return [gen_brand]
+        return brands
 
     @staticmethod
     def get_brand(db: Session, store_id: int, brand_id: int) -> Brand:

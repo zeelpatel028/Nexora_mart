@@ -1,8 +1,9 @@
 from typing import Optional, List
 from fastapi import Depends, HTTPException, status
+from fastapi.security import HTTPAuthorizationCredentials
 from sqlalchemy.orm import Session
 from ..database.connection import get_db
-from ..middleware.auth_middleware import get_current_user
+from ..middleware.auth_middleware import get_current_user, security_scheme
 from ..models.user import User
 from ..models.store import Store
 from ..models.store_user import StoreUser
@@ -104,6 +105,19 @@ def get_current_store_context(
         db.commit()
 
     return StoreContext(store=store, user=current_user, role="OWNER")
+
+
+def get_optional_store_context(
+    credentials: Optional[HTTPAuthorizationCredentials] = Depends(security_scheme),
+    db: Session = Depends(get_db)
+) -> Optional[StoreContext]:
+    if not credentials or not credentials.credentials:
+        return None
+    try:
+        current_user = get_current_user(credentials=credentials, db=db)
+        return get_current_store_context(db=db, current_user=current_user)
+    except Exception:
+        return None
 
 
 def require_store_role(allowed_roles: List[str]):
