@@ -67,6 +67,7 @@ class Product(Base):
     handloom_details = relationship("ProductHandloomDetail", back_populates="product", uselist=False, cascade="all, delete-orphan")
     furniture_details = relationship("ProductFurnitureDetail", back_populates="product", uselist=False, cascade="all, delete-orphan")
     agro_details = relationship("ProductAgroDetail", back_populates="product", uselist=False, cascade="all, delete-orphan")
+    extra_details = relationship("ProductExtraDetail", cascade="all, delete-orphan")
 
     # Backward compatibility synonyms and helper properties
     name = synonym("product_name")
@@ -142,6 +143,7 @@ class Product(Base):
 
     def get_store_details_dict(self) -> dict:
         """Returns store-specific detail fields as a flat dict."""
+        d = {}
         for rel in [
             self.grocery_details,
             self.clothing_details,
@@ -156,8 +158,15 @@ class Product(Base):
                 d = {k: v for k, v in rel.__dict__.items() if not k.startswith("_") and k not in ("id", "store_id", "product_id", "created_at", "updated_at")}
                 if hasattr(rel, "specifications") and isinstance(rel.specifications, dict):
                     d.update(rel.specifications)
-                return d
-        return {}
+                break
+        if hasattr(self, "extra_details") and self.extra_details:
+            for ed in self.extra_details:
+                d[ed.field_name] = ed.field_value
+        return d
+
+    @property
+    def attributes(self) -> dict:
+        return self.get_store_details_dict()
 
 
 class ProductPricing(Base):

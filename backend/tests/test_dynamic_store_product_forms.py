@@ -83,6 +83,7 @@ def run_tests():
                 first_name="Test",
                 surname="Owner",
                 email="test_owner@nmart.com",
+                phone="9999999999",
                 hashed_password="hash",
                 is_active=True
             )
@@ -91,6 +92,10 @@ def run_tests():
 
         # Find or create a grocery store
         st_grocery = db.query(StoreType).filter(StoreType.code == "grocery").first()
+        if not st_grocery:
+            st_grocery = StoreType(code="grocery", name="Grocery Store", is_active=True)
+            db.add(st_grocery)
+            db.flush()
         grocery_store = db.query(Store).filter(Store.store_type_id == st_grocery.id).first()
         if not grocery_store:
             grocery_store = Store(

@@ -1,4 +1,4 @@
-from typing import List, Optional
+from typing import List, Optional, Any
 from fastapi import APIRouter, Depends, status
 from sqlalchemy.orm import Session
 from ..database.connection import get_db
@@ -7,6 +7,8 @@ from ..schemas.category_schema import (
     CategoryResponse,
     CategoryCreate,
     CategoryUpdate,
+    CategoryFieldCreate,
+    CategoryFieldResponse,
 )
 from ..services.category_service import CategoryService
 
@@ -44,6 +46,38 @@ def get_category_fields(id: int, db: Session = Depends(get_db)):
     return db.query(ProductAttribute).filter(
         ProductAttribute.shop_category_id == id
     ).order_by(ProductAttribute.display_order.asc()).all()
+
+@router.post("/{id}/fields", response_model=CategoryFieldResponse, status_code=status.HTTP_201_CREATED)
+def add_field_to_category(
+    id: int,
+    request: CategoryFieldCreate,
+    db: Session = Depends(get_db),
+    current_user: Optional[Any] = None,
+    ctx: Optional[StoreContext] = Depends(get_optional_store_context)
+):
+    """Add a dynamic field to a category (admin / future-proofing compatibility)."""
+    attr = ProductAttribute(
+        shop_category_id=id,
+        name=request.field_label or request.field_name,
+        code=request.field_name,
+        field_type=request.field_type or "text",
+        is_required=request.is_required or False,
+        display_order=request.display_order or 0,
+        options=request.options
+    )
+    db.add(attr)
+    db.commit()
+    db.refresh(attr)
+    return CategoryFieldResponse(
+        id=attr.id,
+        category_id=id,
+        field_name=request.field_name,
+        field_label=request.field_label,
+        field_type=request.field_type,
+        is_required=request.is_required,
+        options=request.options,
+        display_order=request.display_order or 0
+    )
 
 @router.post("", response_model=CategoryResponse, status_code=status.HTTP_201_CREATED, include_in_schema=False)
 @router.post("/", response_model=CategoryResponse, status_code=status.HTTP_201_CREATED)

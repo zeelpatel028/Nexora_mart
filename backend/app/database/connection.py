@@ -1,11 +1,32 @@
 import logging
-from sqlalchemy import create_engine, text
+from pathlib import Path
+from sqlalchemy import create_engine, text, event
+from sqlalchemy.engine import Engine
 from sqlalchemy.orm import declarative_base, sessionmaker
 from ..core.config import settings
 
 logger = logging.getLogger("nmart.database")
 
 Base = declarative_base()
+
+_BACKEND_DIR = Path(__file__).resolve().parent.parent
+LOCAL_DB_FILE = _BACKEND_DIR / "nmart_local.db"
+
+
+@event.listens_for(Engine, "connect")
+def set_sqlite_pragma(dbapi_connection, connection_record):
+    """Enforce SQLite optimizations and foreign key constraints on every connection."""
+    try:
+        cursor = dbapi_connection.cursor()
+        cursor.execute("PRAGMA foreign_keys = ON;")
+        cursor.execute("PRAGMA journal_mode = WAL;")
+        cursor.execute("PRAGMA synchronous = NORMAL;")
+        cursor.execute("PRAGMA cache_size = -64000;")
+        cursor.execute("PRAGMA busy_timeout = 5000;")
+        cursor.close()
+    except Exception:
+        pass
+
 
 def _get_target_database_url() -> str:
     """
@@ -32,6 +53,7 @@ def _get_target_database_url() -> str:
         "or DB_HOST, DB_USER, DB_PASSWORD, DB_NAME in backend/.env"
     )
 
+
 def _build_engine(raw_url: str):
     db_url = raw_url.strip()
     connect_args = {}
@@ -46,17 +68,17 @@ def _build_engine(raw_url: str):
         db_url = db_url.replace("mysql://", "mysql+pymysql://", 1)
 
     if "postgresql" in db_url:
-        connect_args = {"connect_timeout": 10}
+        connect_args = {"connect_timeout": 5}
         engine_kwargs.update({
             "connect_args": connect_args,
             "pool_pre_ping": True,
             "pool_recycle": 300,
-            "pool_size": 10,
-            "max_overflow": 20
+            "pool_size": 20,
+            "max_overflow": 40
         })
     elif "mysql" in db_url:
         import ssl
-        connect_args = {"connect_timeout": 10}
+        connect_args = {"connect_timeout": 4}
         # SSL configuration for Aiven Cloud MySQL and managed cloud providers
         if settings.DB_SSL_MODE or "aivencloud.com" in db_url or "ssl" in db_url.lower():
             try:
@@ -71,11 +93,18 @@ def _build_engine(raw_url: str):
             "connect_args": connect_args,
             "pool_pre_ping": True,
             "pool_recycle": 300,
-            "pool_size": 10,
-            "max_overflow": 20
+            "pool_size": 20,
+            "max_overflow": 40,
+            "pool_timeout": 10
+        })
+    elif "sqlite" in db_url:
+        connect_args = {"check_same_thread": False}
+        engine_kwargs.update({
+            "connect_args": connect_args,
         })
 
     return create_engine(db_url, **engine_kwargs), db_url
+
 
 def _initialize_engine():
     target_url = _get_target_database_url()
@@ -89,11 +118,13 @@ def _initialize_engine():
     except Exception as e:
         logger.warning(f"Could not connect to target database ({e}). Falling back to local SQLite mirror...")
         print(f"[WARN] Target database offline ({e}). Using local SQLite mirror.")
-        eng, _ = _build_engine("sqlite:///./nmart_local.db")
+        eng, _ = _build_engine(f"sqlite:///{LOCAL_DB_FILE.as_posix()}")
         return eng
+
 
 engine = _initialize_engine()
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
+
 
 def get_db():
     """

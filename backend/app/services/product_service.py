@@ -3,7 +3,7 @@ import datetime
 from decimal import Decimal
 from typing import List, Optional, Tuple, Dict, Any
 from fastapi import HTTPException, status
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, joinedload, selectinload
 from sqlalchemy import or_, and_, desc, asc
 
 from ..models.product import (
@@ -23,6 +23,7 @@ from ..models.product import (
     ProductHandloomDetail,
     ProductFurnitureDetail,
     ProductAgroDetail,
+    ProductExtraDetail,
     StoreTypeProductField,
     StoreTypeFieldOption,
     Unit,
@@ -33,6 +34,7 @@ from ..models.store import Store
 from ..models.store_type import StoreType
 from ..models.store_setting import StoreSetting
 from ..middleware.store_auth import StoreContext
+from .cache_service import CacheService
 from ..schemas.product_schema import (
     ProductCreate,
     ProductUpdate,
@@ -53,6 +55,7 @@ STORE_TYPE_DETAIL_CONFIGS = {
             {"name": "item_type", "label": "Item Type", "type": "select", "options": ["Packaged Food", "Staples & Grains", "Fresh Produce", "Dairy Products", "Beverages & Juices", "Snacks & Confectionery", "Personal Care"], "default": "Packaged Food", "required": False},
             {"name": "packaging_type", "label": "Packaging Type", "type": "select", "options": ["Packet / Pouch", "Bottle", "Box / Carton", "Can / Tin", "Glass Jar", "Loose / Bulk", "Tetra Pak"], "default": "Packet / Pouch", "required": False},
             {"name": "net_weight", "label": "Net Weight / Volume", "type": "text", "placeholder": "e.g. 500g, 1 kg, 250ml", "required": False},
+            {"name": "fssai_license", "label": "FSSAI License No.", "type": "text", "placeholder": "14-digit FSSAI Number", "required": False},
         ]
     },
     "clothing": {
@@ -609,16 +612,41 @@ class ProductService:
                     except Exception:
                         pass
 
-            detail_record = detail_model(
-                store_id=ctx.store_id,
-                product_id=product.id,
-                **cleaned_detail
-            )
-            db.add(detail_record)
+            existing_detail = db.query(detail_model).filter(detail_model.product_id == product.id).first()
+            if existing_detail:
+                for k, v in cleaned_detail.items():
+                    setattr(existing_detail, k, v)
+                detail_record = existing_detail
+            else:
+                detail_record = detail_model(
+                    store_id=ctx.store_id,
+                    product_id=product.id,
+                    **cleaned_detail
+                )
+                db.add(detail_record)
+
+            # Insert ProductExtraDetail for general or test attributes
+            if getattr(request, "attributes", None):
+                for k, v in request.attributes.items():
+                    val_str = str(v) if v is not None else ""
+                    db.add(ProductExtraDetail(
+                        store_id=ctx.store_id,
+                        product_id=product.id,
+                        field_name=k,
+                        field_value=val_str
+                    ))
 
             # Atomic commit
             db.commit()
             db.refresh(product)
+
+            # Invalidate caches so UI sees new product immediately
+            try:
+                CacheService.invalidate_dashboard_summary(ctx.store_id)
+                CacheService.invalidate_products_cache(ctx.store_id)
+            except Exception:
+                pass
+
             return product
 
         except Exception as e:
@@ -714,6 +742,18 @@ class ProductService:
         else:
             query = query.order_by(desc(order_col))
 
+        # Eager load relationships to prevent N+1 queries during serialization
+        query = query.options(
+            joinedload(Product.category),
+            joinedload(Product.brand),
+            joinedload(Product.pricing),
+            joinedload(Product.inventory_record),
+            joinedload(Product.unit_rel),
+            selectinload(Product.alerts),
+            selectinload(Product.images),
+            selectinload(Product.extra_details),
+        )
+
         offset = (page - 1) * limit
         products = query.offset(offset).limit(limit).all()
         return products, total_count
@@ -734,7 +774,26 @@ class ProductService:
         """
         resolved_ctx = _resolve_context(store_or_ctx=ctx, user=user, db=db, store=store, store_id=store_id)
         pid = product_id if product_id is not None else kwargs.get("id")
-        product = db.query(Product).filter(
+        product = db.query(Product).options(
+            joinedload(Product.category),
+            joinedload(Product.brand),
+            joinedload(Product.pricing),
+            joinedload(Product.inventory_record),
+            joinedload(Product.unit_rel),
+            joinedload(Product.grocery_details),
+            joinedload(Product.clothing_details),
+            joinedload(Product.medicine_details),
+            joinedload(Product.electronics_details),
+            joinedload(Product.plastic_details),
+            joinedload(Product.handloom_details),
+            joinedload(Product.furniture_details),
+            joinedload(Product.agro_details),
+            selectinload(Product.alerts),
+            selectinload(Product.images),
+            selectinload(Product.variants),
+            selectinload(Product.batches),
+            selectinload(Product.extra_details),
+        ).filter(
             Product.id == pid,
             Product.deleted_at.is_(None)
         ).first()
@@ -954,8 +1013,28 @@ class ProductService:
                                 specs[k] = v
                         existing_detail.specifications = specs
 
+            # Update extra details if attributes dictionary is supplied
+            if getattr(request, "attributes", None):
+                db.query(ProductExtraDetail).filter(ProductExtraDetail.product_id == product.id).delete()
+                for k, v in request.attributes.items():
+                    val_str = str(v) if v is not None else ""
+                    db.add(ProductExtraDetail(
+                        store_id=ctx.store_id,
+                        product_id=product.id,
+                        field_name=k,
+                        field_value=val_str
+                    ))
+
             db.commit()
             db.refresh(product)
+
+            # Invalidate caches
+            try:
+                CacheService.invalidate_dashboard_summary(ctx.store_id)
+                CacheService.invalidate_products_cache(ctx.store_id)
+            except Exception:
+                pass
+
             return product
 
         except Exception as e:
@@ -990,6 +1069,14 @@ class ProductService:
         product.deleted_at = datetime.datetime.now(datetime.timezone.utc)
         product.status = "deleted"
         db.commit()
+
+        # Invalidate caches
+        try:
+            CacheService.invalidate_dashboard_summary(resolved_ctx.store_id)
+            CacheService.invalidate_products_cache(resolved_ctx.store_id)
+        except Exception:
+            pass
+
         return {"status": "success", "message": f"Product '{product.product_name}' was safely removed from catalog."}
 
     @staticmethod
