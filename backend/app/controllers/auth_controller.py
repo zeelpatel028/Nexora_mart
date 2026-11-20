@@ -18,6 +18,7 @@ from ..schemas.auth_schema import (
 )
 from ..services.auth_service import AuthService
 from ..services.cache_service import CacheService
+from ..services.report_service import ReportService
 from ..utils.security import get_password_hash, verify_password
 from ..models.user import User
 from ..models.store import Store
@@ -71,9 +72,12 @@ class AuthController:
             user, store, access_token, refresh_token = AuthService.register_user(db, request_data)
             user_resp = AuthController.format_user_response(user, store)
             store_summary = AuthController.format_store_summary(store)
-            # Cache active merchant profile in Redis
+            # Cache active merchant profile and pre-warm dashboard data in Redis
             try:
                 CacheService.set_user_profile(user.id, user_resp.model_dump())
+                if store:
+                    dash = ReportService.get_dashboard_summary(db, store)
+                    CacheService.set_dashboard_summary(store.id, dash)
             except Exception:
                 pass
             return TokenResponse(
@@ -108,6 +112,9 @@ class AuthController:
             store_summary = AuthController.format_store_summary(store)
             try:
                 CacheService.set_user_profile(user.id, user_resp.model_dump())
+                if store:
+                    dash = ReportService.get_dashboard_summary(db, store)
+                    CacheService.set_dashboard_summary(store.id, dash)
             except Exception:
                 pass
             return TokenResponse(
@@ -135,6 +142,9 @@ class AuthController:
         store_summary = AuthController.format_store_summary(store)
         try:
             CacheService.set_user_profile(user.id, user_resp.model_dump())
+            if store:
+                dash = ReportService.get_dashboard_summary(db, store)
+                CacheService.set_dashboard_summary(store.id, dash)
         except Exception:
             pass
         return TokenResponse(

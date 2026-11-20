@@ -14,7 +14,11 @@ ENV/
 # Local SQLite Databases
 *.sqlite
 *.db
+*.db-shm
+*.db-wal
 nmart_local.db
+nmart_local.db-shm
+nmart_local.db-wal
 database_backup/
 
 # Logs & Cache

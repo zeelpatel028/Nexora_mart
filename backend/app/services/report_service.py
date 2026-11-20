@@ -9,10 +9,16 @@ from ..models.purchase import Purchase
 from ..models.finance import Expense
 from ..models.partner import Customer
 from ..models.category import Category
+from .cache_service import CacheService
 
 class ReportService:
     @staticmethod
     def get_dashboard_summary(db: Session, store: Store) -> dict:
+        # Check Redis / Memory fast cache first
+        cached = CacheService.get_dashboard_summary(store.id)
+        if cached:
+            return cached
+
         now = datetime.datetime.now(datetime.timezone.utc)
         today_start = datetime.datetime(now.year, now.month, now.day, 0, 0, 0, tzinfo=datetime.timezone.utc)
         thirty_days = now + datetime.timedelta(days=30)
@@ -68,7 +74,7 @@ class ReportService:
 
         net_profit = float(total_sales) - float(total_purchases) - float(total_expenses)
 
-        return {
+        result = {
             "store_name": store.name,
             "category_name": store.category.name if store.category else "Retail Store",
             "total_sales": float(total_sales),
@@ -82,9 +88,17 @@ class ReportService:
             "net_profit": net_profit,
             "currency": store.currency or "USD"
         }
+        try:
+            CacheService.set_dashboard_summary(store.id, result)
+        except Exception:
+            pass
+        return result
 
     @staticmethod
     def get_sales_analytics(db: Session, store: Store, days: int = 14) -> dict:
+        cached = CacheService.get_sales_analytics(store.id, days)
+        if cached:
+            return cached
         now = datetime.datetime.now(datetime.timezone.utc)
         start_date = now - datetime.timedelta(days=days)
 
@@ -106,11 +120,16 @@ class ReportService:
                 daily_map[d_key]["orders"] += 1
             total_rev += s.total_amount
 
-        return {
+        res = {
             "items": list(daily_map.values()),
             "total_revenue": total_rev,
             "total_orders": len(sales)
         }
+        try:
+            CacheService.set_sales_analytics(store.id, days, res)
+        except Exception:
+            pass
+        return res
 
     @staticmethod
     def get_category_performance(db: Session, store: Store) -> dict:
