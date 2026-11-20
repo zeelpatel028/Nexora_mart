@@ -128,7 +128,6 @@ export const ProfileScreen: React.FC = () => {
     <View style={{ flex: 1, backgroundColor: colors.background }}>
       <Header
         title="Merchant Profile"
-        subtitle="Account & Store identity"
         showBack
         onBack={() => navigation.goBack()}
       />

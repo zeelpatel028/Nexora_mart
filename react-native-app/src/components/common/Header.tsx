@@ -45,8 +45,8 @@ export const Header: React.FC<HeaderProps> = ({
     }
   };
 
-  // Safe area padding for top: insets.top handles notches/cutouts & Android 15/16 edge-to-edge
-  const topPadding = insets.top > 0 ? insets.top + 6 : 12;
+  // Safe area padding for top: compact & edge-to-edge aware
+  const topPadding = insets.top > 0 ? insets.top + 2 : 6;
 
   return (
     <View
@@ -67,7 +67,7 @@ export const Header: React.FC<HeaderProps> = ({
             activeOpacity={0.7}
             accessibilityLabel="Go back"
           >
-            <ChevronLeftIcon size={20} color={colors.textPrimary} />
+            <ChevronLeftIcon size={18} color={colors.textPrimary} />
           </TouchableOpacity>
         ) : null}
 
@@ -75,11 +75,6 @@ export const Header: React.FC<HeaderProps> = ({
           <Text style={[styles.title, { color: colors.textPrimary }]} numberOfLines={1}>
             {title}
           </Text>
-          {subtitle ? (
-            <Text style={[styles.subtitle, { color: colors.textSecondary }]} numberOfLines={1}>
-              {subtitle}
-            </Text>
-          ) : null}
         </View>
 
         {rightAction ? (
@@ -106,7 +101,7 @@ export const Header: React.FC<HeaderProps> = ({
 
 const styles = StyleSheet.create({
   container: {
-    paddingBottom: 12,
+    paddingBottom: 8,
     paddingHorizontal: 16,
     borderBottomWidth: 1,
   },
@@ -114,34 +109,30 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    minHeight: 44,
+    minHeight: 38,
   },
   iconButton: {
-    width: 38,
-    height: 38,
-    borderRadius: 19,
+    width: 34,
+    height: 34,
+    borderRadius: 17,
     alignItems: 'center',
     justifyContent: 'center',
   },
   iconButtonPlaceholder: {
-    width: 38,
+    width: 34,
   },
   rightActionIcon: {
-    fontSize: 18,
+    fontSize: 16,
     fontWeight: 'bold',
   },
   titleContainer: {
     flex: 1,
-    marginHorizontal: 12,
+    marginHorizontal: 8,
   },
   title: {
-    fontSize: 18,
+    fontSize: 17,
     fontWeight: '700',
     letterSpacing: -0.3,
-  },
-  subtitle: {
-    fontSize: 12,
-    marginTop: 2,
   },
 });
 

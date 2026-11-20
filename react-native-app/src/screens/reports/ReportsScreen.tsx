@@ -79,7 +79,6 @@ export const ReportsScreen: React.FC = () => {
     <View style={{ flex: 1, backgroundColor: colors.background }}>
       <Header
         title="Reports & Analytics"
-        subtitle="Business intelligence & margins"
         showBack
         onBack={() => navigation.goBack()}
         rightAction={{

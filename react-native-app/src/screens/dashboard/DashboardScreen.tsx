@@ -102,7 +102,7 @@ export const DashboardScreen: React.FC = () => {
   const { user, logout } = useAuth();
   const { isDark, colors, brandColors, toggleTheme } = useTheme();
   const insets = useSafeAreaInsets();
-  const topPadding = insets.top > 0 ? insets.top + 6 : 8;
+  const topPadding = insets.top > 0 ? insets.top + 2 : 6;
 
   // Dynamic status bar adapting to light (brand orange banner) or dark (surface theme)
   useScreenSystemBar(isDark ? 'white' : 'orange');
@@ -120,6 +120,7 @@ export const DashboardScreen: React.FC = () => {
 
   // Core Data States
   const [store, setStore] = useState<Store | null>(null);
+  const storeRef = useRef<Store | null>(null);
   const [summary, setSummary] = useState<DashboardSummary | null>(null);
   const [salesAnalytics, setSalesAnalytics] = useState<SalesAnalytics | null>(null);
   const [debitCustomerCount, setDebitCustomerCount] = useState<number>(0);
@@ -257,7 +258,10 @@ export const DashboardScreen: React.FC = () => {
         inventoryService.getLowStockAlerts().catch(() => [] as InventoryItem[]),
       ]);
 
-      if (storeRes) setStore(storeRes);
+      if (storeRes) {
+        storeRef.current = storeRes;
+        setStore(storeRes);
+      }
       if (summaryRes) setSummary(summaryRes);
       if (analyticsRes) setSalesAnalytics(analyticsRes);
 
@@ -354,7 +358,7 @@ export const DashboardScreen: React.FC = () => {
       setNotificationsList(notifs);
 
       // Check Store Setup Status (Separately stored per user/store)
-      const currentStore = storeRes || store;
+      const currentStore = storeRes || storeRef.current;
       const isSetupComplete = Boolean(
         currentStore?.address && currentStore?.phone && currentStore?.name
       );
@@ -376,11 +380,13 @@ export const DashboardScreen: React.FC = () => {
       setLoading(false);
       setRefreshing(false);
     }
-  }, [timeframe, store, user?.id]);
+  }, [timeframe, user?.id]);
 
-  useEffect(() => {
-    loadDashboardData();
-  }, [loadDashboardData]);
+  useFocusEffect(
+    useCallback(() => {
+      loadDashboardData();
+    }, [loadDashboardData])
+  );
 
   // Handle switching between This Week (7 days) and This Month (30 days)
   const handleTimeframeChange = async () => {
@@ -1429,19 +1435,19 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     paddingHorizontal: 16,
-    paddingVertical: 12,
+    paddingVertical: 7,
   },
   headerIconBtn: {
-    padding: 6,
+    padding: 4,
   },
   hamburger: {
-    width: 22,
-    height: 16,
+    width: 20,
+    height: 15,
     justifyContent: 'space-between',
   },
   hamLine: {
     width: '100%',
-    height: 2.2,
+    height: 2,
     borderRadius: 2,
   },
   brandTitleContainer: {
@@ -1449,12 +1455,12 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   headerLogoCircle: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
+    width: 32,
+    height: 32,
+    borderRadius: 16,
     alignItems: 'center',
     justifyContent: 'center',
-    marginRight: 9,
+    marginRight: 8,
     ...Platform.select({
       ios: {
         shadowColor: '#000',
@@ -1468,11 +1474,11 @@ const styles = StyleSheet.create({
     }),
   },
   headerLogoImg: {
-    width: 25,
-    height: 20,
+    width: 22,
+    height: 18,
   },
   headerBrandTitle: {
-    fontSize: 17,
+    fontSize: 16,
     fontWeight: '800',
     letterSpacing: 0.5,
   },
@@ -1481,7 +1487,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   headerActionBtn: {
-    padding: 6,
+    padding: 4,
     marginLeft: 8,
     position: 'relative',
   },

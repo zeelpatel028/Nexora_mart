@@ -63,18 +63,19 @@ const MainTabNavigator: React.FC = () => {
       backBehavior="initialRoute"
       screenOptions={{
         headerShown: false,
+        unmountOnBlur: true,
         tabBarActiveTintColor: brandColors.primary,
         tabBarInactiveTintColor: colors.textMuted,
         tabBarHideOnKeyboard: true,
         tabBarStyle: {
           backgroundColor: colors.surface,
           borderTopColor: colors.border,
-          height: 62 + Math.max(insets.bottom, Platform.OS === 'android' ? 6 : 0),
-          paddingBottom: Math.max(insets.bottom, Platform.OS === 'android' ? 8 : 4),
-          paddingTop: 6,
+          height: 52 + Math.max(insets.bottom, Platform.OS === 'android' ? 4 : 0),
+          paddingBottom: Math.max(insets.bottom, Platform.OS === 'android' ? 4 : 2),
+          paddingTop: 3,
         },
         tabBarLabelStyle: {
-          fontSize: 11,
+          fontSize: 10,
           fontWeight: '700',
         },
         tabBarItemStyle: {
@@ -91,7 +92,7 @@ const MainTabNavigator: React.FC = () => {
           tabBarAccessibilityLabel: 'Home Dashboard Tab',
           tabBarIcon: ({ focused }) => (
             <HomeIcon
-              size={22}
+              size={19}
               color={focused ? brandColors.primary : colors.textMuted}
               strokeWidth={focused ? 2.5 : 2}
             />
@@ -106,7 +107,7 @@ const MainTabNavigator: React.FC = () => {
           tabBarAccessibilityLabel: 'Customer Management Tab',
           tabBarIcon: ({ focused }) => (
             <UsersIcon
-              size={22}
+              size={19}
               color={focused ? brandColors.primary : colors.textMuted}
               strokeWidth={focused ? 2.5 : 2}
             />
@@ -121,7 +122,7 @@ const MainTabNavigator: React.FC = () => {
           tabBarAccessibilityLabel: 'POS Terminal and Billing Tab',
           tabBarIcon: ({ focused }) => (
             <ReceiptIcon
-              size={22}
+              size={19}
               color={focused ? brandColors.primary : colors.textMuted}
               strokeWidth={focused ? 2.5 : 2}
             />
@@ -136,7 +137,7 @@ const MainTabNavigator: React.FC = () => {
           tabBarAccessibilityLabel: 'Product Directory and Inventory Tab',
           tabBarIcon: ({ focused }) => (
             <PackageIcon
-              size={22}
+              size={19}
               color={focused ? brandColors.primary : colors.textMuted}
               strokeWidth={focused ? 2.5 : 2}
             />
@@ -151,7 +152,7 @@ const MainTabNavigator: React.FC = () => {
           tabBarAccessibilityLabel: 'More Store Operations and Settings Tab',
           tabBarIcon: ({ focused }) => (
             <GridIcon
-              size={22}
+              size={19}
               color={focused ? brandColors.primary : colors.textMuted}
               strokeWidth={focused ? 2.5 : 2}
             />

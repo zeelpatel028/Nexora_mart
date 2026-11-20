@@ -96,7 +96,6 @@ export const PurchaseListScreen: React.FC = () => {
     <View style={{ flex: 1, backgroundColor: colors.background }}>
       <Header
         title="Supplier Purchases"
-        subtitle={`${purchases.length} inward stock orders`}
         showBack
         onBack={() => navigation.goBack()}
         rightAction={{

@@ -141,7 +141,6 @@ export const CustomerListScreen: React.FC = () => {
     <View style={{ flex: 1, backgroundColor: colors.background }}>
       <Header
         title="Customer Directory"
-        subtitle={`${customers.length} registered customers`}
         rightAction={{
           icon: '➕',
           onPress: () => setShowAddModal(true),

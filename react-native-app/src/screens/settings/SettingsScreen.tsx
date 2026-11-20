@@ -38,7 +38,6 @@ export const SettingsScreen: React.FC = () => {
     <View style={{ flex: 1, backgroundColor: colors.background }}>
       <Header
         title="App Settings"
-        subtitle="Preferences & Appearance"
         showBack
         onBack={() => navigation.goBack()}
       />

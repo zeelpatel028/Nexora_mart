@@ -252,7 +252,6 @@ export const PosBillingScreen: React.FC = () => {
       {/* Top Header */}
       <Header
         title="Make Bill (POS)"
-        subtitle="Fast retail billing & invoice generation"
         rightAction={{
           icon: <ReceiptIcon size={20} color={brandColors.primary} />,
           onPress: () => navigation.navigate('SalesList'),

@@ -52,7 +52,6 @@ export const InventoryValuationScreen: React.FC = () => {
     <View style={{ flex: 1, backgroundColor: colors.background }}>
       <Header
         title="Inventory Valuation"
-        subtitle="Current asset worth & retail yield"
         showBack
         onBack={() => navigation.goBack()}
       />

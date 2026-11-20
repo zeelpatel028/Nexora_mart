@@ -146,7 +146,6 @@ export const SupplierListScreen: React.FC = () => {
     <View style={{ flex: 1, backgroundColor: colors.background }}>
       <Header
         title="Supplier Directory"
-        subtitle={`${suppliers.length} authorized vendors`}
         showBack
         onBack={() => navigation.goBack()}
         rightAction={{

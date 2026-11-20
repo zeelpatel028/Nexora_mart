@@ -8,7 +8,7 @@ interface BrandLogoProps {
   showTitle?: boolean;
   showTagline?: boolean;
   tagline?: string;
-  variant?: 'standard' | '3d';
+  variant?: 'standard' | '3d' | 'css';
   style?: object;
 }
 
@@ -25,11 +25,11 @@ export const BrandLogo: React.FC<BrandLogoProps> = ({
 
   return (
     <View style={[styles.container, style]}>
-      {variant === '3d' ? (
-        <View style={[styles.imageWrapper, { width: size * 1.5, height: size * 1.5 }]}>
+      {variant !== 'css' ? (
+        <View style={[styles.imageWrapper, { width: size * 1.25, height: size * 1.25 }]}>
           <Image
-            source={require('../../assets/logo-3d.png')}
-            style={{ width: size * 1.5, height: size * 1.5 }}
+            source={require('../../assets/logo.png')}
+            style={{ width: size * 1.25, height: size * 1.25 }}
             resizeMode="contain"
           />
         </View>

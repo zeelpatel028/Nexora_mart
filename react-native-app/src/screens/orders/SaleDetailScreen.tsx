@@ -137,7 +137,6 @@ export const SaleDetailScreen: React.FC = () => {
     <View style={{ flex: 1, backgroundColor: colors.background }}>
       <Header
         title={`Invoice #${sale.invoice_number}`}
-        subtitle={formatDateTime(sale.created_at)}
         showBack
         onBack={() => navigation.goBack()}
       />

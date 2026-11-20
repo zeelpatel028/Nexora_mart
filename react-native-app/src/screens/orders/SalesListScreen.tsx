@@ -218,13 +218,6 @@ export const SalesListScreen: React.FC = () => {
       {/* Header */}
       <Header
         title="View Bills"
-        subtitle={
-          dateFilter.type === 'today'
-            ? "Today's Invoices"
-            : dateFilter.type === 'yesterday'
-            ? "Yesterday's Invoices"
-            : `Bills (${dateFilter.label})`
-        }
         showBack
         onBack={() => navigation.goBack()}
         rightAction={{

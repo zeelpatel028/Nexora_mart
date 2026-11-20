@@ -20,6 +20,7 @@ import {
 import { useTheme } from '../../hooks/useTheme';
 import { useAuth } from '../../hooks/useAuth';
 import { useScreenSystemBar } from '../../utils/systemBar';
+import Header from '../../components/common/Header';
 import {
   HomeIcon,
   ShoppingCartIcon,
@@ -69,10 +70,10 @@ export const MoreMenuScreen: React.FC = () => {
   const insets = useSafeAreaInsets();
   const [isLoggingOut, setIsLoggingOut] = useState<boolean>(false);
 
-  // Dynamic status bar adapting to light (brand orange banner) or dark (surface theme)
-  useScreenSystemBar(isDark ? 'white' : 'orange');
+  // Dynamic white status bar matching top navbar
+  useScreenSystemBar('white');
 
-  const topPadding = insets.top > 0 ? insets.top + 6 : 8;
+  const topPadding = insets.top > 0 ? insets.top + 2 : 6;
 
   // Categorized Sections with strictly-typed navigation destinations
   const categorizedSections: MenuSection[] = [
@@ -314,76 +315,18 @@ export const MoreMenuScreen: React.FC = () => {
 
   return (
     <View style={[styles.root, { backgroundColor: colors.background }]}>
-      {/* Top Header Bar - Dynamically adapts to theme (Orange brand in Light, Slate Surface in Dark) */}
-      <View
-        style={[
-          styles.headerTopContainer,
-          {
-            paddingTop: topPadding,
-            backgroundColor: isDark ? colors.surface : brandColors.primary,
-            borderBottomWidth: isDark ? 1 : 0,
-            borderBottomColor: colors.border,
-          },
-        ]}
-      >
-        <View style={styles.topHeader}>
-          <View style={styles.headerLeft}>
-            <View
-              style={[
-                styles.headerLogoCircle,
-                { backgroundColor: isDark ? colors.surfaceSubtle : '#FFFFFF' },
-              ]}
-            >
-              <Image
-                source={require('../../assets/m-logo-3d.png')}
-                style={styles.headerLogoImg}
-                resizeMode="contain"
-              />
-            </View>
-            <View>
-              <Text
-                style={[
-                  styles.headerBrandTitle,
-                  { color: isDark ? colors.textPrimary : '#FFFFFF' },
-                ]}
-              >
-                TULSI MART
-              </Text>
-              <Text
-                style={[
-                  styles.headerSubTitle,
-                  { color: isDark ? colors.textSecondary : 'rgba(255, 255, 255, 0.88)' },
-                ]}
-              >
-                All Store Operations
-              </Text>
-            </View>
-          </View>
-
-          <TouchableOpacity
-            style={[
-              styles.themeToggleBtn,
-              {
-                backgroundColor: isDark
-                  ? colors.surfaceSubtle
-                  : 'rgba(255, 255, 255, 0.22)',
-              },
-            ]}
-            onPress={toggleTheme}
-            activeOpacity={0.7}
-            accessible={true}
-            accessibilityRole="button"
-            accessibilityLabel="Toggle Theme Mode"
-            accessibilityHint="Toggles between dark and light appearance"
-          >
-            {isDark ? (
-              <MoonIcon size={18} color={colors.textPrimary} strokeWidth={2} />
-            ) : (
-              <SunIcon size={18} color="#FFFFFF" strokeWidth={2} />
-            )}
-          </TouchableOpacity>
-        </View>
-      </View>
+      {/* Top Header - Standard clean navbar matching View Bills and other pages */}
+      <Header
+        title="More"
+        rightAction={{
+          icon: isDark ? (
+            <MoonIcon size={18} color={colors.textPrimary} strokeWidth={2} />
+          ) : (
+            <SunIcon size={18} color={brandColors.primary} strokeWidth={2} />
+          ),
+          onPress: toggleTheme,
+        }}
+      />
 
       <ScrollView
         contentContainerStyle={[styles.scrollContent, { paddingBottom: 32 + insets.bottom }]}

@@ -145,7 +145,6 @@ export const FinanceScreen: React.FC = () => {
     <View style={{ flex: 1, backgroundColor: colors.background }}>
       <Header
         title="Finance & Payments"
-        subtitle={`Total Expenses: ${formatCurrency(totalExpenses)}`}
         showBack
         onBack={() => navigation.goBack()}
         rightAction={{

@@ -137,7 +137,6 @@ export const ProductListScreen: React.FC = () => {
     <View style={{ flex: 1, backgroundColor: colors.background }}>
       <Header
         title="Products Catalog"
-        subtitle={`${products.length} products listed`}
         rightAction={{
           icon: '➕',
           onPress: () => navigation.navigate('AddProduct', { categoryId: selectedCatId }),

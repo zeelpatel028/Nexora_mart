@@ -149,7 +149,6 @@ export const InventoryScreen: React.FC = () => {
     <View style={{ flex: 1, backgroundColor: colors.background }}>
       <Header
         title="Inventory & Stock"
-        subtitle="Live tracking & physical audit"
         showBack
         onBack={() => navigation.goBack()}
         rightAction={{

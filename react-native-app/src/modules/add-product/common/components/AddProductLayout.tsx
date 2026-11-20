@@ -52,7 +52,7 @@ export const AddProductLayout: React.FC<AddProductLayoutProps> = ({
   const pageTitle = title || `Add ${meta.displayName} Product`;
   const pageSubtitle = subtitle || `Configure specifications and inventory for ${meta.displayName}`;
 
-  const topPadding = insets.top > 0 ? insets.top + 6 : 12;
+  const topPadding = insets.top > 0 ? insets.top + 2 : 6;
 
   return (
     <View style={[styles.safeArea, { backgroundColor: colors.background }]}>
@@ -72,7 +72,7 @@ export const AddProductLayout: React.FC<AddProductLayoutProps> = ({
           ]}
         >
           <TouchableOpacity style={styles.backButton} onPress={onBack} disabled={isLoading} activeOpacity={0.7}>
-            <ArrowLeftIcon size={22} color={colors.textPrimary} />
+            <ArrowLeftIcon size={20} color={colors.textPrimary} />
           </TouchableOpacity>
 
           <View style={styles.titleContainer}>
@@ -84,9 +84,6 @@ export const AddProductLayout: React.FC<AddProductLayoutProps> = ({
                 <Text style={[styles.badgeText, { color: meta.badgeColor }]}>{meta.displayName}</Text>
               </View>
             </View>
-            <Text style={[styles.subtitle, { color: colors.textMuted }]} numberOfLines={1}>
-              {pageSubtitle}
-            </Text>
           </View>
         </View>
 
@@ -155,13 +152,13 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: 16,
-    paddingBottom: 12,
+    paddingBottom: 8,
     borderBottomWidth: 1,
     gap: 12,
   },
   backButton: {
-    padding: 6,
-    marginLeft: -6,
+    padding: 4,
+    marginLeft: -4,
   },
   titleContainer: {
     flex: 1,

@@ -32,7 +32,7 @@ export const AccountDetailScreen: React.FC = () => {
   const navigation = useNavigation();
   const { isDark, colors, brandColors, toggleTheme } = useTheme();
   const insets = useSafeAreaInsets();
-  const topPadding = insets.top > 0 ? insets.top + 6 : 8;
+  const topPadding = insets.top > 0 ? insets.top + 2 : 6;
 
   // Dynamic white/theme status bar and bottom nav bar
   useScreenSystemBar('white');
@@ -618,7 +618,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     paddingHorizontal: 16,
-    paddingVertical: 12,
+    paddingVertical: 8,
     borderBottomWidth: 1,
   },
   headerLeft: {
