@@ -1,0 +1,24 @@
+# Dependencies
+node_modules/
+
+# Environment Variables
+.env
+.env.*
+!.env.example
+
+# Android & Gradle Build Artifacts
+.gradle/
+android/.gradle/
+android/app/build/
+android/build/
+android/local.properties
+local.properties
+*.apk
+*.ap_
+*.aab
+
+# Editor & IDE
+.idea/
+.vscode/
+.DS_Store
+Thumbs.db

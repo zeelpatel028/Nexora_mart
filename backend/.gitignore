@@ -1,0 +1,22 @@
+# Python & Virtual Environments
+__pycache__/
+*.py[cod]
+*$py.class
+.venv/
+venv/
+ENV/
+
+# Environment Variables & Secrets
+.env
+.env.*
+!.env.example
+
+# Local SQLite Databases
+*.sqlite
+*.db
+nmart_local.db
+database_backup/
+
+# Logs & Cache
+*.log
+.pytest_cache/
