@@ -14,6 +14,7 @@ from tests.test_store_types_and_products import test_store_types_and_product_val
 from tests.test_multi_category_flow import test_full_store_flow
 from tests.test_audit_security_and_ratelimit import test_audit_security_and_ratelimit
 from tests.test_cart_and_caching import test_cart_and_caching
+from tests.test_reports_sales_analytics import test_reports_sales_analytics
 
 def run_all():
     print("=" * 60)
@@ -38,8 +39,11 @@ def run_all():
     print("\n--- Suite 6: Cart, Wishlist & Redis Caching ---")
     test_cart_and_caching()
 
+    print("\n--- Suite 7: Reports, Sales Analytics & Caching ---")
+    test_reports_sales_analytics()
+
     print("\n" + "=" * 60)
-    print("ALL TESTS PASSED SUCCESSFULLY! (6 / 6 Suites Verified)")
+    print("ALL TESTS PASSED SUCCESSFULLY! (7 / 7 Suites Verified)")
     print("=" * 60)
 
 if __name__ == "__main__":
