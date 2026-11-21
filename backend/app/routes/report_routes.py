@@ -29,7 +29,7 @@ def get_dashboard_summary(
 
 @router.get("/sales-analytics", response_model=SalesAnalyticsResponse)
 def get_sales_analytics(
-    days: int = Query(14, ge=1, le=90),
+    days: int = Query(14, ge=1, le=365),
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):
