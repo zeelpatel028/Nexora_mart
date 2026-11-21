@@ -1,7 +1,10 @@
 import hashlib
+import logging
 from typing import Optional, Dict, Any, List
 from ..core.redis_client import redis_client
 from ..core.config import settings
+
+logger = logging.getLogger("nmart.cache")
 
 class CacheService:
     """
@@ -175,25 +178,76 @@ class CacheService:
     @staticmethod
     def get_dashboard_summary(store_id: int) -> Optional[Dict[str, Any]]:
         """Retrieve cached dashboard summary instantly from Redis/Memory"""
-        key = f"tulsimart:store:dashboard:{store_id}"
-        return redis_client.get_json(key)
+        try:
+            key = f"tulsimart:store:dashboard:{store_id}"
+            return redis_client.get_json(key)
+        except Exception as e:
+            logger.warning(f"Error reading dashboard summary cache for store {store_id}: {e}")
+            return None
 
     @staticmethod
     def set_dashboard_summary(store_id: int, data: Dict[str, Any], ttl: int = 300) -> bool:
         """Cache store dashboard summary (default 5 minutes TTL)"""
-        key = f"tulsimart:store:dashboard:{store_id}"
-        return redis_client.set_json(key, data, expire=ttl)
+        try:
+            key = f"tulsimart:store:dashboard:{store_id}"
+            return redis_client.set_json(key, data, expire=ttl)
+        except Exception as e:
+            logger.warning(f"Error caching dashboard summary for store {store_id}: {e}")
+            return False
+
+    @staticmethod
+    def get_sales_analytics(store_id: int, days: int) -> Optional[Dict[str, Any]]:
+        """
+        Retrieve cached sales analytics for a store and date range from Redis/Memory.
+        Key structure: tulsimart:store:{store_id}:analytics:sales:{days}
+        """
+        try:
+            key = f"tulsimart:store:{store_id}:analytics:sales:{days}"
+            return redis_client.get_json(key)
+        except Exception as e:
+            logger.warning(f"Error reading sales analytics cache for store {store_id}, days {days}: {e}")
+            return None
+
+    @staticmethod
+    def set_sales_analytics(store_id: int, days: int, data: Dict[str, Any], ttl: int = 300) -> bool:
+        """
+        Cache sales analytics for a store and date range (default 5 minutes TTL).
+        Key structure: tulsimart:store:{store_id}:analytics:sales:{days}
+        """
+        try:
+            key = f"tulsimart:store:{store_id}:analytics:sales:{days}"
+            return redis_client.set_json(key, data, expire=ttl)
+        except Exception as e:
+            logger.warning(f"Error caching sales analytics for store {store_id}, days {days}: {e}")
+            return False
+
+    @staticmethod
+    def invalidate_sales_analytics(store_id: int) -> bool:
+        """
+        Invalidate all cached sales analytics across all date ranges for a store.
+        """
+        try:
+            redis_client.delete_pattern(f"tulsimart:store:{store_id}:analytics:sales:*")
+            return True
+        except Exception as e:
+            logger.warning(f"Error invalidating sales analytics cache for store {store_id}: {e}")
+            return False
 
     @staticmethod
     def invalidate_dashboard_summary(store_id: int) -> bool:
         """Invalidate dashboard analytics when inventory/sales/purchases change"""
-        keys = [
-            f"tulsimart:store:dashboard:{store_id}",
-            f"tulsimart:store:overview:{store_id}",
-        ]
-        redis_client.delete(*keys)
-        redis_client.delete_pattern(f"tulsimart:store:analytics:{store_id}:*")
-        return True
+        try:
+            keys = [
+                f"tulsimart:store:dashboard:{store_id}",
+                f"tulsimart:store:overview:{store_id}",
+            ]
+            redis_client.delete(*keys)
+            redis_client.delete_pattern(f"tulsimart:store:analytics:{store_id}:*")
+            redis_client.delete_pattern(f"tulsimart:store:{store_id}:analytics:*")
+            return True
+        except Exception as e:
+            logger.warning(f"Error invalidating dashboard summary for store {store_id}: {e}")
+            return False
 
     # --- OTP Verification Caching ---
     _in_memory_otps: Dict[str, str] = {}

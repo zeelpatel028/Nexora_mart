@@ -103,6 +103,13 @@ def create_order(
     order.total_amount = total
     db.commit()
     db.refresh(order)
+
+    try:
+        from ..services.cache_service import CacheService
+        CacheService.invalidate_dashboard_summary(store.id)
+    except Exception:
+        pass
+
     return _format_order(order)
 
 @router.get("/{id}", response_model=OrderResponse)
@@ -143,5 +150,12 @@ def update_order(
         order.notes = request.notes
     db.commit()
     db.refresh(order)
+
+    try:
+        from ..services.cache_service import CacheService
+        CacheService.invalidate_dashboard_summary(store.id)
+    except Exception:
+        pass
+
     return _format_order(order)
 

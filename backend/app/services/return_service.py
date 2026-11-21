@@ -211,5 +211,14 @@ class ReturnService:
 
         db.commit()
         db.refresh(ret_order)
+
+        # Invalidate dashboard summary and sales analytics caches
+        try:
+            from .cache_service import CacheService
+            CacheService.invalidate_dashboard_summary(store.id)
+            CacheService.invalidate_sales_analytics(store.id)
+        except Exception:
+            pass
+
         return ReturnService.get_return_detail(db, store.id, ret_order.id)
 

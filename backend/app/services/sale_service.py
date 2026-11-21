@@ -367,4 +367,13 @@ class SaleService:
 
         db.commit()
         db.refresh(invoice)
+
+        # Invalidate dashboard summary and sales analytics caches
+        try:
+            from .cache_service import CacheService
+            CacheService.invalidate_dashboard_summary(store.id)
+            CacheService.invalidate_sales_analytics(store.id)
+        except Exception:
+            pass
+
         return SaleService.get_sale_detail(db, store.id, invoice.id)
