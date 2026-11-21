@@ -15,6 +15,8 @@ from tests.test_multi_category_flow import test_full_store_flow
 from tests.test_audit_security_and_ratelimit import test_audit_security_and_ratelimit
 from tests.test_cart_and_caching import test_cart_and_caching
 from tests.test_reports_sales_analytics import test_reports_sales_analytics
+from tests.test_tulsi_mart_v2_features import TestTulsiMartV2Features
+import unittest
 
 def run_all():
     print("=" * 60)
@@ -42,8 +44,15 @@ def run_all():
     print("\n--- Suite 7: Reports, Sales Analytics & Caching ---")
     test_reports_sales_analytics()
 
+    print("\n--- Suite 8: Tulsi Mart V2 Store Prefixes, Orders, Billing & Ledgers ---")
+    suite = unittest.TestLoader().loadTestsFromTestCase(TestTulsiMartV2Features)
+    runner = unittest.TextTestRunner(verbosity=1)
+    result = runner.run(suite)
+    if not result.wasSuccessful():
+        sys.exit(1)
+
     print("\n" + "=" * 60)
-    print("ALL TESTS PASSED SUCCESSFULLY! (7 / 7 Suites Verified)")
+    print("ALL TESTS PASSED SUCCESSFULLY! (8 / 8 Suites Verified)")
     print("=" * 60)
 
 if __name__ == "__main__":

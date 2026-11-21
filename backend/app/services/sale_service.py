@@ -324,9 +324,7 @@ class SaleService:
                     prod.inventory_record.last_stock_update = now
                 except Exception:
                     pass
-
-            # Synchronize product current_stock
-            if hasattr(prod, 'current_stock') and prod.current_stock is not None:
+            elif hasattr(prod, 'current_stock') and prod.current_stock is not None:
                 try:
                     prod.current_stock = max(0.0, float(prod.current_stock) - float(item_req.quantity))
                 except Exception:

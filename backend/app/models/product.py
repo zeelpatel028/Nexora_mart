@@ -90,11 +90,25 @@ class Product(Base):
             return float(self.pricing.selling_price)
         return 0.0
 
+    @selling_price.setter
+    def selling_price(self, val: float):
+        if not self.pricing:
+            self.pricing = ProductPricing(store_id=self.store_id or 1, selling_price=Decimal(str(val)))
+        else:
+            self.pricing.selling_price = Decimal(str(val))
+
     @property
     def purchase_price(self) -> float:
         if self.pricing and self.pricing.purchase_price is not None:
             return float(self.pricing.purchase_price)
         return 0.0
+
+    @purchase_price.setter
+    def purchase_price(self, val: float):
+        if not self.pricing:
+            self.pricing = ProductPricing(store_id=self.store_id or 1, purchase_price=Decimal(str(val)))
+        else:
+            self.pricing.purchase_price = Decimal(str(val))
 
     @property
     def mrp(self) -> float:
@@ -108,6 +122,13 @@ class Product(Base):
             return float(self.inventory_record.current_stock)
         return 0.0
 
+    @current_stock.setter
+    def current_stock(self, val: float):
+        if not self.inventory_record:
+            self.inventory_record = ProductInventory(store_id=self.store_id or 1, current_stock=Decimal(str(val)))
+        else:
+            self.inventory_record.current_stock = Decimal(str(val))
+
     @property
     def min_stock_level(self) -> float:
         if self.inventory_record and self.inventory_record.minimum_stock is not None:
@@ -116,9 +137,15 @@ class Product(Base):
 
     @property
     def unit(self) -> str:
+        if hasattr(self, "_unit_override") and self._unit_override:
+            return self._unit_override
         if self.unit_rel:
             return self.unit_rel.symbol
         return "pcs"
+
+    @unit.setter
+    def unit(self, val: str):
+        self._unit_override = val
 
     @property
     def has_variants(self) -> bool:
