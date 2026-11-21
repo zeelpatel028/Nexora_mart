@@ -26,9 +26,21 @@ class CustomerResponse(CustomerBase):
     store_id: int
     balance: float
     is_active: bool
+    total_outstanding: Optional[float] = 0.0
+    total_paid: Optional[float] = 0.0
+    total_bills: Optional[int] = 0
+    transaction_count: Optional[int] = 0
+    last_transaction_date: Optional[str] = None
 
     class Config:
         from_attributes = True
+
+
+class CustomerPaymentRequest(BaseModel):
+    amount: float = Field(..., gt=0)
+    payment_method: str = "CASH"
+    payment_date: Optional[str] = None
+    notes: Optional[str] = None
 
 
 class SupplierBase(BaseModel):

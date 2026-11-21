@@ -7,10 +7,12 @@ from ..middleware.auth_middleware import get_current_user
 from ..models.user import User
 from ..models.partner import Customer, Supplier, DebitCustomer
 from ..models.finance import Payment
+from ..models.invoice import Invoice
 from ..schemas.partner_schema import (
     CustomerCreate,
     CustomerUpdate,
     CustomerResponse,
+    CustomerPaymentRequest,
     SupplierCreate,
     SupplierUpdate,
     SupplierResponse
@@ -33,7 +35,249 @@ def list_customers(
     if search:
         p = f"%{search.strip()}%"
         q = q.filter((Customer.name.ilike(p)) | (Customer.phone.ilike(p)))
-    return q.order_by(Customer.name).all()
+    customers = q.order_by(Customer.name).all()
+    for cust in customers:
+        invoices = cust.invoices or []
+        total_bills = len(invoices)
+        total_paid = sum(float(inv.paid_amount or 0.0) for inv in invoices)
+        total_outstanding = max(0.0, float(cust.balance or 0.0))
+        cust.total_outstanding = total_outstanding
+        cust.total_paid = total_paid
+        cust.total_bills = total_bills
+        cust.transaction_count = total_bills
+        if invoices:
+            last_inv = max(invoices, key=lambda i: i.invoice_date or datetime.datetime.min)
+            cust.last_transaction_date = last_inv.invoice_date.isoformat() if last_inv.invoice_date else None
+        else:
+            cust.last_transaction_date = None
+    return customers
+
+@router.get("/customers/{id}")
+def get_customer(
+    id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    store = StoreService.get_user_store(db, current_user)
+    cust = db.query(Customer).filter(Customer.id == id, Customer.store_id == store.id).first()
+    if not cust:
+        raise HTTPException(status_code=404, detail="Customer not found.")
+
+    invoices = db.query(Invoice).filter(Invoice.customer_id == cust.id, Invoice.store_id == store.id).all()
+    payments = db.query(Payment).filter(
+        Payment.store_id == store.id,
+        Payment.reference_type.in_(["CUSTOMER_PAYMENT", "DEBIT_CUSTOMER", "INVOICE"]),
+        Payment.reference_id == cust.id
+    ).all()
+
+    total_bills = len(invoices)
+    total_paid = sum(float(inv.paid_amount or 0.0) for inv in invoices)
+    total_outstanding = max(0.0, float(cust.balance or 0.0))
+    transaction_count = total_bills + len(payments)
+
+    last_date = None
+    if invoices:
+        last_inv = max(invoices, key=lambda i: i.invoice_date or datetime.datetime.min)
+        last_date = last_inv.invoice_date.isoformat() if last_inv.invoice_date else None
+
+    return {
+        "id": cust.id,
+        "store_id": cust.store_id,
+        "name": cust.name,
+        "phone": cust.phone,
+        "email": cust.email,
+        "address": cust.address,
+        "gst_number": cust.gst_number,
+        "credit_limit": cust.credit_limit,
+        "balance": cust.balance,
+        "is_active": cust.is_active,
+        "total_outstanding": total_outstanding,
+        "total_paid": total_paid,
+        "total_bills": total_bills,
+        "transaction_count": transaction_count,
+        "last_transaction_date": last_date
+    }
+
+@router.get("/customers/{id}/ledger")
+def get_customer_ledger(
+    id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    store = StoreService.get_user_store(db, current_user)
+    cust = db.query(Customer).filter(Customer.id == id, Customer.store_id == store.id).first()
+    if not cust:
+        raise HTTPException(status_code=404, detail="Customer not found.")
+
+    invoices = db.query(Invoice).filter(Invoice.customer_id == cust.id, Invoice.store_id == store.id).order_by(Invoice.id.desc()).all()
+
+    deb = db.query(DebitCustomer).filter(DebitCustomer.customer_id == cust.id, DebitCustomer.store_id == store.id).first()
+    deb_id = deb.id if deb else None
+
+    pay_query = db.query(Payment).filter(
+        Payment.store_id == store.id,
+        (
+            (Payment.reference_type == "CUSTOMER_PAYMENT") & (Payment.reference_id == cust.id)
+            | (Payment.reference_type == "DEBIT_CUSTOMER") & (Payment.reference_id == deb_id)
+        )
+    ).order_by(Payment.id.desc()).all() if deb_id else db.query(Payment).filter(
+        Payment.store_id == store.id,
+        Payment.reference_type == "CUSTOMER_PAYMENT",
+        Payment.reference_id == cust.id
+    ).order_by(Payment.id.desc()).all()
+
+    bills_data = []
+    total_billed = 0.0
+    total_paid_bills = 0.0
+    for inv in invoices:
+        tot = float(inv.total_amount or 0.0)
+        pd = float(inv.paid_amount or 0.0)
+        rem = max(0.0, tot - pd)
+        total_billed += tot
+        total_paid_bills += pd
+        bills_data.append({
+            "id": inv.id,
+            "invoice_number": inv.invoice_number,
+            "invoice_date": inv.invoice_date.isoformat() if inv.invoice_date else None,
+            "total_amount": tot,
+            "paid_amount": pd,
+            "remaining_amount": rem,
+            "payment_status": inv.payment_status or "PAID",
+            "payment_method": inv.payment_method or "CASH",
+            "notes": inv.notes,
+            "items_count": len(inv.items)
+        })
+
+    payments_data = []
+    for p in pay_query:
+        amt = float(p.amount or 0.0)
+        p_date = p.transaction_date or p.created_at or datetime.datetime.now(datetime.timezone.utc)
+        payments_data.append({
+            "id": p.id,
+            "reference_type": p.reference_type,
+            "reference_id": p.reference_id,
+            "amount": amt,
+            "payment_method": p.payment_method or "CASH",
+            "transaction_date": p_date.isoformat() if hasattr(p_date, 'isoformat') else str(p_date),
+            "notes": p.notes
+        })
+
+    total_outstanding = max(0.0, float(cust.balance or 0.0))
+
+    return {
+        "customer": {
+            "id": cust.id,
+            "store_id": cust.store_id,
+            "name": cust.name,
+            "phone": cust.phone,
+            "email": cust.email,
+            "address": cust.address,
+            "gst_number": cust.gst_number,
+            "credit_limit": cust.credit_limit,
+            "balance": cust.balance
+        },
+        "summary": {
+            "total_outstanding": total_outstanding,
+            "total_paid": total_paid_bills,
+            "total_billed": total_billed,
+            "total_bills": len(bills_data),
+            "total_payments": len(payments_data),
+            "total_transactions": len(bills_data) + len(payments_data)
+        },
+        "bills": bills_data,
+        "payments": payments_data
+    }
+
+@router.post("/customers/{id}/payment")
+def record_customer_payment(
+    id: int,
+    request: CustomerPaymentRequest,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    store = StoreService.get_user_store(db, current_user)
+    cust = db.query(Customer).filter(Customer.id == id, Customer.store_id == store.id).first()
+    if not cust:
+        raise HTTPException(status_code=404, detail="Customer not found.")
+
+    if request.amount <= 0:
+        raise HTTPException(status_code=400, detail="Payment amount must be greater than zero.")
+
+    amount = float(request.amount)
+    now = datetime.datetime.now(datetime.timezone.utc)
+    if request.payment_date:
+        try:
+            now = datetime.datetime.fromisoformat(request.payment_date.replace('Z', '+00:00'))
+        except Exception:
+            pass
+
+    previous_balance = float(cust.balance or 0.0)
+    cust.balance = max(0.0, previous_balance - amount)
+
+    deb = db.query(DebitCustomer).filter(DebitCustomer.customer_id == cust.id, DebitCustomer.store_id == store.id).first()
+    if deb:
+        deb.outstanding_balance = max(0.0, float(deb.outstanding_balance or 0.0) - amount)
+        deb.last_payment_date = now
+        if deb.outstanding_balance <= 0:
+            deb.status = "CLEARED"
+
+    unpaid_invoices = db.query(Invoice).filter(
+        Invoice.customer_id == cust.id,
+        Invoice.store_id == store.id,
+        Invoice.payment_status.in_(["UNPAID", "PARTIAL", "DEBIT"])
+    ).order_by(Invoice.id.asc()).all()
+
+    remaining_payment = amount
+    allocated_bills = []
+    for inv in unpaid_invoices:
+        tot = float(inv.total_amount or 0.0)
+        pd = float(inv.paid_amount or 0.0)
+        unpaid = max(0.0, tot - pd)
+        if unpaid <= 0:
+            continue
+
+        allocation = min(remaining_payment, unpaid)
+        inv.paid_amount = pd + allocation
+        if inv.paid_amount >= tot:
+            inv.payment_status = "PAID"
+        elif inv.paid_amount > 0:
+            inv.payment_status = "PARTIAL"
+
+        allocated_bills.append({
+            "bill_id": inv.id,
+            "invoice_number": inv.invoice_number,
+            "allocated_amount": allocation,
+            "new_paid_amount": inv.paid_amount,
+            "new_status": inv.payment_status
+        })
+
+        remaining_payment -= allocation
+        if remaining_payment <= 0:
+            break
+
+    pay = Payment(
+        store_id=store.id,
+        reference_type="CUSTOMER_PAYMENT",
+        reference_id=cust.id,
+        amount=amount,
+        payment_method=(request.payment_method or "CASH").upper(),
+        transaction_date=now,
+        notes=request.notes or f"Customer payment from {cust.name}"
+    )
+    db.add(pay)
+    db.commit()
+    db.refresh(cust)
+
+    return {
+        "success": True,
+        "message": f"Successfully received payment of ₹ {amount:,.2f} from {cust.name}",
+        "payment_id": pay.id,
+        "amount_paid": amount,
+        "previous_balance": previous_balance,
+        "remaining_balance": cust.balance,
+        "allocated_bills": allocated_bills
+    }
+
 
 @router.post("/customers", response_model=CustomerResponse, status_code=status.HTTP_201_CREATED)
 @router.post("/customers/", response_model=CustomerResponse, status_code=status.HTTP_201_CREATED, include_in_schema=False)
