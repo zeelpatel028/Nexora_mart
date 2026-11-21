@@ -90,6 +90,7 @@ class Store(Base):
     refunds = relationship("Refund", back_populates="store", cascade="all, delete-orphan")
     stock_adjustments = relationship("StockAdjustment", back_populates="store", cascade="all, delete-orphan")
     activity_logs = relationship("ActivityLog", back_populates="store")
+    prefixes = relationship("StorePrefix", back_populates="store", uselist=False, cascade="all, delete-orphan")
 
 
 class StoreOwnerDetails(Base):
