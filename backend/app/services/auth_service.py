@@ -25,6 +25,7 @@ from ..utils.security import (
     hash_refresh_token
 )
 from ..core.config import settings
+from .cache_service import CacheService
 
 class AuthService:
     @staticmethod
@@ -115,7 +116,6 @@ class AuthService:
                 shop_category=store_type.name,
                 shop_category_id=cat_id,
                 hashed_password=get_password_hash(request_data.password),
-                plain_password=request_data.password,
                 is_active=True
             )
             db.add(user)
@@ -215,6 +215,11 @@ class AuthService:
             db.refresh(store)
 
             access_token = create_access_token(data={"sub": str(user.id), "sid": session_id, "email": user.email})
+            # Register active refresh token in Redis for instant verification & revocation
+            try:
+                CacheService.store_refresh_token(plain_refresh, user.id)
+            except Exception:
+                pass
             return user, store, access_token, plain_refresh
         except HTTPException:
             db.rollback()
@@ -275,6 +280,11 @@ class AuthService:
         db.refresh(store)
 
         access_token = create_access_token(data={"sub": str(user.id), "sid": session_id, "email": user.email})
+        # Store refresh token in Redis for instantaneous verification & logout invalidation
+        try:
+            CacheService.store_refresh_token(plain_refresh, user.id)
+        except Exception:
+            pass
         return user, store, access_token, plain_refresh
 
     @staticmethod
@@ -287,6 +297,13 @@ class AuthService:
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
                 detail="Refresh token required"
+            )
+
+        # Check Redis blacklist first for fast invalidation
+        if CacheService.is_token_blacklisted(plain_refresh_token):
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Invalid, expired or revoked refresh session. Please log in again."
             )
 
         token_hash = hash_refresh_token(plain_refresh_token)
@@ -341,6 +358,13 @@ class AuthService:
         db.add(new_rt)
         db.commit()
 
+        # Revoke old refresh token in Redis and store the newly rotated one
+        try:
+            CacheService.revoke_refresh_token(plain_refresh_token)
+            CacheService.store_refresh_token(new_plain_refresh, user.id)
+        except Exception:
+            pass
+
         new_access_token = create_access_token(data={"sub": str(user.id), "sid": rt.session_id, "email": user.email})
         return user, store, new_access_token, new_plain_refresh
 
@@ -348,6 +372,10 @@ class AuthService:
     def revoke_token(db: Session, plain_refresh_token: Optional[str] = None, user_id: Optional[int] = None) -> bool:
         now = datetime.datetime.now(datetime.timezone.utc)
         if plain_refresh_token:
+            try:
+                CacheService.revoke_refresh_token(plain_refresh_token)
+            except Exception:
+                pass
             token_hash = hash_refresh_token(plain_refresh_token)
             rt = db.query(RefreshToken).filter(RefreshToken.token_hash == token_hash).first()
             if rt:

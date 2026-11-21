@@ -15,6 +15,7 @@ from ..services.category_service import CategoryService
 from ..models.category import Category
 from ..models.store import ShopCategory
 from ..models.product import ProductAttribute
+from ..services.cache_service import CacheService
 
 router = APIRouter(prefix="/categories", tags=["Categories"])
 
@@ -26,6 +27,11 @@ def get_categories(
     ctx: Optional[StoreContext] = Depends(get_optional_store_context)
 ):
     """List all categories belonging to current merchant's store, or global shop categories if public."""
+    store_id = ctx.store_id if isinstance(ctx, StoreContext) else None
+    cached = CacheService.get_categories(store_id)
+    if cached is not None:
+        return cached
+
     if isinstance(ctx, StoreContext) and ctx.store_id:
         store_cats = CategoryService.get_all_categories(db, store_id=ctx.store_id, active_only=active_only)
         if not store_cats:
@@ -33,12 +39,17 @@ def get_categories(
                 db.add(Category(store_id=ctx.store_id, name=c_name, code=c_name.lower(), is_active=True))
             db.commit()
             store_cats = CategoryService.get_all_categories(db, store_id=ctx.store_id, active_only=active_only)
+        try:
+            CacheService.set_categories([c.to_dict() if hasattr(c, 'to_dict') else c for c in store_cats], store_id=store_id)
+        except Exception:
+            pass
         return store_cats
     # Fallback to ShopCategory master list
     query = db.query(ShopCategory)
     if active_only:
         query = query.filter(ShopCategory.is_active == True)
-    return query.order_by(ShopCategory.name.asc()).all()
+    res = query.order_by(ShopCategory.name.asc()).all()
+    return res
 
 @router.get("/{id}/fields")
 def get_category_fields(id: int, db: Session = Depends(get_db)):
@@ -88,7 +99,9 @@ def create_category(
 ):
     """Add a new category scoped strictly to current merchant store."""
     ctx.require_permission("create_product")
-    return CategoryService.create_category(db, ctx.store_id, request)
+    res = CategoryService.create_category(db, ctx.store_id, request)
+    CacheService.invalidate_products_cache()
+    return res
 
 @router.get("/{id}", response_model=CategoryResponse)
 def get_category_detail(
@@ -108,7 +121,9 @@ def update_category(
 ):
     """Update store category metadata."""
     ctx.require_permission("edit_product")
-    return CategoryService.update_category(db, ctx.store_id, id, request)
+    res = CategoryService.update_category(db, ctx.store_id, id, request)
+    CacheService.invalidate_products_cache()
+    return res
 
 @router.delete("/{id}")
 def delete_category(
@@ -118,4 +133,6 @@ def delete_category(
 ):
     """Deactivate category in store."""
     ctx.require_permission("delete_product")
-    return CategoryService.delete_category(db, ctx.store_id, id)
+    res = CategoryService.delete_category(db, ctx.store_id, id)
+    CacheService.invalidate_products_cache()
+    return res

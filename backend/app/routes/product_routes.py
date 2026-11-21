@@ -23,6 +23,7 @@ from ..schemas.product_schema import (
 )
 from ..models.product import ProductBatch, ProductVariant
 from ..services.product_service import ProductService
+from ..services.cache_service import CacheService
 
 router = APIRouter(prefix="/products", tags=["Products"])
 
@@ -257,6 +258,11 @@ def list_products(
     List products in current merchant's store.
     Strictly isolated: Store A cannot view Store B products.
     """
+    cache_key = f"{category_id}:{brand_id}:{search}:{barcode}:{status_filter}:{stock_filter}:{is_active}:{sort_by}:{sort_order}:{page}:{limit}"
+    cached = CacheService.get_products_list(ctx.store_id, cache_key)
+    if cached is not None:
+        return cached
+
     products, _ = ProductService.list_products(
         db=db,
         ctx=ctx,
@@ -272,7 +278,12 @@ def list_products(
         page=page,
         limit=limit
     )
-    return [_serialize_product(p) for p in products]
+    serialized = [_serialize_product(p) for p in products]
+    try:
+        CacheService.set_products_list(ctx.store_id, cache_key, [p.model_dump() for p in serialized], ttl=180)
+    except Exception:
+        pass
+    return serialized
 
 
 # --- 3. CREATE PRODUCT (Atomic Transaction) ---
@@ -288,6 +299,7 @@ def create_product(
     Rolls back completely if any step fails.
     """
     product = ProductService.create_product(db, ctx, request)
+    CacheService.invalidate_products_cache(ctx.store_id)
     return _serialize_product_detail(product)
 
 
@@ -320,6 +332,7 @@ def update_product(
     Validates ownership of product, category, and brand.
     """
     product = ProductService.update_product(db, ctx, id, request)
+    CacheService.invalidate_products_cache(ctx.store_id)
     return _serialize_product_detail(product)
 
 
@@ -334,7 +347,9 @@ def delete_product(
     Soft-deletes product.
     Strictly verifies ownership before deletion.
     """
-    return ProductService.delete_product(db, ctx, id)
+    res = ProductService.delete_product(db, ctx, id)
+    CacheService.invalidate_products_cache(ctx.store_id)
+    return res
 
 
 # --- 7. BATCH SUB-RESOURCES ---

@@ -35,7 +35,23 @@ class UserRegisterRequest(BaseModel):
     store_type_code: Optional[str] = None
     storeType: Optional[str] = None
     store_name: Optional[str] = None
-    password: str = Field(..., min_length=6)
+    password: str = Field(..., min_length=8, description="Min 8 characters with upper, lower, number, special char")
+
+    @field_validator("password")
+    @classmethod
+    def validate_password_strength(cls, v: str) -> str:
+        if len(v) < 8:
+            raise ValueError("Password must be at least 8 characters long.")
+        if not any(c.isupper() for c in v):
+            raise ValueError("Password must contain at least one uppercase letter.")
+        if not any(c.islower() for c in v):
+            raise ValueError("Password must contain at least one lowercase letter.")
+        if not any(c.isdigit() for c in v):
+            raise ValueError("Password must contain at least one number.")
+        special_chars = set("@$!%*?&#^()_+-=[]{}|;:,.<>~`'\"/\\")
+        if not any(c in special_chars for c in v):
+            raise ValueError("Password must contain at least one special character.")
+        return v
 
     @field_validator("email", mode="before")
     @classmethod
@@ -76,7 +92,23 @@ class VerifyOtpRequest(BaseModel):
 class ResetPasswordRequest(BaseModel):
     email: str = Field(..., min_length=1)
     otp: str = Field(..., min_length=4, max_length=10)
-    newPassword: str = Field(..., min_length=6)
+    newPassword: str = Field(..., min_length=8)
+
+    @field_validator("newPassword")
+    @classmethod
+    def validate_new_password_strength(cls, v: str) -> str:
+        if len(v) < 8:
+            raise ValueError("Password must be at least 8 characters long.")
+        if not any(c.isupper() for c in v):
+            raise ValueError("Password must contain at least one uppercase letter.")
+        if not any(c.islower() for c in v):
+            raise ValueError("Password must contain at least one lowercase letter.")
+        if not any(c.isdigit() for c in v):
+            raise ValueError("Password must contain at least one number.")
+        special_chars = set("@$!%*?&#^()_+-=[]{}|;:,.<>~`'\"/\\")
+        if not any(c in special_chars for c in v):
+            raise ValueError("Password must contain at least one special character.")
+        return v
 
 class UpdateProfileRequest(BaseModel):
     firstName: Optional[str] = Field(None, max_length=100)
