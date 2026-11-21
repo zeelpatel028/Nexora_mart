@@ -34,16 +34,24 @@ class Settings(BaseSettings):
     """
     # General API Configuration
     PROJECT_NAME: str = "Tulsi Mart API"
-    ENVIRONMENT: str = "development"
+    ENVIRONMENT: str = "production"
     API_V1_PREFIX: str = "/api"
+    HOST: str = "0.0.0.0"
+    PORT: int = 8000
+    SEED_DEMO_DATA: bool = False
 
     # Security & Tokens (Loaded exclusively from .env)
     SECRET_KEY: Optional[str] = None
     ALGORITHM: str = "HS256"
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 15
-    REFRESH_TOKEN_EXPIRE_HOURS: int = 15
-    JWT_ISSUER: str = "nexora-mart-api"
-    JWT_AUDIENCE: str = "nexora-mart-client"
+    REFRESH_TOKEN_EXPIRE_HOURS: int = 168  # 7 days with refresh-token rotation
+    JWT_ISSUER: str = "tulsi-mart-api"
+    JWT_AUDIENCE: str = "tulsi-mart-client"
+
+    # Login Attempt Limiting & Security (Max 3 wrong tries, 15 min lockout)
+    LOGIN_MAX_FAILED_ATTEMPTS: int = 3
+    LOGIN_LOCKOUT_SECONDS: int = 900  # 15 minutes lockout
+    GLOBAL_RATE_LIMIT_PER_MINUTE: int = 100
 
     # Database Configuration (Loaded exclusively from .env)
     DATABASE_URL: Optional[str] = None
@@ -78,7 +86,27 @@ class Settings(BaseSettings):
                     "CRITICAL SECURITY CONFIGURATION: SECRET_KEY is missing. "
                     "Define SECRET_KEY in your backend/.env file or environment variables."
                 )
+
+        if self.is_production:
+            if len(self.SECRET_KEY) < 32 or "replace_with" in self.SECRET_KEY.lower():
+                raise ValueError(
+                    "CRITICAL SECURITY CONFIGURATION: SECRET_KEY must be a strong key (at least 32 characters) in production. "
+                    "Update SECRET_KEY in backend/.env."
+                )
+            if not (self.DATABASE_URL or self.MYSQL_URL or self.DB_HOST):
+                logger.warning(
+                    "PRODUCTION WARNING: No remote production database credentials found in .env (DATABASE_URL/DB_HOST)."
+                )
+
         return self
+
+    @property
+    def is_production(self) -> bool:
+        return self.ENVIRONMENT.lower() == "production"
+
+    @property
+    def is_dev(self) -> bool:
+        return self.ENVIRONMENT.lower() in ("development", "dev", "local", "test")
 
     model_config = SettingsConfigDict(
         env_file=str(_ENV_FILE) if _ENV_FILE is not None else None,

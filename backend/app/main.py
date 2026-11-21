@@ -53,7 +53,9 @@ try:
         account_router,
         unit_router,
         employee_router,
-        return_router
+        return_router,
+        cart_router,
+        wishlist_router
     )
 except (ImportError, ValueError):
     from app.core.config import settings
@@ -91,7 +93,9 @@ except (ImportError, ValueError):
         account_router,
         unit_router,
         employee_router,
-        return_router
+        return_router,
+        cart_router,
+        wishlist_router
     )
 
 def run_db_migrations():
@@ -115,39 +119,36 @@ def run_db_migrations():
 def seed_initial_data():
     db = SessionLocal()
     try:
-        # Seed 8 standardized categories, category fields, units
+        # Seed standardized categories, category fields, units
         seed_categories_and_fields(db)
 
-        # Seed or sync demo user
-        demo_user = db.query(User).filter(User.email == "demo@nmart.com").first()
-        if not demo_user:
-            demo = User(
-                first_name="Alex",
-                surname="Morgan",
-                email="demo@nmart.com",
-                phone="+1-555-0199",
-                store_type="Grocery Store",
-                shop_category="Grocery Store",
-                shop_category_id=1,
-                hashed_password=get_password_hash("password123"),
-                plain_password="password123",
-                is_active=True
-            )
-            db.add(demo)
-            db.commit()
-        else:
-            updated = False
-            if not demo_user.shop_category:
-                demo_user.shop_category = "Grocery Store"
-                updated = True
-            if not demo_user.shop_category_id:
-                demo_user.shop_category_id = 1
-                updated = True
-            if not demo_user.plain_password:
-                demo_user.plain_password = "password123"
-                updated = True
-            if updated:
+        # Seed or sync demo user (only when explicitly enabled or in development mode)
+        if settings.SEED_DEMO_DATA or settings.is_dev:
+            demo_user = db.query(User).filter(User.email == "demo@nmart.com").first()
+            if not demo_user:
+                demo = User(
+                    first_name="Alex",
+                    surname="Morgan",
+                    email="demo@nmart.com",
+                    phone="+1-555-0199",
+                    store_type="Grocery Store",
+                    shop_category="Grocery Store",
+                    shop_category_id=1,
+                    hashed_password=get_password_hash("password123"),
+                    is_active=True
+                )
+                db.add(demo)
                 db.commit()
+            else:
+                updated = False
+                if not demo_user.shop_category:
+                    demo_user.shop_category = "Grocery Store"
+                    updated = True
+                if not demo_user.shop_category_id:
+                    demo_user.shop_category_id = 1
+                    updated = True
+                if updated:
+                    db.commit()
     except Exception as e:
         db.rollback()
         logger.error(f"Error seeding initial data: {e}")
@@ -177,6 +178,10 @@ def create_application() -> FastAPI:
     # Setup Cross-Origin Resource Sharing
     setup_cors(app)
 
+    # Starlette GZip compression for high-performance payload delivery
+    from starlette.middleware.gzip import GZipMiddleware
+    app.add_middleware(GZipMiddleware, minimum_size=1000)
+
     # Setup Helmet-equivalent Security Headers and Request Size Limit Protection
     try:
         from .middleware.security_headers_middleware import SecurityHeadersMiddleware
@@ -184,6 +189,18 @@ def create_application() -> FastAPI:
     except (ImportError, ValueError):
         from app.middleware.security_headers_middleware import SecurityHeadersMiddleware
         app.add_middleware(SecurityHeadersMiddleware)
+
+    # Structured request logging without exposing sensitive tokens or credentials
+    import time
+    @app.middleware("http")
+    async def request_logging_middleware(request: Request, call_next):
+        start_time = time.time()
+        response = await call_next(request)
+        duration_ms = round((time.time() - start_time) * 1000, 2)
+        # Exclude passwords and authorization tokens from logs
+        if not request.url.path.startswith("/docs") and not request.url.path.startswith("/openapi"):
+            logger.info(f"HTTP {request.method} {request.url.path} - Status {response.status_code} ({duration_ms}ms)")
+        return response
 
     # Register centralized exception handlers for production error responses
     @app.exception_handler(StarletteHTTPException)
@@ -318,6 +335,8 @@ def create_application() -> FastAPI:
         unit_router,
         employee_router,
         return_router,
+        cart_router,
+        wishlist_router,
     ]
     for r in all_routers:
         app.include_router(r, prefix=settings.API_V1_PREFIX)
@@ -362,9 +381,10 @@ def create_application() -> FastAPI:
 app = create_application()
 
 if __name__ == "__main__":
-    import os
     import uvicorn
-    port = int(os.environ.get("PORT", 8000))
-    host = os.environ.get("HOST", "0.0.0.0")
-    is_dev = os.environ.get("ENVIRONMENT", "development") == "development"
-    uvicorn.run("app.main:app", host=host, port=port, reload=is_dev)
+    uvicorn.run(
+        "app.main:app",
+        host=settings.HOST,
+        port=settings.PORT,
+        reload=settings.is_dev
+    )

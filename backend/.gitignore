@@ -1,26 +1,75 @@
-# Python & Virtual Environments
+# ==============================================================================
+# TULSI MART BACKEND GITIGNORE
+# ==============================================================================
+
+# Python Bytecode & Runtime Cache
 __pycache__/
 *.py[cod]
 *$py.class
+*.so
+.Python
+
+# Virtual Environments
 .venv/
 venv/
 ENV/
+env/
+.env.virtual/
+.uv/
 
-# Environment Variables & Secrets
+# Environment Variables & Sensitive Credentials (STRICT)
 .env
 .env.*
+*.env
 !.env.example
 
-# Local SQLite Databases
+# Local Databases, SQLite Mirrors & Backups
 *.sqlite
+*.sqlite3
 *.db
 *.db-shm
 *.db-wal
-nmart_local.db
-nmart_local.db-shm
-nmart_local.db-wal
+nmart_local.db*
+test_*.db*
 database_backup/
+*.sql.gz
 
-# Logs & Cache
+# Logs, Runtime & Process Identifiers
 *.log
+logs/
+*.pid
+*.seed
+
+# Testing, Coverage & Type Checking Caches
 .pytest_cache/
+.coverage
+htmlcov/
+.mypy_cache/
+.ruff_cache/
+.tox/
+.nox/
+
+# Builds, Packaging & Distribution
+build/
+dist/
+*.egg-info/
+*.egg
+develop-eggs/
+downloads/
+eggs/
+.installed.cfg
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+
+# IDE, Editor & OS Artifacts
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+*.swp
+*.swo
+*~

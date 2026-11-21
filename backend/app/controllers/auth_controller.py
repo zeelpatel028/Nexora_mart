@@ -246,7 +246,6 @@ class AuthController:
             )
 
         user.hashed_password = get_password_hash(request_data.newPassword)
-        user.plain_password = request_data.newPassword
         db.commit()
         db.refresh(user)
 

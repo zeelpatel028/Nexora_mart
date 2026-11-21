@@ -16,6 +16,8 @@ from .account_routes import router as account_router
 from .unit_routes import router as unit_router
 from .employee_routes import router as employee_router
 from .return_routes import router as return_router
+from .cart_routes import router as cart_router
+from .wishlist_routes import router as wishlist_router
 
 from .clothing_product_routes import router as clothing_product_router
 from .agro_product_routes import router as agro_product_router
@@ -55,4 +57,6 @@ __all__ = [
     "unit_router",
     "employee_router",
     "return_router",
+    "cart_router",
+    "wishlist_router",
 ]

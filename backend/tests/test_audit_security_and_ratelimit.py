@@ -84,25 +84,35 @@ def test_audit_security_and_ratelimit():
             password="WrongPassword123!"
         )
 
-        # Attempts 1 to 5: Should raise 401 Unauthorized (allowed attempt, bad password)
-        for i in range(1, 6):
+        # Attempts 1 and 2: Should raise 401 Unauthorized with remaining attempts countdown
+        for attempt in [1, 2]:
             try:
                 route_login(dummy_req, bad_login_payload, db)
-                assert False, f"Attempt {i} unexpectedly succeeded"
+                assert False, f"Attempt {attempt} unexpectedly succeeded"
             except HTTPException as exc:
-                assert exc.status_code == 401, f"Attempt {i} expected 401, got {exc.status_code}"
-                print(f"  -> Attempt {i}: Allowed (Returned HTTP 401 Invalid Credentials).")
+                assert exc.status_code == 401, f"Attempt {attempt} expected 401, got {exc.status_code}"
+                expected_left = 3 - attempt
+                assert str(expected_left) in exc.detail
+                print(f"  -> Attempt {attempt}: Allowed (Returned HTTP 401: '{exc.detail}').")
 
-        # Attempt 6: MUST RAISE HTTP 429 Too Many Requests with Retry-After header!
+        # Attempt 3: MUST Lock account for 15 minutes and RAISE HTTP 429 Too Many Requests!
         try:
             route_login(dummy_req, bad_login_payload, db)
-            assert False, "Attempt 6 was not rate limited!"
+            assert False, "Attempt 3 was not rate limited!"
         except HTTPException as exc:
             assert exc.status_code == 429, f"Expected 429, got {exc.status_code}"
-            assert "too many" in exc.detail.lower()
+            assert "too many attempts" in exc.detail.lower()
             assert "Retry-After" in exc.headers or "retry-after" in exc.headers
             retry_val = exc.headers.get("Retry-After") or exc.headers.get("retry-after")
-            print(f"  -> Attempt 6: BLOCKED with HTTP 429 Too Many Requests! Retry-After: {retry_val}s.")
+            print(f"  -> Attempt 3: BLOCKED with HTTP 429 Too Many Requests! Detail: '{exc.detail}', Retry-After: {retry_val}s.")
+
+        # Attempt 4: Still BLOCKED by 15-minute lock
+        try:
+            route_login(dummy_req, bad_login_payload, db)
+            assert False, "Attempt 4 was not locked!"
+        except HTTPException as exc:
+            assert exc.status_code == 429
+            print(f"  -> Attempt 4: BLOCKED by active lock. Detail: '{exc.detail}'.")
 
         # 3. TEST RATE LIMIT RESET ON SUCCESSFUL LOGIN
         print("\n[TEST 3] Testing rate limit reset upon successful login...")

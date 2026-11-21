@@ -27,24 +27,59 @@ router = APIRouter(prefix="/auth", tags=["Authentication"])
 @router.post("/login", response_model=TokenResponse)
 @router.post("/login/", response_model=TokenResponse, include_in_schema=False)
 def login(request: Request, request_data: UserLoginRequest, db: Session = Depends(get_db)):
-    """Authenticate merchant user and return short-lived access JWT and 15-hour refresh token"""
+    """Authenticate merchant user and return short-lived access JWT and refresh token"""
     client_ip = request.client.host if request.client else "127.0.0.1"
-    is_allowed, retry_after = RateLimiterService.check_login_rate_limit(request_data.email, client_ip)
-    if not is_allowed:
+    norm_email = request_data.email.strip().lower()
+
+    # 1. Check if account or IP is currently locked out (Max 3 wrong tries -> 15 min lock)
+    is_locked, lock_seconds, _ = RateLimiterService.check_login_lockout(norm_email, client_ip)
+    if is_locked:
+        mins = lock_seconds // 60
+        secs = lock_seconds % 60
+        time_str = f"{mins:02d}:{secs:02d}"
         raise HTTPException(
             status_code=status.HTTP_429_TOO_MANY_REQUESTS,
-            detail="Too many login attempts. Please try again in 5 minutes.",
-            headers={"Retry-After": str(retry_after)}
+            detail=f"Too many attempts. Try again in {time_str}",
+            headers={"Retry-After": str(lock_seconds)}
         )
 
-    response = AuthController.login(db, request_data)
-    RateLimiterService.clear_login_rate_limit(request_data.email, client_ip)
-    return response
+    # 2. Attempt authentication
+    try:
+        response = AuthController.login(db, request_data)
+        # Authentication succeeded! Reset failed attempts counter
+        RateLimiterService.clear_failed_logins(norm_email, client_ip)
+        return response
+    except (HTTPException, ValueError) as exc:
+        # Increment failed login attempts
+        new_count, attempts_left, lock_time = RateLimiterService.record_failed_login(norm_email, client_ip)
+        if new_count >= RateLimiterService.MAX_FAILED_LOGIN_ATTEMPTS:
+            mins = lock_time // 60
+            secs = lock_time % 60
+            time_str = f"{mins:02d}:{secs:02d}"
+            raise HTTPException(
+                status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+                detail=f"Too many attempts. Try again in {time_str}",
+                headers={"Retry-After": str(lock_time)}
+            )
+        else:
+            plural = "attempt" if attempts_left == 1 else "attempts"
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail=f"Incorrect email or password. You have {attempts_left} {plural} left."
+            )
 
 @router.post("/register", response_model=TokenResponse, status_code=status.HTTP_201_CREATED)
 @router.post("/register/", response_model=TokenResponse, status_code=status.HTTP_201_CREATED, include_in_schema=False)
-def register(request_data: UserRegisterRequest, db: Session = Depends(get_db)):
-    """Create new merchant store account and return short-lived access JWT and 15-hour refresh token"""
+def register(request: Request, request_data: UserRegisterRequest, db: Session = Depends(get_db)):
+    """Create new merchant store account and return short-lived access JWT and refresh token"""
+    client_ip = request.client.host if request.client else "127.0.0.1"
+    is_allowed, retry_after = RateLimiterService.check_endpoint_rate_limit("register", client_ip, max_requests=10, window_seconds=60)
+    if not is_allowed:
+        raise HTTPException(
+            status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+            detail="Too many registration attempts. Please try again later.",
+            headers={"Retry-After": str(retry_after)}
+        )
     return AuthController.register(db, request_data)
 
 @router.post("/refresh", response_model=TokenResponse)
@@ -58,8 +93,16 @@ def refresh_token(request_data: RefreshTokenRequest, db: Session = Depends(get_d
 
 @router.post("/forgot-password")
 @router.post("/forgot-password/", include_in_schema=False)
-def forgot_password(request_data: ForgotPasswordRequest, db: Session = Depends(get_db)):
+def forgot_password(request: Request, request_data: ForgotPasswordRequest, db: Session = Depends(get_db)):
     """Initiate password reset flow and issue 6-digit verification OTP"""
+    client_ip = request.client.host if request.client else "127.0.0.1"
+    is_allowed, retry_after = RateLimiterService.check_endpoint_rate_limit("forgot-pw", client_ip, max_requests=5, window_seconds=300)
+    if not is_allowed:
+        raise HTTPException(
+            status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+            detail="Too many password reset requests. Please try again in 5 minutes.",
+            headers={"Retry-After": str(retry_after)}
+        )
     return AuthController.forgot_password(db, request_data)
 
 @router.post("/verify-otp")

@@ -12,10 +12,12 @@ from tests.test_authentication_lifecycle import test_registration_and_login_life
 from tests.test_store_isolation import test_store_isolation_and_cross_access_prevention
 from tests.test_store_types_and_products import test_store_types_and_product_validation
 from tests.test_multi_category_flow import test_full_store_flow
+from tests.test_audit_security_and_ratelimit import test_audit_security_and_ratelimit
+from tests.test_cart_and_caching import test_cart_and_caching
 
 def run_all():
     print("=" * 60)
-    print("RUNNING COMPLETE NEXORA MART MULTI-STORE TEST SUITE")
+    print("RUNNING COMPLETE TULSI MART MULTI-STORE TEST SUITE")
     print("=" * 60)
 
     print("\n--- Suite 1: Authentication & Token Lifecycle ---")
@@ -30,8 +32,14 @@ def run_all():
     print("\n--- Suite 4: Multi-Category Integration Flow ---")
     test_full_store_flow()
 
+    print("\n--- Suite 5: Security, 3-Attempt Lockout & Rate Limiting ---")
+    test_audit_security_and_ratelimit()
+
+    print("\n--- Suite 6: Cart, Wishlist & Redis Caching ---")
+    test_cart_and_caching()
+
     print("\n" + "=" * 60)
-    print("ALL TESTS PASSED SUCCESSFULLY! (4 / 4 Suites Verified)")
+    print("ALL TESTS PASSED SUCCESSFULLY! (6 / 6 Suites Verified)")
     print("=" * 60)
 
 if __name__ == "__main__":

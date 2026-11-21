@@ -14,7 +14,6 @@ class User(Base):
     shop_category = Column(String(100), nullable=True)
     store_type = Column(String(100), nullable=True)
     hashed_password = Column(String(255), nullable=False)
-    plain_password = Column(String(255), nullable=True)
     shop_category_id = Column(Integer, ForeignKey("shop_categories.id"), nullable=True, index=True)
     role = Column(String(50), default="owner", index=True)  # 'owner', 'manager', 'cashier'
     is_active = Column(Boolean, default=True, index=True)
