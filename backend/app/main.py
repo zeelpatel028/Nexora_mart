@@ -103,12 +103,12 @@ except (ImportError, ValueError):
         cart_router,
         wishlist_router
     )
-    from .api.v1.billing_router import router as v1_billing_router
-    from .api.v1.orders_router import router as v1_orders_router
-    from .api.v1.customers_router import router as v1_customers_router
-    from .api.v1.suppliers_router import router as v1_suppliers_router
-    from .api.v1.store_prefixes_router import router as v1_store_prefixes_router
-    from .api.v1.settings_router import router as v1_settings_router
+    from app.api.v1.billing_router import router as v1_billing_router
+    from app.api.v1.orders_router import router as v1_orders_router
+    from app.api.v1.customers_router import router as v1_customers_router
+    from app.api.v1.suppliers_router import router as v1_suppliers_router
+    from app.api.v1.store_prefixes_router import router as v1_store_prefixes_router
+    from app.api.v1.settings_router import router as v1_settings_router
 
 def run_db_migrations():
     """
