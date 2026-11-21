@@ -4,7 +4,7 @@ from decimal import Decimal
 from typing import List, Optional, Tuple, Dict, Any
 from fastapi import HTTPException, status
 from sqlalchemy.orm import Session, joinedload, selectinload
-from sqlalchemy import or_, and_, desc, asc
+from sqlalchemy import or_, and_, desc, asc, func
 
 from ..models.product import (
     Product,
@@ -709,11 +709,13 @@ class ProductService:
             query = query.filter(Product.barcode == barcode.strip())
 
         if status_filter:
-            query = query.filter(Product.status == status_filter.strip().lower())
+            query = query.filter(func.lower(Product.status) == status_filter.strip().lower())
 
         if is_active is not None:
-            target_status = "active" if is_active else "inactive"
-            query = query.filter(Product.status == target_status)
+            if is_active:
+                query = query.filter(func.lower(Product.status) == "active")
+            else:
+                query = query.filter(func.lower(Product.status) != "active")
 
         # Stock filtering via join
         if stock_filter:
@@ -731,13 +733,16 @@ class ProductService:
         total_count = query.count()
 
         # Sorting
+        sort_by_str = str(getattr(sort_by, "default", sort_by) or "created_at").lower()
+        sort_order_str = str(getattr(sort_order, "default", sort_order) or "desc").lower()
+
         order_col = Product.created_at
-        if sort_by == "name" or sort_by == "product_name":
+        if sort_by_str in ("name", "product_name"):
             order_col = Product.product_name
-        elif sort_by == "sku":
+        elif sort_by_str == "sku":
             order_col = Product.sku
 
-        if sort_order.lower() == "asc":
+        if sort_order_str == "asc":
             query = query.order_by(asc(order_col))
         else:
             query = query.order_by(desc(order_col))

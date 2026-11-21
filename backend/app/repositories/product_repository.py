@@ -31,11 +31,11 @@ class ProductRepository:
         if search and search.strip():
             term = f"%{search.strip()}%"
             query = query.filter(
-                or_(Product.name.ilike(term), Product.sku.ilike(term), Product.barcode.ilike(term))
+                or_(Product.product_name.ilike(term), Product.sku.ilike(term), Product.barcode.ilike(term))
             )
         if low_stock_only:
             query = query.filter(Product.current_stock <= Product.min_stock_level)
 
         total = query.count()
-        products = query.order_by(Product.name).offset(offset).limit(limit).all()
+        products = query.order_by(Product.product_name).offset(offset).limit(limit).all()
         return products, total

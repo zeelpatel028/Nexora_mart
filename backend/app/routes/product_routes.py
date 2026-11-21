@@ -211,6 +211,19 @@ def _serialize_product_detail(p) -> ProductDetailResponse:
     )
 
 
+def _parse_bool(val: Optional[Any]) -> Optional[bool]:
+    if val is None or val == "":
+        return None
+    if isinstance(val, bool):
+        return val
+    s = str(val).strip().lower()
+    if s in ("true", "1", "yes", "active"):
+        return True
+    if s in ("false", "0", "no", "inactive"):
+        return False
+    return None
+
+
 # --- 1. DYNAMIC FORM CONFIGURATION ---
 @router.get("/form-config", response_model=FormConfigResponse)
 def get_product_form_config(
@@ -246,11 +259,11 @@ def list_products(
     barcode: Optional[str] = None,
     status_filter: Optional[str] = None,
     stock_filter: Optional[str] = None,
-    is_active: Optional[bool] = None,
+    is_active: Optional[str] = Query(None, description="Active status filter: true/false/1/0"),
     sort_by: str = Query("created_at"),
     sort_order: str = Query("desc"),
     page: int = Query(1, ge=1),
-    limit: int = Query(50, ge=1, le=200),
+    limit: int = Query(50, ge=1, le=1000),
     db: Session = Depends(get_db),
     ctx: StoreContext = Depends(get_current_store_context)
 ):
@@ -258,7 +271,13 @@ def list_products(
     List products in current merchant's store.
     Strictly isolated: Store A cannot view Store B products.
     """
-    cache_key = f"{category_id}:{brand_id}:{search}:{barcode}:{status_filter}:{stock_filter}:{is_active}:{sort_by}:{sort_order}:{page}:{limit}"
+    active_bool = _parse_bool(is_active)
+    limit = min(max(1, limit), 1000)
+    page = max(1, page)
+    sort_by_str = getattr(sort_by, "default", sort_by) or "created_at"
+    sort_order_str = getattr(sort_order, "default", sort_order) or "desc"
+
+    cache_key = f"{category_id}:{brand_id}:{search}:{barcode}:{status_filter}:{stock_filter}:{active_bool}:{sort_by_str}:{sort_order_str}:{page}:{limit}"
     cached = CacheService.get_products_list(ctx.store_id, cache_key)
     if cached is not None:
         return cached
@@ -272,15 +291,15 @@ def list_products(
         barcode=barcode,
         status_filter=status_filter,
         stock_filter=stock_filter,
-        is_active=is_active,
-        sort_by=sort_by,
-        sort_order=sort_order,
+        is_active=active_bool,
+        sort_by=sort_by_str,
+        sort_order=sort_order_str,
         page=page,
         limit=limit
     )
     serialized = [_serialize_product(p) for p in products]
     try:
-        CacheService.set_products_list(ctx.store_id, cache_key, [p.model_dump() for p in serialized], ttl=180)
+        CacheService.set_products_list(ctx.store_id, cache_key, [p.model_dump(mode="json") for p in serialized], ttl=180)
     except Exception:
         pass
     return serialized
