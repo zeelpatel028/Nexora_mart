@@ -111,42 +111,13 @@ class InventoryTransaction(Base):
 # 1. GROCERY STORE PRODUCT TABLES
 # =========================================================================
 
-class GroceryProduct(Base):
-    __tablename__ = "grocery_products"
-
-    id = Column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()), index=True)
-    store_id = Column(Integer, ForeignKey("stores.id", ondelete="CASCADE"), nullable=False, index=True)
-    product_id = Column(Integer, ForeignKey("products.id", ondelete="SET NULL"), nullable=True, index=True)
-    category_id = Column(Integer, ForeignKey("categories.id", ondelete="SET NULL"), nullable=True, index=True)
-    brand_id = Column(Integer, ForeignKey("brands.id", ondelete="SET NULL"), nullable=True, index=True)
-    product_name = Column(String(255), nullable=False, index=True)
-    product_code = Column(String(100), nullable=True, index=True)
-    sku = Column(String(100), nullable=True, index=True)
-    barcode = Column(String(100), nullable=True, index=True)
-    description = Column(Text, nullable=True)
-    food_type = Column(String(50), default="Vegetarian")  # Vegetarian, Non-Vegetarian, Vegan
-    item_type = Column(String(100), nullable=True)        # Grains, Dals, Oil, Spices, Dairy, Snacks
-    packaging_type = Column(String(100), nullable=True)   # Packet, Bottle, Tin, Bag, Loose
-    net_weight = Column(String(50), nullable=True)
-    gross_weight = Column(String(50), nullable=True)
-    shelf_life_days = Column(Integer, nullable=True)
-    is_vegetarian = Column(Boolean, default=True)
-    storage_type = Column(String(100), default="Cool & Dry Place")
-    fssai_license = Column(String(100), nullable=True)
-    status = Column(String(50), default="active", nullable=False)
-    created_at = Column(DateTime, default=lambda: datetime.datetime.now(datetime.timezone.utc), index=True)
-    updated_at = Column(DateTime, default=lambda: datetime.datetime.now(datetime.timezone.utc), onupdate=lambda: datetime.datetime.now(datetime.timezone.utc))
-    deleted_at = Column(DateTime, nullable=True, index=True)
-
-    details = relationship("GroceryProductDetail", back_populates="grocery_product", uselist=False, cascade="all, delete-orphan")
-    batches = relationship("GroceryProductBatch", back_populates="grocery_product", cascade="all, delete-orphan")
-
+from ..stores.grocery.grocery_product.models import GroceryProduct, GroceryProductBatch
 
 class GroceryProductDetail(Base):
     __tablename__ = "grocery_product_details_v2"
 
     id = Column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()), index=True)
-    grocery_product_id = Column(String(36), ForeignKey("grocery_products.id", ondelete="CASCADE"), unique=True, nullable=False, index=True)
+    grocery_product_id = Column(Integer, ForeignKey("grocery_products.id", ondelete="CASCADE"), unique=True, nullable=False, index=True)
     ingredients = Column(Text, nullable=True)
     nutritional_info = Column(Text, nullable=True)
     allergen_info = Column(Text, nullable=True)
@@ -154,24 +125,8 @@ class GroceryProductDetail(Base):
     manufacturer = Column(String(200), nullable=True)
     created_at = Column(DateTime, default=lambda: datetime.datetime.now(datetime.timezone.utc))
 
-    grocery_product = relationship("GroceryProduct", back_populates="details")
+    grocery_product = relationship(lambda: GroceryProduct)
 
-
-class GroceryProductBatch(Base):
-    __tablename__ = "grocery_product_batches_v2"
-
-    id = Column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()), index=True)
-    grocery_product_id = Column(String(36), ForeignKey("grocery_products.id", ondelete="CASCADE"), nullable=False, index=True)
-    batch_number = Column(String(100), nullable=False, index=True)
-    manufacturing_date = Column(DateTime, nullable=True)
-    expiry_date = Column(DateTime, nullable=True, index=True)
-    purchase_price = Column(Numeric(12, 2), default=Decimal("0.00"))
-    selling_price = Column(Numeric(12, 2), default=Decimal("0.00"))
-    current_quantity = Column(Numeric(12, 3), default=Decimal("0.000"))
-    is_active = Column(Boolean, default=True)
-    created_at = Column(DateTime, default=lambda: datetime.datetime.now(datetime.timezone.utc))
-
-    grocery_product = relationship("GroceryProduct", back_populates="batches")
 
 
 # =========================================================================
