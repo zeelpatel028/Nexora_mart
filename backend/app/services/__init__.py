@@ -1,4 +1,2 @@
-from .auth_service import AuthService
-from .cache_service import CacheService
-
-__all__ = ["AuthService", "CacheService"]
+# app/services/__init__.py
+# Non-eager package root to prevent circular imports during application startup.

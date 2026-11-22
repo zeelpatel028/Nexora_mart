@@ -90,9 +90,7 @@ from .store_specific_products import (
     TaxRate,
     HsnCode,
     InventoryTransaction,
-    GroceryProduct,
     GroceryProductDetail,
-    GroceryProductBatch,
     ClothingProduct,
     ClothingProductDetail,
     ClothingProductVariant,
@@ -117,6 +115,7 @@ from .store_specific_products import (
     AgroFertilizerDetail,
     AgroSeedDetail,
 )
+from app.stores.grocery.grocery_product.models import GroceryProduct, GroceryProductBatch
 
 from .store_prefix import StorePrefix
 from .ledger import (

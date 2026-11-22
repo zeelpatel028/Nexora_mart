@@ -1,7 +1,7 @@
 import sys
 from pathlib import Path
 
-# Ensure the backend root directory is in sys.path so both 'app.*' and relative imports work reliably
+# Ensure the backend root directory is in sys.path so 'app.*' imports work reliably
 _CURRENT_DIR = Path(__file__).resolve().parent
 _BACKEND_DIR = _CURRENT_DIR.parent
 if str(_BACKEND_DIR) not in sys.path:
@@ -9,108 +9,65 @@ if str(_BACKEND_DIR) not in sys.path:
 if str(_CURRENT_DIR) not in sys.path:
     sys.path.insert(0, str(_CURRENT_DIR))
 
+import logging
+import threading
+import time
 from fastapi import FastAPI, Request, status
 from fastapi.responses import JSONResponse
 from fastapi.exceptions import RequestValidationError, ResponseValidationError
 from starlette.exceptions import HTTPException as StarletteHTTPException
-import logging
+from starlette.middleware.gzip import GZipMiddleware
 
 logger = logging.getLogger("nmart.api")
 
-try:
-    from .core.config import settings
-    from .core.redis_client import redis_client
-    from .database.connection import Base, engine, SessionLocal
-    from .middleware.cors_middleware import setup_cors
-    from .models import *  # Import all 18 models so Base.metadata knows about them
-    from .models.user import User
-    from .utils.security import get_password_hash
-    from .services.seed_service import seed_categories_and_fields
-    from .routes import (
-        auth_router,
-        store_type_router,
-        store_router,
-        category_router,
-        brand_router,
-        product_router,
-        clothing_product_router,
-        agro_product_router,
-        medical_product_router,
-        grocery_product_router,
-        electronics_product_router,
-        plastic_product_router,
-        handloom_product_router,
-        furniture_product_router,
-        common_product_router,
-        inventory_router,
-        sale_router,
-        bill_router,
-        order_router,
-        purchase_router,
-        partner_router,
-        finance_router,
-        report_router,
-        account_router,
-        unit_router,
-        employee_router,
-        return_router,
-        cart_router,
-        wishlist_router
-    )
-    from .api.v1.billing_router import router as v1_billing_router
-    from .api.v1.orders_router import router as v1_orders_router
-    from .api.v1.customers_router import router as v1_customers_router
-    from .api.v1.suppliers_router import router as v1_suppliers_router
-    from .api.v1.store_prefixes_router import router as v1_store_prefixes_router
-    from .api.v1.settings_router import router as v1_settings_router
-    from .stores.grocery.router import router as grocery_v1_router
-except (ImportError, ValueError):
-    from app.core.config import settings
-    from app.core.redis_client import redis_client
-    from app.database.connection import Base, engine, SessionLocal
-    from app.middleware.cors_middleware import setup_cors
-    from app.models import *
-    from app.models.user import User
-    from app.utils.security import get_password_hash
-    from app.services.seed_service import seed_categories_and_fields
-    from app.routes import (
-        auth_router,
-        store_type_router,
-        store_router,
-        category_router,
-        brand_router,
-        product_router,
-        clothing_product_router,
-        agro_product_router,
-        medical_product_router,
-        grocery_product_router,
-        electronics_product_router,
-        plastic_product_router,
-        handloom_product_router,
-        furniture_product_router,
-        common_product_router,
-        inventory_router,
-        sale_router,
-        bill_router,
-        order_router,
-        purchase_router,
-        partner_router,
-        finance_router,
-        report_router,
-        account_router,
-        unit_router,
-        employee_router,
-        return_router,
-        cart_router,
-        wishlist_router
-    )
-    from app.api.v1.billing_router import router as v1_billing_router
-    from app.api.v1.orders_router import router as v1_orders_router
-    from app.api.v1.customers_router import router as v1_customers_router
-    from app.api.v1.suppliers_router import router as v1_suppliers_router
-    from app.api.v1.store_prefixes_router import router as v1_store_prefixes_router
-    from app.api.v1.settings_router import router as v1_settings_router
-    from app.stores.grocery.router import router as grocery_v1_router
+from app.core.config import settings
+from app.core.redis_client import redis_client
+from app.database.connection import Base, engine, SessionLocal
+from app.middleware.cors_middleware import setup_cors
+from app.middleware.security_headers_middleware import SecurityHeadersMiddleware
+from app.models import *  # Import all models so Base.metadata knows about them
+from app.models.user import User
+from app.utils.security import get_password_hash
+from app.services.seed_service import seed_categories_and_fields
+from app.routes import (
+    auth_router,
+    store_type_router,
+    store_router,
+    category_router,
+    brand_router,
+    product_router,
+    clothing_product_router,
+    agro_product_router,
+    medical_product_router,
+    grocery_product_router,
+    electronics_product_router,
+    plastic_product_router,
+    handloom_product_router,
+    furniture_product_router,
+    common_product_router,
+    inventory_router,
+    sale_router,
+    bill_router,
+    order_router,
+    purchase_router,
+    partner_router,
+    finance_router,
+    report_router,
+    account_router,
+    unit_router,
+    employee_router,
+    return_router,
+    cart_router,
+    wishlist_router
+)
+from app.api.v1.billing_router import router as v1_billing_router
+from app.api.v1.orders_router import router as v1_orders_router
+from app.api.v1.customers_router import router as v1_customers_router
+from app.api.v1.suppliers_router import router as v1_suppliers_router
+from app.api.v1.store_prefixes_router import router as v1_store_prefixes_router
+from app.api.v1.settings_router import router as v1_settings_router
+from app.stores.grocery.router import router as grocery_v1_router
+
 
 def run_db_migrations():
     """
@@ -129,6 +86,7 @@ def run_db_migrations():
             logger.info("Alembic database migrations up to date.")
     except Exception as e:
         logger.warning(f"Notice: Automatic migration runner encountered ({e})")
+
 
 def seed_initial_data():
     db = SessionLocal()
@@ -170,6 +128,7 @@ def seed_initial_data():
     finally:
         db.close()
 
+
 def initialize_database():
     try:
         # Run schema creation and seed data
@@ -179,8 +138,9 @@ def initialize_database():
         logger.warning(f"Notice: Database initialization ({e})")
         print(f"Notice: Database initialization ({e})")
 
-import threading
+
 threading.Thread(target=initialize_database, daemon=True, name="db_init").start()
+
 
 def create_application() -> FastAPI:
     app = FastAPI(
@@ -193,19 +153,12 @@ def create_application() -> FastAPI:
     setup_cors(app)
 
     # Starlette GZip compression for high-performance payload delivery
-    from starlette.middleware.gzip import GZipMiddleware
     app.add_middleware(GZipMiddleware, minimum_size=1000)
 
     # Setup Helmet-equivalent Security Headers and Request Size Limit Protection
-    try:
-        from .middleware.security_headers_middleware import SecurityHeadersMiddleware
-        app.add_middleware(SecurityHeadersMiddleware)
-    except (ImportError, ValueError):
-        from app.middleware.security_headers_middleware import SecurityHeadersMiddleware
-        app.add_middleware(SecurityHeadersMiddleware)
+    app.add_middleware(SecurityHeadersMiddleware)
 
     # Structured request logging without exposing sensitive tokens or credentials
-    import time
     @app.middleware("http")
     async def request_logging_middleware(request: Request, call_next):
         start_time = time.time()
@@ -401,6 +354,7 @@ def create_application() -> FastAPI:
         return health_check()
 
     return app
+
 
 app = create_application()
 
