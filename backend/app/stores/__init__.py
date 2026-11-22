@@ -1,3 +1,2 @@
-from .grocery.router import router as grocery_router
-
-__all__ = ["grocery_router"]
+# app/stores/__init__.py
+# Non-eager package root to prevent circular imports during application startup.
