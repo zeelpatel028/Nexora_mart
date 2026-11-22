@@ -1,4 +1,4 @@
-from typing import Optional, List
+from typing import Optional, List, Union
 from pydantic import BaseModel, Field
 
 
@@ -38,7 +38,7 @@ class GroceryProductUpdate(BaseModel):
 
 
 class GroceryProductResponse(GroceryProductBase):
-    id: int
+    id: Union[str, int]
     store_id: int
     product_code: str
     is_active: bool

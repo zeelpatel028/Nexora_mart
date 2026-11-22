@@ -2,6 +2,7 @@
 Grocery Product, Batch, and Stock Movement Models
 """
 import datetime
+import uuid
 from sqlalchemy import Column, Integer, String, Float, DateTime, Boolean, ForeignKey, Index
 from sqlalchemy.orm import relationship, synonym
 from ....config.database import Base
@@ -16,14 +17,13 @@ class GroceryProduct(Base):
         {"extend_existing": True}
     )
 
-    id = Column(Integer, primary_key=True, autoincrement=True, index=True)
+    # In database schema and production migrations, id is VARCHAR(36) UUID string
+    id = Column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()), index=True)
     store_id = Column(Integer, ForeignKey("stores.id", ondelete="CASCADE"), nullable=False, index=True)
     product_code = Column(String(100), nullable=False, index=True)
     name = Column(String(255), nullable=False, index=True)
+    product_name = Column(String(255), nullable=True)
     supplier_id = Column(Integer, ForeignKey("grocery_suppliers.id", ondelete="SET NULL"), nullable=True, index=True)
-
-    # Backward compatibility
-    product_name = synonym("name")
 
     # Purchase specifics
     purchase_price_with_tax = Column(Float, default=0.0, nullable=False)
@@ -58,7 +58,7 @@ class GroceryProductBatch(Base):
 
     id = Column(Integer, primary_key=True, autoincrement=True, index=True)
     store_id = Column(Integer, ForeignKey("stores.id", ondelete="CASCADE"), nullable=False, index=True)
-    product_id = Column(Integer, ForeignKey("grocery_products.id", ondelete="CASCADE"), nullable=False, index=True)
+    product_id = Column(String(36), ForeignKey("grocery_products.id", ondelete="CASCADE"), nullable=False, index=True)
     purchase_order_id = Column(Integer, nullable=True, index=True)
     qty = Column(Float, nullable=False)
     remaining_qty = Column(Float, nullable=False)
@@ -79,7 +79,7 @@ class GroceryStockMovement(Base):
 
     id = Column(Integer, primary_key=True, autoincrement=True, index=True)
     store_id = Column(Integer, ForeignKey("stores.id", ondelete="CASCADE"), nullable=False, index=True)
-    product_id = Column(Integer, ForeignKey("grocery_products.id", ondelete="CASCADE"), nullable=False, index=True)
+    product_id = Column(String(36), ForeignKey("grocery_products.id", ondelete="CASCADE"), nullable=False, index=True)
     type = Column(String(50), nullable=False)  # 'order_received' | 'sale' | 'adjust'
     qty = Column(Float, nullable=False)
     ref_id = Column(String(100), nullable=True)

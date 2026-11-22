@@ -1,9 +1,9 @@
-from typing import Optional, List
+from typing import Optional, List, Union
 from pydantic import BaseModel, Field
 
 
 class BillItemInput(BaseModel):
-    product_id: int
+    product_id: Union[str, int]
     product_name: str
     price_with_tax: float = Field(..., ge=0)
     gst_rate: float = Field(0.0, ge=0)
@@ -23,7 +23,7 @@ class MakeBillRequest(BaseModel):
 
 class BillItemResponse(BaseModel):
     id: int
-    product_id: Optional[int]
+    product_id: Optional[Union[str, int]] = None
     product_name: str
     price_with_tax: float
     base_price: float

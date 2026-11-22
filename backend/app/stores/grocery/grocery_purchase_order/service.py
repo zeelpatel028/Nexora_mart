@@ -115,6 +115,8 @@ class GroceryPurchaseOrderService:
         order = GroceryPurchaseOrder(
             store_id=store_id,
             order_code=order_code,
+            order_number=order_code,
+            paid_amount=0.0,
             supplier_id=supplier.id,
             product_id=product.id,
             qty=data.qty,
