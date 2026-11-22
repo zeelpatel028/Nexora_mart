@@ -111,7 +111,9 @@ class InventoryTransaction(Base):
 # 1. GROCERY STORE PRODUCT TABLES
 # =========================================================================
 
-from ..stores.grocery.grocery_product.models import GroceryProduct, GroceryProductBatch
+from typing import TYPE_CHECKING
+if TYPE_CHECKING:
+    from app.stores.grocery.grocery_product.models import GroceryProduct, GroceryProductBatch
 
 class GroceryProductDetail(Base):
     __tablename__ = "grocery_product_details_v2"
@@ -125,7 +127,7 @@ class GroceryProductDetail(Base):
     manufacturer = Column(String(200), nullable=True)
     created_at = Column(DateTime, default=lambda: datetime.datetime.now(datetime.timezone.utc))
 
-    grocery_product = relationship(lambda: GroceryProduct)
+    grocery_product = relationship("GroceryProduct")
 
 
 

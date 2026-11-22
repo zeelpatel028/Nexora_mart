@@ -7,11 +7,8 @@ import datetime
 
 from ..database.connection import get_db
 from ..middleware.store_auth import get_current_store_context, StoreContext
-from ..models.store_specific_products import (
-    GroceryProduct,
-    GroceryProductDetail,
-    GroceryProductBatch,
-)
+from app.stores.grocery.grocery_product.models import GroceryProduct, GroceryProductBatch
+from app.models.store_specific_products import GroceryProductDetail
 from ..models.product import Product, ProductPricing, ProductInventory
 from ..services.product_validation_service import ProductValidationService
 

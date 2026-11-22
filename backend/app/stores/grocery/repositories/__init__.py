@@ -1,5 +1,5 @@
 from sqlalchemy.orm import Session
-from ..models import GroceryProduct
+from app.stores.grocery.grocery_product.models import GroceryProduct
 
 class GroceryRepository:
     @staticmethod
