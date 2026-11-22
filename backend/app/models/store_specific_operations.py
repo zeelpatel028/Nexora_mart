@@ -133,7 +133,8 @@ def create_store_invoice_tables(inv_table_name, item_table_name):
 
 # 1. Grocery
 GroceryInventory = create_store_inventory_table("grocery_inventory")
-GroceryPurchaseOrder, GroceryPurchaseOrderItem = create_store_po_tables("grocery_purchase_orders", "grocery_purchase_order_items")
+from ..stores.grocery.grocery_purchase_order.models import GroceryPurchaseOrder
+_, GroceryPurchaseOrderItem = create_store_po_tables("grocery_purchase_orders_legacy", "grocery_purchase_order_items")
 GroceryInvoice, GroceryInvoiceItem = create_store_invoice_tables("grocery_invoices", "grocery_invoice_items")
 
 # 2. Clothing

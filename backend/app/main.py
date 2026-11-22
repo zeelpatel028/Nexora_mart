@@ -63,6 +63,7 @@ try:
     from .api.v1.suppliers_router import router as v1_suppliers_router
     from .api.v1.store_prefixes_router import router as v1_store_prefixes_router
     from .api.v1.settings_router import router as v1_settings_router
+    from .stores.grocery.router import router as grocery_v1_router
 except (ImportError, ValueError):
     from app.core.config import settings
     from app.core.redis_client import redis_client
@@ -109,6 +110,7 @@ except (ImportError, ValueError):
     from app.api.v1.suppliers_router import router as v1_suppliers_router
     from app.api.v1.store_prefixes_router import router as v1_store_prefixes_router
     from app.api.v1.settings_router import router as v1_settings_router
+    from app.stores.grocery.router import router as grocery_v1_router
 
 def run_db_migrations():
     """
@@ -360,6 +362,10 @@ def create_application() -> FastAPI:
         app.include_router(r, prefix=settings.API_V1_PREFIX)
         if settings.API_V1_PREFIX != "/api/v1":
             app.include_router(r, prefix="/api/v1")
+
+    # Store-Wise V1 Grocery Modular Sub-Application
+    app.include_router(grocery_v1_router, prefix="/api/v1/grocery")
+    app.include_router(grocery_v1_router, prefix="/api/grocery")
 
     @app.get("/", tags=["Root"], operation_id="root_get")
     def root():
