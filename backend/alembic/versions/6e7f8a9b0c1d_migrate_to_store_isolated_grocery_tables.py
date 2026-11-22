@@ -20,6 +20,7 @@ def upgrade() -> None:
     bind = op.get_bind()
     insp = sa.inspect(bind)
     tables = insp.get_table_names()
+    is_mysql = bind.dialect.name == 'mysql'
 
     # 1. grocery_prefixes
     if 'grocery_prefixes' not in tables:
@@ -114,7 +115,7 @@ def upgrade() -> None:
     if 'grocery_products' not in tables:
         op.create_table(
             'grocery_products',
-            sa.Column('id', sa.Integer(), autoincrement=True, nullable=False),
+            sa.Column('id', sa.String(length=36), nullable=False),
             sa.Column('store_id', sa.Integer(), sa.ForeignKey('stores.id', ondelete='CASCADE'), nullable=False),
             sa.Column('product_code', sa.String(length=100), nullable=False),
             sa.Column('name', sa.String(length=255), nullable=False),
@@ -168,12 +169,13 @@ def upgrade() -> None:
             op.add_column('grocery_products', sa.Column('is_deleted', sa.Boolean(), server_default='0', nullable=False))
 
     # 8. grocery_product_batches
+    # Foreign key product_id references grocery_products.id which is String(36)
     if 'grocery_product_batches' not in tables:
         op.create_table(
             'grocery_product_batches',
             sa.Column('id', sa.Integer(), autoincrement=True, nullable=False),
             sa.Column('store_id', sa.Integer(), sa.ForeignKey('stores.id', ondelete='CASCADE'), nullable=False),
-            sa.Column('product_id', sa.Integer(), sa.ForeignKey('grocery_products.id', ondelete='CASCADE'), nullable=False),
+            sa.Column('product_id', sa.String(length=36), sa.ForeignKey('grocery_products.id', ondelete='CASCADE'), nullable=False),
             sa.Column('purchase_order_id', sa.Integer(), nullable=True),
             sa.Column('qty', sa.Float(), nullable=False),
             sa.Column('remaining_qty', sa.Float(), nullable=False),
@@ -192,7 +194,7 @@ def upgrade() -> None:
             sa.Column('store_id', sa.Integer(), sa.ForeignKey('stores.id', ondelete='CASCADE'), nullable=False),
             sa.Column('order_code', sa.String(length=100), nullable=False),
             sa.Column('supplier_id', sa.Integer(), sa.ForeignKey('grocery_suppliers.id', ondelete='SET NULL'), nullable=True),
-            sa.Column('product_id', sa.Integer(), sa.ForeignKey('grocery_products.id', ondelete='SET NULL'), nullable=True),
+            sa.Column('product_id', sa.String(length=36), sa.ForeignKey('grocery_products.id', ondelete='SET NULL'), nullable=True),
             sa.Column('qty', sa.Float(), nullable=False),
             sa.Column('unit', sa.String(length=50), server_default='Piece', nullable=False),
             sa.Column('purchase_price', sa.Float(), nullable=False),
@@ -214,7 +216,7 @@ def upgrade() -> None:
             op.add_column('grocery_purchase_orders', sa.Column('order_code', sa.String(length=100), nullable=True))
             bind.execute(text("UPDATE grocery_purchase_orders SET order_code = order_number WHERE order_code IS NULL AND order_number IS NOT NULL"))
         if 'product_id' not in po_cols:
-            op.add_column('grocery_purchase_orders', sa.Column('product_id', sa.Integer(), nullable=True))
+            op.add_column('grocery_purchase_orders', sa.Column('product_id', sa.String(length=36), nullable=True))
         if 'qty' not in po_cols:
             op.add_column('grocery_purchase_orders', sa.Column('qty', sa.Float(), server_default='0.0', nullable=False))
         if 'unit' not in po_cols:
@@ -268,7 +270,7 @@ def upgrade() -> None:
             sa.Column('id', sa.Integer(), autoincrement=True, nullable=False),
             sa.Column('bill_id', sa.Integer(), sa.ForeignKey('grocery_bills.id', ondelete='CASCADE'), nullable=False),
             sa.Column('store_id', sa.Integer(), sa.ForeignKey('stores.id', ondelete='CASCADE'), nullable=False),
-            sa.Column('product_id', sa.Integer(), sa.ForeignKey('grocery_products.id', ondelete='SET NULL'), nullable=True),
+            sa.Column('product_id', sa.String(length=36), sa.ForeignKey('grocery_products.id', ondelete='SET NULL'), nullable=True),
             sa.Column('product_name', sa.String(length=255), nullable=False),
             sa.Column('price_with_tax', sa.Float(), nullable=False),
             sa.Column('base_price', sa.Float(), nullable=False),
@@ -305,7 +307,7 @@ def upgrade() -> None:
             'grocery_stock_movements',
             sa.Column('id', sa.Integer(), autoincrement=True, nullable=False),
             sa.Column('store_id', sa.Integer(), sa.ForeignKey('stores.id', ondelete='CASCADE'), nullable=False),
-            sa.Column('product_id', sa.Integer(), sa.ForeignKey('grocery_products.id', ondelete='CASCADE'), nullable=False),
+            sa.Column('product_id', sa.String(length=36), sa.ForeignKey('grocery_products.id', ondelete='CASCADE'), nullable=False),
             sa.Column('type', sa.String(length=50), nullable=False),
             sa.Column('qty', sa.Float(), nullable=False),
             sa.Column('ref_id', sa.String(length=100), nullable=True),
@@ -329,65 +331,107 @@ def upgrade() -> None:
     # SAFE DATA MIGRATION WITHOUT DATA LOSS
     # =========================================================================
     try:
-        # 1. Migrate Suppliers data safely
         if 'suppliers' in tables:
-            bind.execute(text("""
-                INSERT OR IGNORE INTO grocery_suppliers (
-                    id, store_id, supplier_code, store_name, seller_name, phone, email, address, gst_number,
-                    is_active, created_at, updated_at, is_deleted
-                )
-                SELECT 
-                    id, store_id, 
-                    COALESCE(NULLIF(supplier_code, ''), 'S001_SUP_' || SUBSTR('0000' || id, -4, 4)),
-                    COALESCE(company_name, name, 'Store Supplier'),
-                    COALESCE(name, 'Supplier'),
-                    COALESCE(phone, ''),
-                    email, address, gst_number,
-                    COALESCE(is_active, 1),
-                    COALESCE(created_at, CURRENT_TIMESTAMP),
-                    COALESCE(updated_at, CURRENT_TIMESTAMP),
-                    0
-                FROM suppliers;
-            """))
+            if is_mysql:
+                bind.execute(text("""
+                    INSERT IGNORE INTO grocery_suppliers (
+                        id, store_id, supplier_code, store_name, seller_name, phone, email, address, gst_number,
+                        is_active, created_at, updated_at, is_deleted
+                    )
+                    SELECT 
+                        id, store_id, 
+                        COALESCE(NULLIF(supplier_code, ''), CONCAT('S001_SUP_', LPAD(id, 4, '0'))),
+                        COALESCE(company_name, name, 'Store Supplier'),
+                        COALESCE(name, 'Supplier'),
+                        COALESCE(phone, ''),
+                        email, address, gst_number,
+                        COALESCE(is_active, 1),
+                        COALESCE(created_at, CURRENT_TIMESTAMP),
+                        COALESCE(updated_at, CURRENT_TIMESTAMP),
+                        0
+                    FROM suppliers;
+                """))
+            else:
+                bind.execute(text("""
+                    INSERT OR IGNORE INTO grocery_suppliers (
+                        id, store_id, supplier_code, store_name, seller_name, phone, email, address, gst_number,
+                        is_active, created_at, updated_at, is_deleted
+                    )
+                    SELECT 
+                        id, store_id, 
+                        COALESCE(NULLIF(supplier_code, ''), 'S001_SUP_' || SUBSTR('0000' || id, -4, 4)),
+                        COALESCE(company_name, name, 'Store Supplier'),
+                        COALESCE(name, 'Supplier'),
+                        COALESCE(phone, ''),
+                        email, address, gst_number,
+                        COALESCE(is_active, 1),
+                        COALESCE(created_at, CURRENT_TIMESTAMP),
+                        COALESCE(updated_at, CURRENT_TIMESTAMP),
+                        0
+                    FROM suppliers;
+                """))
     except Exception:
         pass
 
     try:
-        # 2. Migrate Customers data safely
         if 'customers' in tables:
-            bind.execute(text("""
-                INSERT OR IGNORE INTO grocery_customers (
-                    id, store_id, customer_code, name, phone, address, is_active, created_at, updated_at, is_deleted
-                )
-                SELECT 
-                    id, store_id,
-                    COALESCE(NULLIF(customer_code, ''), 'S001_KHT_' || SUBSTR('0000' || id, -4, 4)),
-                    COALESCE(name, 'Customer'),
-                    COALESCE(phone, ''),
-                    address,
-                    COALESCE(is_active, 1),
-                    COALESCE(created_at, CURRENT_TIMESTAMP),
-                    COALESCE(updated_at, CURRENT_TIMESTAMP),
-                    0
-                FROM customers;
-            """))
+            if is_mysql:
+                bind.execute(text("""
+                    INSERT IGNORE INTO grocery_customers (
+                        id, store_id, customer_code, name, phone, address, is_active, created_at, updated_at, is_deleted
+                    )
+                    SELECT 
+                        id, store_id,
+                        COALESCE(NULLIF(customer_code, ''), CONCAT('S001_KHT_', LPAD(id, 4, '0'))),
+                        COALESCE(name, 'Customer'),
+                        COALESCE(phone, ''),
+                        address,
+                        COALESCE(is_active, 1),
+                        COALESCE(created_at, CURRENT_TIMESTAMP),
+                        COALESCE(updated_at, CURRENT_TIMESTAMP),
+                        0
+                    FROM customers;
+                """))
+            else:
+                bind.execute(text("""
+                    INSERT OR IGNORE INTO grocery_customers (
+                        id, store_id, customer_code, name, phone, address, is_active, created_at, updated_at, is_deleted
+                    )
+                    SELECT 
+                        id, store_id,
+                        COALESCE(NULLIF(customer_code, ''), 'S001_KHT_' || SUBSTR('0000' || id, -4, 4)),
+                        COALESCE(name, 'Customer'),
+                        COALESCE(phone, ''),
+                        address,
+                        COALESCE(is_active, 1),
+                        COALESCE(created_at, CURRENT_TIMESTAMP),
+                        COALESCE(updated_at, CURRENT_TIMESTAMP),
+                        0
+                    FROM customers;
+                """))
     except Exception:
         pass
 
 
 def downgrade() -> None:
-    # Downgrade drops new grocery_* tables safely
-    op.drop_table('grocery_bill_items')
-    op.drop_table('grocery_bills')
-    op.drop_table('grocery_purchase_orders')
-    op.drop_table('grocery_product_batches')
-    op.drop_table('grocery_stock_movements')
-    op.drop_table('grocery_products')
-    op.drop_table('grocery_customers')
-    op.drop_table('grocery_suppliers')
-    op.drop_table('grocery_backups')
-    op.drop_table('grocery_settings')
-    op.drop_table('grocery_units')
-    op.drop_table('grocery_gst_rates')
-    op.drop_table('grocery_id_counters')
-    op.drop_table('grocery_prefixes')
+    # Downgrade drops new grocery_* tables safely without touching base tables
+    bind = op.get_bind()
+    insp = sa.inspect(bind)
+    tables = insp.get_table_names()
+
+    tables_to_drop = [
+        'grocery_bill_items',
+        'grocery_bills',
+        'grocery_product_batches',
+        'grocery_stock_movements',
+        'grocery_backups',
+        'grocery_settings',
+        'grocery_units',
+        'grocery_gst_rates',
+        'grocery_id_counters',
+        'grocery_prefixes'
+    ]
+
+    for t in tables_to_drop:
+        if t in tables:
+            op.drop_table(t)

@@ -3,7 +3,7 @@ Atomic Sequential ID Generator
 Generates collision-free IDs in the format:
 {store_code}_{prefix}_{4-digit number}
 Example: S001_PRD_0001, S001_SUP_0001, S001_KHT_0001, S001_INV_0001
-Uses database transactions with row-locking (SELECT ... FOR UPDATE) on grocery_id_counters.
+Uses database transactions with row-locking (with_for_update) on grocery_id_counters.
 """
 import datetime
 from sqlalchemy.orm import Session
@@ -46,13 +46,14 @@ def get_prefix_value(db: Session, store_id: int, key: str) -> str:
         normalized_key = "debit_customer"
 
     try:
-        # Check grocery_prefixes table first
-        res = db.execute(
-            text("SELECT prefix_value FROM grocery_prefixes WHERE store_id = :sid AND key = :k LIMIT 1;"),
-            {"sid": store_id, "k": normalized_key}
-        ).fetchone()
-        if res and res[0]:
-            return str(res[0]).strip().upper()
+        from ..stores.grocery.grocery_prefix.models import GroceryPrefix
+        pfx = db.query(GroceryPrefix).filter(
+            GroceryPrefix.store_id == store_id,
+            GroceryPrefix.key == normalized_key,
+            GroceryPrefix.is_deleted == False
+        ).first()
+        if pfx and pfx.prefix_value:
+            return str(pfx.prefix_value).strip().upper()
     except Exception:
         pass
 
@@ -83,7 +84,7 @@ def get_prefix_value(db: Session, store_id: int, key: str) -> str:
 
 def generate_next_id(db: Session, store_id: int, key: str) -> str:
     """
-    Atomically generates and increments the next ID inside the current or dedicated transaction.
+    Atomically generates and increments the next ID inside the current transaction.
     Format: {store_code}_{prefix}_{4-digit number} (e.g. S001_PRD_0001).
     """
     normalized_key = key.lower().strip()
@@ -93,51 +94,29 @@ def generate_next_id(db: Session, store_id: int, key: str) -> str:
     store_code = get_store_code(db, store_id)
     prefix = get_prefix_value(db, store_id, normalized_key)
 
-    # 1. Try atomic increment on grocery_id_counters
     try:
-        # Ensure row exists
-        db.execute(
-            text("""
-                INSERT INTO grocery_id_counters (store_id, key, last_number, updated_at)
-                VALUES (:sid, :k, 0, :dt)
-                ON CONFLICT(store_id, key) DO NOTHING;
-            """),
-            {"sid": store_id, "k": normalized_key, "dt": datetime.datetime.now(datetime.timezone.utc)}
-        )
-    except Exception:
-        try:
-            # Fallback for MySQL INSERT IGNORE or generic
-            db.execute(
-                text("""
-                    INSERT IGNORE INTO grocery_id_counters (store_id, key, last_number, updated_at)
-                    VALUES (:sid, :k, 0, :dt);
-                """),
-                {"sid": store_id, "k": normalized_key, "dt": datetime.datetime.now(datetime.timezone.utc)}
-            )
-        except Exception:
-            pass
+        from ..stores.grocery.grocery_prefix.models import GroceryIdCounter
+        counter = db.query(GroceryIdCounter).filter(
+            GroceryIdCounter.store_id == store_id,
+            GroceryIdCounter.key == normalized_key
+        ).with_for_update().first()
 
-    # Read and increment with row lock
-    try:
-        row = db.execute(
-            text("SELECT id, last_number FROM grocery_id_counters WHERE store_id = :sid AND key = :k;"),
-            {"sid": store_id, "k": normalized_key}
-        ).fetchone()
-
-        if row:
-            next_num = int(row[1]) + 1
-            db.execute(
-                text("UPDATE grocery_id_counters SET last_number = :num, updated_at = :dt WHERE id = :cid;"),
-                {"num": next_num, "dt": datetime.datetime.now(datetime.timezone.utc), "cid": row[0]}
-            )
-            return f"{store_code}_{prefix}_{str(next_num).zfill(4)}"
+        now = datetime.datetime.now(datetime.timezone.utc)
+        if counter:
+            counter.last_number += 1
+            counter.updated_at = now
+            next_num = counter.last_number
         else:
-            # First row insertion
-            db.execute(
-                text("INSERT INTO grocery_id_counters (store_id, key, last_number, updated_at) VALUES (:sid, :k, 1, :dt);"),
-                {"sid": store_id, "k": normalized_key, "dt": datetime.datetime.now(datetime.timezone.utc)}
+            counter = GroceryIdCounter(
+                store_id=store_id,
+                key=normalized_key,
+                last_number=1,
+                updated_at=now
             )
-            return f"{store_code}_{prefix}_0001"
+            db.add(counter)
+            next_num = 1
+        db.flush()
+        return f"{store_code}_{prefix}_{str(next_num).zfill(4)}"
     except Exception:
         # Fallback to document_sequences table
         try:
@@ -170,11 +149,12 @@ def preview_next_id(db: Session, store_id: int, key: str) -> str:
     prefix = get_prefix_value(db, store_id, normalized_key)
 
     try:
-        row = db.execute(
-            text("SELECT last_number FROM grocery_id_counters WHERE store_id = :sid AND key = :k;"),
-            {"sid": store_id, "k": normalized_key}
-        ).fetchone()
-        next_num = (int(row[0]) + 1) if row else 1
+        from ..stores.grocery.grocery_prefix.models import GroceryIdCounter
+        counter = db.query(GroceryIdCounter).filter(
+            GroceryIdCounter.store_id == store_id,
+            GroceryIdCounter.key == normalized_key
+        ).first()
+        next_num = (counter.last_number + 1) if counter else 1
         return f"{store_code}_{prefix}_{str(next_num).zfill(4)}"
     except Exception:
         pass

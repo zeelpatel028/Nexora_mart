@@ -1,10 +1,10 @@
-from typing import Optional, List
+from typing import Optional, List, Union
 from pydantic import BaseModel, Field
 
 
 class PurchaseOrderCreate(BaseModel):
     supplier_id: int
-    product_id: int
+    product_id: Union[str, int]
     qty: float = Field(..., gt=0)
     unit: str = "Piece"
     purchase_price: float = Field(..., ge=0)
@@ -25,7 +25,7 @@ class PurchaseOrderResponse(BaseModel):
     order_code: str
     supplier_id: Optional[int]
     supplier_name: Optional[str]
-    product_id: Optional[int]
+    product_id: Optional[Union[str, int]] = None
     product_name: Optional[str]
     qty: float
     unit: str
