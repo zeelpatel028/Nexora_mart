@@ -46,6 +46,10 @@ from app.stores.grocery.grocery_backup.service import GroceryBackupService
 
 
 class TestGroceryStoreAPIs(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls):
+        Base.metadata.create_all(bind=engine)
+
     def setUp(self):
         self.db = SessionLocal()
         ts = int(datetime.datetime.now().timestamp() * 1000)
@@ -64,6 +68,7 @@ class TestGroceryStoreAPIs(unittest.TestCase):
 
         self.store = Store(
             user_id=self.user.id,
+            shop_category_id=1,
             name="Tulsi Fresh Groceries",
             store_type="grocery",
             store_code=f"S{self.user.id:03d}",

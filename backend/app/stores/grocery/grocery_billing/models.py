@@ -52,7 +52,7 @@ class GroceryBillItem(Base):
     id = Column(Integer, primary_key=True, autoincrement=True, index=True)
     bill_id = Column(Integer, ForeignKey("grocery_bills.id", ondelete="CASCADE"), nullable=False, index=True)
     store_id = Column(Integer, ForeignKey("stores.id", ondelete="CASCADE"), nullable=False, index=True)
-    product_id = Column(Integer, ForeignKey("grocery_products.id", ondelete="SET NULL"), nullable=True, index=True)
+    product_id = Column(String(36), ForeignKey("grocery_products.id", ondelete="SET NULL"), nullable=True, index=True)
 
     product_name = Column(String(255), nullable=False)
     price_with_tax = Column(Float, nullable=False)  # Price as edited for THIS bill only

@@ -1,5 +1,5 @@
 import datetime
-from typing import Optional, List, Dict, Any, Tuple
+from typing import Optional, List, Dict, Any, Tuple, Union
 from sqlalchemy.orm import Session
 from sqlalchemy import or_
 from fastapi import HTTPException, status
@@ -100,6 +100,7 @@ class GroceryProductService:
             store_id=store_id,
             product_code=code,
             name=data.name.strip(),
+            product_name=data.name.strip(),
             supplier_id=data.supplier_id,
             purchase_price_with_tax=data.purchase_price_with_tax,
             purchase_gst_rate=data.purchase_gst_rate,
@@ -133,7 +134,7 @@ class GroceryProductService:
         return product
 
     @staticmethod
-    def get_product_detail(db: Session, store_id: int, product_id: int) -> dict:
+    def get_product_detail(db: Session, store_id: int, product_id: Union[str, int]) -> dict:
         p = db.query(GroceryProduct).filter(
             GroceryProduct.id == product_id,
             GroceryProduct.store_id == store_id,
@@ -185,7 +186,7 @@ class GroceryProductService:
         }
 
     @staticmethod
-    def update_product(db: Session, store_id: int, product_id: int, data: GroceryProductUpdate) -> GroceryProduct:
+    def update_product(db: Session, store_id: int, product_id: Union[str, int], data: GroceryProductUpdate) -> GroceryProduct:
         p = db.query(GroceryProduct).filter(
             GroceryProduct.id == product_id,
             GroceryProduct.store_id == store_id,
@@ -205,7 +206,7 @@ class GroceryProductService:
         return p
 
     @staticmethod
-    def delete_product(db: Session, store_id: int, product_id: int):
+    def delete_product(db: Session, store_id: int, product_id: Union[str, int]):
         p = db.query(GroceryProduct).filter(
             GroceryProduct.id == product_id,
             GroceryProduct.store_id == store_id

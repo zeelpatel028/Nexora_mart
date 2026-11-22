@@ -61,7 +61,7 @@ def create_product(
 
 @router.get("/{product_id}")
 def get_product_detail(
-    product_id: int,
+    product_id: str,
     db: Session = Depends(get_db),
     store: Store = Depends(get_current_store)
 ):
@@ -71,7 +71,7 @@ def get_product_detail(
 
 @router.put("/{product_id}", response_model=GroceryProductResponse)
 def update_product(
-    product_id: int,
+    product_id: str,
     payload: GroceryProductUpdate,
     db: Session = Depends(get_db),
     store: Store = Depends(get_current_store)
@@ -83,7 +83,7 @@ def update_product(
 
 @router.delete("/{product_id}")
 def delete_product(
-    product_id: int,
+    product_id: str,
     db: Session = Depends(get_db),
     store: Store = Depends(get_current_store)
 ):
