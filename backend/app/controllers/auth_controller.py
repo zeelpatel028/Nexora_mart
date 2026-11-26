@@ -1,7 +1,9 @@
-import random
+import datetime
+import secrets
 from typing import Optional
 from fastapi import HTTPException, status
 from sqlalchemy.orm import Session
+from ..core.config import settings
 from ..schemas.auth_schema import (
     UserLoginRequest,
     UserRegisterRequest,
@@ -20,7 +22,7 @@ from ..services.auth_service import AuthService
 from ..services.cache_service import CacheService
 from ..services.report_service import ReportService
 from ..utils.security import get_password_hash, verify_password
-from ..models.user import User
+from ..models.user import User, PasswordResetOtp
 from ..models.store import Store
 
 class AuthController:
@@ -189,31 +191,74 @@ class AuthController:
     @staticmethod
     def forgot_password(db: Session, request_data: ForgotPasswordRequest) -> dict:
         user = AuthService.get_user_by_email(db, request_data.email)
-        target_email = user.email if user else request_data.email.strip()
-        otp_code = str(random.randint(100000, 999999))
+        target_email = (user.email if user else request_data.email).strip().lower()
+        otp_code = f"{secrets.randbelow(900000) + 100000}"
+
+        # Persist OTP in database (invalidate previous unused OTPs for this email)
+        now = datetime.datetime.now(datetime.timezone.utc)
+        if user:
+            db.query(PasswordResetOtp).filter(
+                PasswordResetOtp.email == target_email,
+                PasswordResetOtp.is_used == False
+            ).update({"is_used": True})
+            db.add(PasswordResetOtp(
+                user_id=user.id,
+                email=target_email,
+                otp_code=otp_code,
+                otp_type="RESET_PASSWORD",
+                is_used=False,
+                expires_at=now + datetime.timedelta(minutes=10),
+            ))
+            db.commit()
+
         try:
             CacheService.set_otp(target_email, otp_code, ttl=600)
-            if target_email != request_data.email.strip():
-                CacheService.set_otp(request_data.email.strip(), otp_code, ttl=600)
+            req_email_norm = request_data.email.strip().lower()
+            if target_email != req_email_norm:
+                CacheService.set_otp(req_email_norm, otp_code, ttl=600)
         except Exception:
             pass
-        return {
+
+        resp = {
             "success": True,
-            "message": f"6-digit OTP verification code generated for {target_email}",
-            "otp": otp_code,
+            "message": f"If an account exists for {target_email}, a 6-digit verification OTP has been generated.",
             "email": target_email,
-            "exists": bool(user)
         }
+        if settings.is_dev:
+            resp["otp"] = otp_code
+        return resp
 
     @staticmethod
-    def verify_otp(request_data: VerifyOtpRequest) -> dict:
+    def _is_valid_otp(email: str, provided_otp: str, db: Optional[Session] = None) -> bool:
+        clean_email = email.strip().lower()
+        code = provided_otp.strip()
+        if not code:
+            return False
         saved_otp = None
         try:
-            saved_otp = CacheService.get_otp(request_data.email)
+            saved_otp = CacheService.get_otp(clean_email)
         except Exception:
             pass
-        provided_otp = request_data.otp.strip()
-        if (saved_otp and (saved_otp == provided_otp or provided_otp == "123456")) or provided_otp == "123456":
+        if saved_otp and secrets.compare_digest(saved_otp, code):
+            return True
+        if db is not None:
+            now = datetime.datetime.now(datetime.timezone.utc)
+            otp_row = db.query(PasswordResetOtp).filter(
+                PasswordResetOtp.email == clean_email,
+                PasswordResetOtp.otp_code == code,
+                PasswordResetOtp.is_used == False,
+            ).order_by(PasswordResetOtp.id.desc()).first()
+            if otp_row:
+                exp = otp_row.expires_at
+                if exp.tzinfo is None:
+                    exp = exp.replace(tzinfo=datetime.timezone.utc)
+                if exp > now:
+                    return True
+        return False
+
+    @staticmethod
+    def verify_otp(request_data: VerifyOtpRequest, db: Optional[Session] = None) -> dict:
+        if AuthController._is_valid_otp(request_data.email, request_data.otp, db=db):
             return {
                 "success": True,
                 "message": "OTP verification successful"
@@ -225,20 +270,15 @@ class AuthController:
 
     @staticmethod
     def reset_password(db: Session, request_data: ResetPasswordRequest) -> dict:
-        saved_otp = None
-        try:
-            saved_otp = CacheService.get_otp(request_data.email)
-        except Exception:
-            pass
-        provided_otp = request_data.otp.strip()
-        is_valid_otp = (saved_otp and saved_otp == provided_otp) or provided_otp == "123456"
-        if not is_valid_otp:
+        clean_email = request_data.email.strip().lower()
+        code = request_data.otp.strip()
+        if not AuthController._is_valid_otp(clean_email, code, db=db):
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail="Invalid or expired OTP code."
             )
 
-        user = AuthService.get_user_by_email(db, request_data.email)
+        user = AuthService.get_user_by_email(db, clean_email)
         if not user:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
@@ -246,11 +286,16 @@ class AuthController:
             )
 
         user.hashed_password = get_password_hash(request_data.newPassword)
+        db.query(PasswordResetOtp).filter(
+            PasswordResetOtp.email == user.email.lower(),
+            PasswordResetOtp.is_used == False
+        ).update({"is_used": True})
         db.commit()
         db.refresh(user)
 
         try:
-            CacheService.clear_otp(request_data.email)
+            CacheService.clear_otp(clean_email)
+            CacheService.clear_otp(user.email)
             CacheService.invalidate_user(user.id, user.email)
         except Exception:
             pass
@@ -262,19 +307,24 @@ class AuthController:
 
     @staticmethod
     def update_profile(db: Session, current_user: User, request_data: UpdateProfileRequest) -> UserResponse:
+        # Always load persistent DB User instance (handles Redis-cached detached user objects)
+        db_user = db.query(User).filter(User.id == current_user.id).first()
+        if not db_user:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found.")
+
         if request_data.name and not request_data.firstName:
             parts = request_data.name.strip().split(maxsplit=1)
-            current_user.first_name = parts[0]
+            db_user.first_name = parts[0]
             if len(parts) > 1:
-                current_user.surname = parts[1]
+                db_user.surname = parts[1]
         else:
             if request_data.firstName is not None and request_data.firstName.strip():
-                current_user.first_name = request_data.firstName.strip()
+                db_user.first_name = request_data.firstName.strip()
             if request_data.surname is not None and request_data.surname.strip():
-                current_user.surname = request_data.surname.strip()
+                db_user.surname = request_data.surname.strip()
 
         if request_data.phone is not None and request_data.phone.strip():
-            current_user.phone = request_data.phone.strip()
+            db_user.phone = request_data.phone.strip()
 
         if request_data.newPassword:
             if not request_data.currentPassword:
@@ -282,25 +332,25 @@ class AuthController:
                     status_code=status.HTTP_400_BAD_REQUEST,
                     detail="Current password is required to set a new password."
                 )
-            if not verify_password(request_data.currentPassword, current_user.hashed_password):
+            if not verify_password(request_data.currentPassword, db_user.hashed_password):
                 raise HTTPException(
                     status_code=status.HTTP_400_BAD_REQUEST,
                     detail="Incorrect current password."
                 )
-            current_user.hashed_password = get_password_hash(request_data.newPassword)
+            db_user.hashed_password = get_password_hash(request_data.newPassword)
 
         db.commit()
-        db.refresh(current_user)
+        db.refresh(db_user)
 
         try:
-            CacheService.invalidate_user(current_user.id, current_user.email)
+            CacheService.invalidate_user(db_user.id, db_user.email)
         except Exception:
             pass
 
-        store = db.query(Store).filter(Store.user_id == current_user.id, Store.is_active == True).first()
-        user_resp = AuthController.format_user_response(current_user, store)
+        store = db.query(Store).filter(Store.user_id == db_user.id, Store.is_active == True).first()
+        user_resp = AuthController.format_user_response(db_user, store)
         try:
-            CacheService.set_user_profile(current_user.id, user_resp.model_dump())
+            CacheService.set_user_profile(db_user.id, user_resp.model_dump())
         except Exception:
             pass
         return user_resp

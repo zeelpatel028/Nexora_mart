@@ -54,6 +54,6 @@ class GroceryLookupService:
             db.commit()
             rows = db.query(GroceryUnit).order_by(GroceryUnit.name.asc()).all()
 
-        res = [{"id": r.id, "name": r.name, "short_name": r.short_name} for r in rows]
+        res = [{"id": r.id, "name": r.name, "short_name": r.short_name, "symbol": r.short_name} for r in rows]
         set_cached_units(res)
         return res

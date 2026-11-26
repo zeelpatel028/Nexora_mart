@@ -2,6 +2,7 @@ import datetime
 from typing import List, Optional
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
+from sqlalchemy import func
 from ..database.connection import get_db
 from ..middleware.auth_middleware import get_current_user
 from ..models.user import User
@@ -36,20 +37,28 @@ def list_customers(
         p = f"%{search.strip()}%"
         q = q.filter((Customer.name.ilike(p)) | (Customer.phone.ilike(p)))
     customers = q.order_by(Customer.name).all()
+    cust_ids = [c.id for c in customers]
+    inv_map = {}
+    if cust_ids:
+        rows = db.query(
+            Invoice.customer_id,
+            func.count(Invoice.id),
+            func.coalesce(func.sum(Invoice.paid_amount), 0.0),
+            func.max(Invoice.invoice_date),
+        ).filter(
+            Invoice.store_id == store.id,
+            Invoice.customer_id.in_(cust_ids),
+        ).group_by(Invoice.customer_id).all()
+        for cid, cnt, paid_sum, max_dt in rows:
+            inv_map[cid] = (int(cnt or 0), float(paid_sum or 0.0), max_dt)
+
     for cust in customers:
-        invoices = cust.invoices or []
-        total_bills = len(invoices)
-        total_paid = sum(float(inv.paid_amount or 0.0) for inv in invoices)
-        total_outstanding = max(0.0, float(cust.balance or 0.0))
-        cust.total_outstanding = total_outstanding
+        total_bills, total_paid, last_dt = inv_map.get(cust.id, (0, 0.0, None))
+        cust.total_outstanding = max(0.0, float(cust.balance or 0.0))
         cust.total_paid = total_paid
         cust.total_bills = total_bills
         cust.transaction_count = total_bills
-        if invoices:
-            last_inv = max(invoices, key=lambda i: i.invoice_date or datetime.datetime.min)
-            cust.last_transaction_date = last_inv.invoice_date.isoformat() if last_inv.invoice_date else None
-        else:
-            cust.last_transaction_date = None
+        cust.last_transaction_date = last_dt.isoformat() if last_dt else None
     return customers
 
 @router.get("/customers/{id}")
@@ -383,6 +392,18 @@ def create_supplier(
     db.add(supp)
     db.commit()
     db.refresh(supp)
+    return supp
+
+@router.get("/suppliers/{id}", response_model=SupplierResponse)
+def get_supplier(
+    id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    store = StoreService.get_user_store(db, current_user)
+    supp = db.query(Supplier).filter(Supplier.id == id, Supplier.store_id == store.id).first()
+    if not supp:
+        raise HTTPException(status_code=404, detail="Supplier not found.")
     return supp
 
 @router.put("/suppliers/{id}", response_model=SupplierResponse)

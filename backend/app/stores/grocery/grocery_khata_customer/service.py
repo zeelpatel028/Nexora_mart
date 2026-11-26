@@ -116,7 +116,10 @@ class GroceryKhataCustomerService:
                 "total_bills_count": agg["total_bills"],
                 "total_bill_amount": agg["total_amt"],
                 "pending_bill_count": agg["pending_bills"],
-                "pending_bill_amount": agg["pending_amt"]
+                "pending_bill_amount": agg["pending_amt"],
+                "total_bills": agg["total_bills"],
+                "unpaid_bills": agg["pending_bills"],
+                "total_due": agg["pending_amt"]
             })
 
         set_cached_customers(store_id, cache_key, {"items": results, "total": total})
@@ -172,6 +175,9 @@ class GroceryKhataCustomerService:
         elif tab_filter == "unpaid":
             filtered_bills = pending_bills
 
+        paid_bills = [b for b in all_bills if b.payment_status == "paid"]
+        total_paid = sum(float(b.grand_total or 0.0) for b in paid_bills)
+
         return {
             "customer": {
                 "id": customer.id,
@@ -183,8 +189,27 @@ class GroceryKhataCustomerService:
                 "total_bills_count": total_bills,
                 "total_bill_amount": round(total_amount, 2),
                 "pending_bill_count": len(pending_bills),
-                "pending_bill_amount": round(pending_amount, 2)
+                "pending_bill_amount": round(pending_amount, 2),
+                "unpaid_bills": len(pending_bills),
+                "total_due": round(pending_amount, 2),
             },
+            "metrics": {
+                "total_bills": total_bills,
+                "unpaid_bills": len(pending_bills),
+                "total_billed": round(total_amount, 2),
+                "total_paid": round(total_paid, 2),
+                "total_due": round(pending_amount, 2),
+            },
+            "payments": [
+                {
+                    "id": b.id,
+                    "invoice_code": b.invoice_code,
+                    "amount": float(b.grand_total or 0.0),
+                    "payment_method": "SETTLED",
+                    "created_at": str(b.paid_at or b.updated_at or b.created_at),
+                }
+                for b in paid_bills
+            ],
             "bills": [
                 {
                     "id": b.id,

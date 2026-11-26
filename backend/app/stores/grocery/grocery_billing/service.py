@@ -181,15 +181,21 @@ class GroceryBillingService:
         offset = (max(page, 1) - 1) * limit
         bills = query.order_by(GroceryBill.id.desc()).offset(offset).limit(limit).all()
 
+        cust_ids = list({b.customer_id for b in bills if b.customer_id})
+        cust_map = {}
+        if cust_ids:
+            for c in db.query(GroceryCustomer).filter(
+                GroceryCustomer.id.in_(cust_ids),
+                GroceryCustomer.store_id == store_id,
+            ).all():
+                cust_map[c.id] = (c.name, c.phone)
+
         results = []
         for b in bills:
             cust_name = b.walk_in_name or "Walk-in"
             cust_phone = b.walk_in_phone or ""
-            if b.customer_id:
-                c = db.query(GroceryCustomer).filter(GroceryCustomer.id == b.customer_id).first()
-                if c:
-                    cust_name = c.name
-                    cust_phone = c.phone
+            if b.customer_id and b.customer_id in cust_map:
+                cust_name, cust_phone = cust_map[b.customer_id]
 
             results.append({
                 "id": b.id,
@@ -225,16 +231,34 @@ class GroceryBillingService:
 
         store = db.query(Store).filter(Store.id == store_id).first()
         store_name = store.name if store else "Tulsi Mart"
-        store_phone = store.phone if store else ""
-        store_address = store.address if store else ""
-        store_gst = getattr(store, "gst_number", None) or getattr(store, "tax_number", "N/A")
+        store_phone = (
+            (getattr(store, "phone", None))
+            or (store.owner_details.contact_phone if store and store.owner_details else "")
+            or ""
+        )
+        store_address = (
+            getattr(store, "address", None)
+            or (
+                f"{store.addresses[0].address_line1}, {store.addresses[0].city}"
+                if store and store.addresses else ""
+            )
+            or ""
+        )
+        store_gst = (
+            getattr(store, "gst_number", None)
+            or (store.business_details.gstin if store and store.business_details else None)
+            or "N/A"
+        )
 
         cust_name = bill.walk_in_name or "Walk-in Customer"
         cust_phone = bill.walk_in_phone or ""
         cust_addr = bill.walk_in_address or ""
 
         if bill.customer_id:
-            c = db.query(GroceryCustomer).filter(GroceryCustomer.id == bill.customer_id).first()
+            c = db.query(GroceryCustomer).filter(
+                GroceryCustomer.id == bill.customer_id,
+                GroceryCustomer.store_id == store_id,
+            ).first()
             if c:
                 cust_name = c.name
                 cust_phone = c.phone
@@ -255,7 +279,7 @@ class GroceryBillingService:
                 "line_total": it.line_total
             })
 
-        return {
+        invoice_dict = {
             "id": bill.id,
             "store_id": bill.store_id,
             "invoice_code": bill.invoice_code,
@@ -275,7 +299,18 @@ class GroceryBillingService:
             "paid_at": str(bill.paid_at) if bill.paid_at else None,
             "template_id": bill.template_id,
             "created_at": str(bill.created_at),
-            "items": items_list
+            "items": items_list,
+        }
+        return {
+            **invoice_dict,
+            "invoice": invoice_dict,
+            "store": {
+                "id": store_id,
+                "name": store_name,
+                "phone": store_phone,
+                "address": store_address,
+                "gst_number": store_gst,
+            },
         }
 
     @staticmethod

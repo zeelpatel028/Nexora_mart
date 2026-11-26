@@ -49,8 +49,9 @@ def login(request: Request, request_data: UserLoginRequest, db: Session = Depend
         # Authentication succeeded! Reset failed attempts counter
         RateLimiterService.clear_failed_logins(norm_email, client_ip)
         return response
-    except (HTTPException, ValueError) as exc:
-        # Increment failed login attempts
+    except HTTPException as exc:
+        if exc.status_code == status.HTTP_403_FORBIDDEN:
+            raise exc
         new_count, attempts_left, lock_time = RateLimiterService.record_failed_login(norm_email, client_ip)
         if new_count >= RateLimiterService.MAX_FAILED_LOGIN_ATTEMPTS:
             mins = lock_time // 60
@@ -61,12 +62,27 @@ def login(request: Request, request_data: UserLoginRequest, db: Session = Depend
                 detail=f"Too many attempts. Try again in {time_str}",
                 headers={"Retry-After": str(lock_time)}
             )
-        else:
-            plural = "attempt" if attempts_left == 1 else "attempts"
+        plural = "attempt" if attempts_left == 1 else "attempts"
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail=f"Incorrect email or password. You have {attempts_left} {plural} left."
+        )
+    except ValueError:
+        new_count, attempts_left, lock_time = RateLimiterService.record_failed_login(norm_email, client_ip)
+        if new_count >= RateLimiterService.MAX_FAILED_LOGIN_ATTEMPTS:
+            mins = lock_time // 60
+            secs = lock_time % 60
+            time_str = f"{mins:02d}:{secs:02d}"
             raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED,
-                detail=f"Incorrect email or password. You have {attempts_left} {plural} left."
+                status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+                detail=f"Too many attempts. Try again in {time_str}",
+                headers={"Retry-After": str(lock_time)}
             )
+        plural = "attempt" if attempts_left == 1 else "attempts"
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail=f"Incorrect email or password. You have {attempts_left} {plural} left."
+        )
 
 @router.post("/register", response_model=TokenResponse, status_code=status.HTTP_201_CREATED)
 @router.post("/register/", response_model=TokenResponse, status_code=status.HTTP_201_CREATED, include_in_schema=False)
@@ -107,9 +123,9 @@ def forgot_password(request: Request, request_data: ForgotPasswordRequest, db: S
 
 @router.post("/verify-otp")
 @router.post("/verify-otp/", include_in_schema=False)
-def verify_otp(request_data: VerifyOtpRequest):
+def verify_otp(request_data: VerifyOtpRequest, db: Session = Depends(get_db)):
     """Verify 6-digit OTP code sent to user email"""
-    return AuthController.verify_otp(request_data)
+    return AuthController.verify_otp(request_data, db=db)
 
 @router.post("/reset-password")
 @router.post("/reset-password/", include_in_schema=False)

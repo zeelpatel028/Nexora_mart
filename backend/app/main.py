@@ -9,14 +9,15 @@ if str(_BACKEND_DIR) not in sys.path:
 if str(_CURRENT_DIR) not in sys.path:
     sys.path.insert(0, str(_CURRENT_DIR))
 
+from contextlib import asynccontextmanager
 import logging
-import threading
 import time
 from fastapi import FastAPI, Request, status
 from fastapi.responses import JSONResponse
 from fastapi.exceptions import RequestValidationError, ResponseValidationError
 from starlette.exceptions import HTTPException as StarletteHTTPException
 from starlette.middleware.gzip import GZipMiddleware
+from sqlalchemy import text
 
 logger = logging.getLogger("nmart.api")
 
@@ -24,6 +25,7 @@ from app.core.config import settings
 from app.core.redis_client import redis_client
 from app.database.connection import Base, engine, SessionLocal
 from app.middleware.cors_middleware import setup_cors
+from app.middleware.rate_limiter import RateLimiterMiddleware
 from app.middleware.security_headers_middleware import SecurityHeadersMiddleware
 from app.models import *  # Import all models so Base.metadata knows about them
 from app.models.user import User
@@ -39,7 +41,6 @@ from app.routes import (
     clothing_product_router,
     agro_product_router,
     medical_product_router,
-    grocery_product_router,
     electronics_product_router,
     plastic_product_router,
     handloom_product_router,
@@ -131,26 +132,31 @@ def seed_initial_data():
 
 def initialize_database():
     try:
-        # Run schema creation and seed data
         Base.metadata.create_all(bind=engine)
         seed_initial_data()
     except Exception as e:
         logger.warning(f"Notice: Database initialization ({e})")
-        print(f"Notice: Database initialization ({e})")
 
 
-threading.Thread(target=initialize_database, daemon=True, name="db_init").start()
+@asynccontextmanager
+async def lifespan(_app: FastAPI):
+    initialize_database()
+    yield
 
 
 def create_application() -> FastAPI:
     app = FastAPI(
         title=settings.PROJECT_NAME,
         version="2.0.0",
-        description="Tulsi Mart All-in-One Multi-Category Store Management API"
+        description="Tulsi Mart All-in-One Multi-Category Store Management API",
+        lifespan=lifespan,
     )
 
     # Setup Cross-Origin Resource Sharing
     setup_cors(app)
+
+    # Global sliding-window rate limiter backed by Redis with in-memory fallback
+    app.add_middleware(RateLimiterMiddleware, max_requests=settings.GLOBAL_RATE_LIMIT_PER_MINUTE, window_seconds=60)
 
     # Starlette GZip compression for high-performance payload delivery
     app.add_middleware(GZipMiddleware, minimum_size=1000)
@@ -274,6 +280,8 @@ def create_application() -> FastAPI:
         )
 
     # Mount API routers under /api and /api/v1
+    # Note: v1_* routers are mounted before legacy partner/order routers so
+    # static routes like /customers/dashboard and /suppliers/dashboard match before /{id}.
     all_routers = [
         auth_router,
         store_type_router,
@@ -284,7 +292,6 @@ def create_application() -> FastAPI:
         clothing_product_router,
         agro_product_router,
         medical_product_router,
-        grocery_product_router,
         electronics_product_router,
         plastic_product_router,
         handloom_product_router,
@@ -293,6 +300,12 @@ def create_application() -> FastAPI:
         inventory_router,
         sale_router,
         bill_router,
+        v1_billing_router,
+        v1_orders_router,
+        v1_customers_router,
+        v1_suppliers_router,
+        v1_store_prefixes_router,
+        v1_settings_router,
         order_router,
         purchase_router,
         partner_router,
@@ -304,12 +317,6 @@ def create_application() -> FastAPI:
         return_router,
         cart_router,
         wishlist_router,
-        v1_billing_router,
-        v1_orders_router,
-        v1_customers_router,
-        v1_suppliers_router,
-        v1_store_prefixes_router,
-        v1_settings_router,
     ]
     for r in all_routers:
         app.include_router(r, prefix=settings.API_V1_PREFIX)
@@ -341,11 +348,20 @@ def create_application() -> FastAPI:
 
     @app.get("/health", tags=["Health"], operation_id="health_check_get")
     def health_check():
+        db_ok = False
+        db_dialect = engine.dialect.name
+        try:
+            with engine.connect() as conn:
+                conn.execute(text("SELECT 1"))
+            db_ok = True
+        except Exception:
+            db_ok = False
         return {
-            "status": "success",
-            "message": "Tulsi Mart API Healthy",
+            "status": "success" if db_ok else "degraded",
+            "message": "Tulsi Mart API Healthy" if db_ok else "Tulsi Mart API Degraded",
             "service": settings.PROJECT_NAME,
             "environment": settings.ENVIRONMENT,
+            "database": {"connected": db_ok, "dialect": db_dialect},
             "redis": redis_client.get_status()
         }
 

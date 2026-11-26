@@ -1,6 +1,6 @@
 import datetime
 import logging
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, joinedload, selectinload
 from sqlalchemy import func
 from ..models.store import Store
 from ..models.product import Product
@@ -114,7 +114,7 @@ class ReportService:
         now = datetime.datetime.now(datetime.timezone.utc)
         start_date = now - datetime.timedelta(days=days)
 
-        sales = db.query(Sale).filter(
+        sales = db.query(Sale.invoice_date, Sale.created_at, Sale.total_amount).filter(
             Sale.store_id == store.id,
             Sale.sale_date >= start_date
         ).order_by(Sale.sale_date).all()
@@ -125,10 +125,10 @@ class ReportService:
             daily_map[d] = {"date": d, "sales": 0.0, "orders": 0}
 
         total_rev = 0.0
-        for s in sales:
-            sale_dt = s.sale_date or getattr(s, "created_at", None) or now
+        for inv_dt, created_dt, tot_amt in sales:
+            sale_dt = inv_dt or created_dt or now
             d_key = sale_dt.strftime("%b %d")
-            amt = float(s.total_amount or 0.0)
+            amt = float(tot_amt or 0.0)
             if d_key in daily_map:
                 daily_map[d_key]["sales"] = round(daily_map[d_key]["sales"] + amt, 2)
                 daily_map[d_key]["orders"] += 1
@@ -174,7 +174,11 @@ class ReportService:
 
     @staticmethod
     def get_inventory_valuation(db: Session, store: Store) -> dict:
-        products = db.query(Product).filter(
+        products = db.query(Product).options(
+            joinedload(Product.pricing),
+            joinedload(Product.inventory_record),
+            selectinload(Product.stock_records),
+        ).filter(
             Product.store_id == store.id,
             Product.is_active == True
         ).all()
@@ -216,7 +220,9 @@ class ReportService:
         ).count()
 
         # Low stock query from database
-        db_low_stock = db.query(Inventory).filter(
+        db_low_stock = db.query(Inventory).options(
+            joinedload(Inventory.product).joinedload(Product.category)
+        ).filter(
             Inventory.store_id == store.id,
             Inventory.quantity <= (Inventory.reorder_level or 15)
         ).limit(5).all()
