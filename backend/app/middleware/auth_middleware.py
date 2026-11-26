@@ -50,6 +50,8 @@ def get_current_user(
             surname=cached_profile.get("surname", ""),
             phone=cached_profile.get("phone", ""),
             store_type=cached_profile.get("storeType") or cached_profile.get("store_type", ""),
+            shop_category_id=cached_profile.get("shop_category_id"),
+            role=cached_profile.get("role", "owner"),
             is_active=cached_profile.get("isActive", True)
         )
 
@@ -70,6 +72,8 @@ def get_current_user(
         "surname": user.surname,
         "phone": user.phone,
         "storeType": user.store_type,
+        "shop_category_id": user.shop_category_id,
+        "role": user.role,
         "isActive": user.is_active
     }
     CacheService.set_user_profile(user.id, user_dict)

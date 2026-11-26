@@ -3,7 +3,10 @@ import logging
 import time
 import fnmatch
 from typing import Optional, Any, Dict, Tuple
-import redis
+try:
+    import redis
+except ImportError:
+    redis = None  # type: ignore[assignment]
 from .config import settings
 
 logger = logging.getLogger(__name__)
@@ -90,8 +93,8 @@ class RedisManager:
         self._cooldown_seconds: float = 30.0
         self._memory_cache = InMemoryTTLCache()
 
-    def get_client(self) -> Optional[redis.Redis]:
-        if not settings.REDIS_ENABLED or not settings.REDIS_URL:
+    def get_client(self) -> Optional[Any]:
+        if redis is None or not settings.REDIS_ENABLED or not settings.REDIS_URL:
             return None
 
         # If connected and healthy, return client
@@ -223,6 +226,40 @@ class RedisManager:
                 self._is_connected = False
                 self._last_failure_time = time.time()
         return mem_count
+
+    def incr(self, key: str) -> int:
+        client = self.get_client()
+        if client:
+            try:
+                return int(client.incr(key))
+            except Exception as e:
+                logger.warning(f"Redis incr failed for key '{key}': {e}")
+                self._is_connected = False
+                self._last_failure_time = time.time()
+        return self._memory_cache.incr(key)
+
+    def expire(self, key: str, seconds: int) -> bool:
+        self._memory_cache.expire(key, seconds)
+        client = self.get_client()
+        if client:
+            try:
+                return bool(client.expire(key, seconds))
+            except Exception as e:
+                logger.warning(f"Redis expire failed for key '{key}': {e}")
+                self._is_connected = False
+                self._last_failure_time = time.time()
+        return True
+
+    def ttl(self, key: str) -> int:
+        client = self.get_client()
+        if client:
+            try:
+                return int(client.ttl(key))
+            except Exception as e:
+                logger.warning(f"Redis ttl failed for key '{key}': {e}")
+                self._is_connected = False
+                self._last_failure_time = time.time()
+        return self._memory_cache.ttl(key)
 
 
 # Singleton instance

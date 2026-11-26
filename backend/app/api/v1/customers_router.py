@@ -2,7 +2,7 @@ import datetime
 from typing import Optional, List
 from fastapi import APIRouter, Depends, Query, status, HTTPException
 from sqlalchemy.orm import Session
-from sqlalchemy import or_
+from sqlalchemy import or_, func, case
 from ...api.dependencies import get_db, get_current_user, get_current_store
 from ...models.user import User
 from ...models.store import Store
@@ -28,16 +28,25 @@ def get_customer_dashboard_metrics(
     user: User = Depends(get_current_user)
 ):
     """Top-level metrics for Khata Customer Dashboard: Total Customers, Pending Bills, Pending Amount."""
-    total_customers = db.query(Customer).filter(Customer.store_id == store.id, Customer.is_active == True).count()
-    
-    pending_invoices = db.query(Invoice).filter(
+    total_customers = db.query(func.count(Customer.id)).filter(
+        Customer.store_id == store.id,
+        Customer.is_active == True
+    ).scalar() or 0
+
+    pending_agg = db.query(
+        func.count(Invoice.id),
+        func.coalesce(
+            func.sum(func.coalesce(Invoice.total_amount, 0.0) - func.coalesce(Invoice.paid_amount, 0.0)),
+            0.0,
+        ),
+    ).filter(
         Invoice.store_id == store.id,
         Invoice.customer_id != None,
-        Invoice.payment_status.in_(["PARTIAL", "UNPAID"])
-    ).all()
+        Invoice.payment_status.in_(["PARTIAL", "UNPAID"]),
+    ).first()
 
-    total_pending_bills = len(pending_invoices)
-    total_pending_amount = sum(max(0.0, float(inv.total_amount or 0.0) - float(inv.paid_amount or 0.0)) for inv in pending_invoices)
+    total_pending_bills = int(pending_agg[0] or 0) if pending_agg else 0
+    total_pending_amount = max(0.0, float(pending_agg[1] or 0.0)) if pending_agg else 0.0
 
     return {
         "total_customers": total_customers,
@@ -63,12 +72,31 @@ def list_customers(
     offset = (max(page, 1) - 1) * limit
     customers = query.order_by(Customer.name).offset(offset).limit(limit).all()
 
+    cust_ids = [c.id for c in customers]
+    agg_map = {}
+    if cust_ids:
+        pending_expr = case(
+            (
+                Invoice.payment_status.in_(["PARTIAL", "UNPAID"]),
+                func.coalesce(Invoice.total_amount, 0.0) - func.coalesce(Invoice.paid_amount, 0.0),
+            ),
+            else_=0.0,
+        )
+        rows = db.query(
+            Invoice.customer_id,
+            func.count(Invoice.id),
+            func.coalesce(func.sum(Invoice.paid_amount), 0.0),
+            func.coalesce(func.sum(pending_expr), 0.0),
+        ).filter(
+            Invoice.store_id == store.id,
+            Invoice.customer_id.in_(cust_ids),
+        ).group_by(Invoice.customer_id).all()
+        for cid, cnt, paid_sum, pend_sum in rows:
+            agg_map[cid] = (int(cnt or 0), float(paid_sum or 0.0), max(0.0, float(pend_sum or 0.0)))
+
     results = []
     for c in customers:
-        invoices = db.query(Invoice).filter(Invoice.customer_id == c.id, Invoice.store_id == store.id).all()
-        pending_invoices = [inv for inv in invoices if inv.payment_status in ("PARTIAL", "UNPAID")]
-        pending_amt = sum(max(0.0, float(inv.total_amount or 0.0) - float(inv.paid_amount or 0.0)) for inv in pending_invoices)
-
+        total_bills, total_paid, pending_amt = agg_map.get(c.id, (0, 0.0, 0.0))
         res = CustomerResponse(
             id=c.id,
             store_id=c.store_id,
@@ -82,9 +110,9 @@ def list_customers(
             balance=round(pending_amt if pending_amt > 0 else (c.balance or 0.0), 2),
             is_active=c.is_active,
             total_outstanding=round(pending_amt, 2),
-            total_paid=sum(float(inv.paid_amount or 0.0) for inv in invoices),
-            total_bills=len(invoices),
-            transaction_count=len(invoices)
+            total_paid=round(total_paid, 2),
+            total_bills=total_bills,
+            transaction_count=total_bills
         )
         results.append(res)
     return results

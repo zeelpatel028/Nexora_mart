@@ -69,12 +69,16 @@ def _build_engine(raw_url: str):
 
     if "postgresql" in db_url:
         connect_args = {"connect_timeout": 5}
+        if settings.DB_SSL_MODE or "aivencloud.com" in db_url or "ssl" in db_url.lower():
+            if "sslmode=" not in db_url.lower():
+                connect_args["sslmode"] = "require"
         engine_kwargs.update({
             "connect_args": connect_args,
             "pool_pre_ping": True,
             "pool_recycle": 300,
             "pool_size": 20,
-            "max_overflow": 40
+            "max_overflow": 40,
+            "pool_timeout": 10
         })
     elif "mysql" in db_url:
         import ssl

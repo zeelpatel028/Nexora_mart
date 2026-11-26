@@ -4,9 +4,15 @@ from pathlib import Path
 backend_dir = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(backend_dir))
 
-from app.database.connection import Base, engine
+from app.database.connection import Base, engine, SessionLocal
 from app.models import *
+from app.services.seed_service import seed_categories_and_fields
 Base.metadata.create_all(bind=engine)
+_seed_db = SessionLocal()
+try:
+    seed_categories_and_fields(_seed_db)
+finally:
+    _seed_db.close()
 
 from tests.test_authentication_lifecycle import test_registration_and_login_lifecycle
 from tests.test_store_isolation import test_store_isolation_and_cross_access_prevention

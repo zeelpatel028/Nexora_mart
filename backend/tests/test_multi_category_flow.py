@@ -6,6 +6,9 @@ sys.path.insert(0, str(backend_path))
 
 from app.database.connection import SessionLocal
 from app.models.user import User
+from app.models.store_type import StoreType
+from app.schemas.auth_schema import UserRegisterRequest
+from app.services.auth_service import AuthService
 from app.routes.store_routes import get_my_store
 from app.routes.category_routes import get_categories, get_category_fields
 from app.routes.product_routes import list_products, create_product
@@ -24,9 +27,27 @@ from app.schemas.finance_schema import ExpenseCreate
 
 def test_full_store_flow():
     db = SessionLocal()
+    test_email = "flow_test_user@nexoramart.com"
+    created_temp = False
     try:
         user = db.query(User).filter(User.email == "demo@nmart.com").first()
-        assert user is not None, "Demo user not found"
+        if not user:
+            existing = db.query(User).filter(User.email == test_email).first()
+            if existing:
+                db.delete(existing)
+                db.commit()
+            st = db.query(StoreType).filter(StoreType.code == "grocery").first()
+            user, _, _, _ = AuthService.register_user(
+                db,
+                UserRegisterRequest(
+                    name="Flow Tester",
+                    email=test_email,
+                    password="FlowPassword123!",
+                    store_type_id=st.id if st else None,
+                    storeType="Grocery Store" if not st else None,
+                ),
+            )
+            created_temp = True
 
         store = get_my_store(db=db, current_user=user)
         store_id = store.id if hasattr(store, 'id') else store.get('id')
@@ -41,6 +62,11 @@ def test_full_store_flow():
         summary = get_dashboard_summary(db=db, current_user=user)
         assert "total_sales" in summary
     finally:
+        if created_temp:
+            u = db.query(User).filter(User.email == test_email).first()
+            if u:
+                db.delete(u)
+                db.commit()
         db.close()
 
 if __name__ == "__main__":

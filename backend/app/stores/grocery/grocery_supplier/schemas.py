@@ -42,6 +42,9 @@ class GrocerySupplierResponse(GrocerySupplierBase):
     total_orders_count: int = 0
     total_purchase_amount: float = 0.0
     pending_payment_amount: float = 0.0
+    total_orders: int = 0
+    total_purchases: float = 0.0
+    pending_balance: float = 0.0
 
     class Config:
         from_attributes = True

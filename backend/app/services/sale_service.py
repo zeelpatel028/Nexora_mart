@@ -1,7 +1,7 @@
 import datetime
 from typing import List, Optional, Tuple
 from fastapi import HTTPException, status
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, joinedload, selectinload
 from ..models.invoice import Invoice, InvoiceItem
 from ..models.product import Product
 from ..models.inventory import ProductStock, StockAdjustment
@@ -74,7 +74,10 @@ class SaleService:
         p_int = int(p_val) if isinstance(p_val, (int, float, str)) else 1
         l_int = int(l_val) if isinstance(l_val, (int, float, str)) else 50
         offset = (max(p_int, 1) - 1) * l_int
-        invoices = query.order_by(Invoice.id.desc()).offset(offset).limit(l_int).all()
+        invoices = query.options(
+            joinedload(Invoice.customer),
+            selectinload(Invoice.items),
+        ).order_by(Invoice.id.desc()).offset(offset).limit(l_int).all()
 
         results = []
         for inv in invoices:
@@ -107,14 +110,22 @@ class SaleService:
 
     @staticmethod
     def get_sale_detail(db: Session, store_id: int, sale_id: int) -> dict:
-        inv = db.query(Invoice).filter(Invoice.id == sale_id, Invoice.store_id == store_id).first()
+        inv = db.query(Invoice).options(
+            joinedload(Invoice.customer),
+            selectinload(Invoice.items),
+        ).filter(Invoice.id == sale_id, Invoice.store_id == store_id).first()
         if not inv:
             raise HTTPException(status_code=404, detail="Sale invoice not found.")
 
+        prod_ids = [it.product_id for it in inv.items if it.product_id is not None]
+        prod_map = {}
+        if prod_ids:
+            for pid, p_name in db.query(Product.id, Product.product_name).filter(Product.id.in_(prod_ids)).all():
+                prod_map[pid] = p_name
+
         items = []
         for it in inv.items:
-            prod = db.query(Product).filter(Product.id == it.product_id).first()
-            p_name = prod.name or prod.product_name if prod else f"Product #{it.product_id}"
+            p_name = prod_map.get(it.product_id) or f"Product #{it.product_id}"
             items.append({
                 "id": it.id,
                 "product_id": it.product_id,
