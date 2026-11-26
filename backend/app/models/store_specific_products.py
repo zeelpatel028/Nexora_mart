@@ -119,7 +119,7 @@ class GroceryProductDetail(Base):
     __tablename__ = "grocery_product_details_v2"
 
     id = Column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()), index=True)
-    grocery_product_id = Column(Integer, ForeignKey("grocery_products.id", ondelete="CASCADE"), unique=True, nullable=False, index=True)
+    grocery_product_id = Column(String(36), ForeignKey("grocery_products.id", ondelete="CASCADE"), unique=True, nullable=False, index=True)
     ingredients = Column(Text, nullable=True)
     nutritional_info = Column(Text, nullable=True)
     allergen_info = Column(Text, nullable=True)

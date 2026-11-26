@@ -102,13 +102,15 @@ def update_account_information(
     Update permitted account and store details.
     """
     store = StoreService.get_user_store(db, current_user)
+    db_user = db.query(User).filter(User.id == current_user.id).first()
 
-    if request.first_name:
-        current_user.first_name = request.first_name.strip()
-    if request.surname:
-        current_user.surname = request.surname.strip()
-    if request.phone:
-        current_user.phone = request.phone.strip()
+    if db_user:
+        if request.first_name:
+            db_user.first_name = request.first_name.strip()
+        if request.surname:
+            db_user.surname = request.surname.strip()
+        if request.phone:
+            db_user.phone = request.phone.strip()
 
     if request.store_name:
         store.name = request.store_name.strip()
@@ -131,6 +133,10 @@ def update_account_information(
             store.business_details.gstin = request.tax_number.strip()
 
     db.commit()
+    if db_user:
+        from ..services.cache_service import CacheService
+        CacheService.invalidate_user(db_user.id, db_user.email)
+        current_user = db_user
     return get_account_information(db=db, current_user=current_user)
 
 @router.get("/analytics/sales", response_model=SalesAnalyticsResponse)

@@ -26,6 +26,9 @@ class GroceryCustomerResponse(BaseModel):
     total_bill_amount: float = 0.0
     pending_bill_count: int = 0
     pending_bill_amount: float = 0.0
+    total_bills: int = 0
+    unpaid_bills: int = 0
+    total_due: float = 0.0
 
     class Config:
         from_attributes = True

@@ -50,22 +50,47 @@ class GroceryProductService:
                 GroceryProduct.available_stock <= GroceryProduct.low_stock_qty
             )
 
+        now = datetime.datetime.now(datetime.timezone.utc)
+        if expiring_only:
+            thirty_days = now + datetime.timedelta(days=30)
+            expiring_pids = db.query(GroceryProductBatch.product_id).filter(
+                GroceryProductBatch.store_id == store_id,
+                GroceryProductBatch.is_deleted == False,
+                GroceryProductBatch.remaining_qty > 0,
+                GroceryProductBatch.expiry_date != None,
+                GroceryProductBatch.expiry_date <= thirty_days,
+            ).distinct().subquery()
+            query = query.filter(GroceryProduct.id.in_(expiring_pids))
+
         total = query.count()
         offset = (max(page, 1) - 1) * limit
         products = query.order_by(GroceryProduct.id.desc()).offset(offset).limit(limit).all()
 
-        # Fetch supplier names in one query
+        # Fetch supplier names and expired batch flags in batch queries
         supplier_ids = [p.supplier_id for p in products if p.supplier_id]
         supplier_map = {}
         if supplier_ids:
             supps = db.query(GrocerySupplier.id, GrocerySupplier.seller_name, GrocerySupplier.store_name).filter(
-                GrocerySupplier.id.in_(supplier_ids)
+                GrocerySupplier.id.in_(supplier_ids),
+                GrocerySupplier.store_id == store_id,
             ).all()
             for sid, sname, stname in supps:
                 supplier_map[sid] = f"{sname} ({stname})" if stname else sname
 
+        prod_ids = [p.id for p in products]
+        expired_pids = set()
+        if prod_ids:
+            exp_rows = db.query(GroceryProductBatch.product_id).filter(
+                GroceryProductBatch.store_id == store_id,
+                GroceryProductBatch.product_id.in_(prod_ids),
+                GroceryProductBatch.is_deleted == False,
+                GroceryProductBatch.remaining_qty > 0,
+                GroceryProductBatch.expiry_date != None,
+                GroceryProductBatch.expiry_date <= now,
+            ).distinct().all()
+            expired_pids = {r[0] for r in exp_rows}
+
         results = []
-        now = datetime.datetime.now(datetime.timezone.utc)
         for p in products:
             is_low = bool(p.low_stock_enabled and p.available_stock <= p.low_stock_qty)
             results.append({
@@ -87,7 +112,7 @@ class GroceryProductService:
                 "expiry_alert_enabled": p.expiry_alert_enabled,
                 "is_active": p.is_active,
                 "is_low_stock": is_low,
-                "has_expired_batches": False
+                "has_expired_batches": p.id in expired_pids
             })
 
         set_cached_products(store_id, cache_key, {"items": results, "total": total})
@@ -195,7 +220,7 @@ class GroceryProductService:
         if not p:
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Product not found")
 
-        for key, val in data.dict(exclude_unset=True).items():
+        for key, val in data.model_dump(exclude_unset=True).items():
             if val is not None:
                 setattr(p, key, val)
 
@@ -219,3 +244,72 @@ class GroceryProductService:
         db.commit()
         invalidate_products_cache(store_id)
         return {"success": True, "message": "Product deleted successfully"}
+
+    @staticmethod
+    def adjust_stock(
+        db: Session,
+        store_id: int,
+        product_id: Union[str, int],
+        change_qty: float,
+        reason: str = "Manual Stock Adjustment",
+    ) -> dict:
+        p = db.query(GroceryProduct).filter(
+            GroceryProduct.id == product_id,
+            GroceryProduct.store_id == store_id,
+            GroceryProduct.is_deleted == False,
+        ).first()
+        if not p:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Product not found")
+
+        new_stock = (p.available_stock or 0.0) + float(change_qty)
+        if new_stock < 0:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"Stock cannot be negative (current: {p.available_stock}, delta: {change_qty}).",
+            )
+
+        now = datetime.datetime.now(datetime.timezone.utc)
+        p.available_stock = new_stock
+        p.updated_at = now
+        db.add(GroceryStockMovement(
+            store_id=store_id,
+            product_id=p.id,
+            type="adjust",
+            qty=float(change_qty),
+            ref_id=reason[:100] if reason else "MANUAL_ADJUST",
+        ))
+        db.commit()
+        db.refresh(p)
+        invalidate_products_cache(store_id)
+        return {
+            "success": True,
+            "product_id": p.id,
+            "available_stock": p.available_stock,
+            "change_qty": float(change_qty),
+        }
+
+    @staticmethod
+    def get_batches(db: Session, store_id: int, product_id: Union[str, int]) -> List[dict]:
+        p = db.query(GroceryProduct).filter(
+            GroceryProduct.id == product_id,
+            GroceryProduct.store_id == store_id,
+            GroceryProduct.is_deleted == False,
+        ).first()
+        if not p:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Product not found")
+
+        batches = db.query(GroceryProductBatch).filter(
+            GroceryProductBatch.store_id == store_id,
+            GroceryProductBatch.product_id == p.id,
+            GroceryProductBatch.is_deleted == False,
+        ).order_by(GroceryProductBatch.received_at.desc()).all()
+        return [
+            {
+                "id": b.id,
+                "qty": b.qty,
+                "remaining_qty": b.remaining_qty,
+                "expiry_date": str(b.expiry_date)[:10] if b.expiry_date else None,
+                "received_at": str(b.received_at),
+            }
+            for b in batches
+        ]

@@ -223,7 +223,9 @@ def update_my_store(
         cat = db.query(ShopCategory).filter(ShopCategory.id == request.category_id).first()
         if cat:
             store.shop_category_id = cat.id
-            current_user.store_type = cat.name
+            db_user = db.query(User).filter(User.id == current_user.id).first()
+            if db_user:
+                db_user.store_type = cat.name
     if request.currency is not None:
         store.currency = request.currency.upper()
         store.currency_symbol = "₹" if store.currency == "INR" else "$"

@@ -86,19 +86,29 @@ def get_sales_report(
     store: Store = Depends(get_current_store)
 ):
     """Sales report for grocery store."""
-    bills = db.query(GroceryBill).filter(
+    agg = db.query(
+        func.coalesce(func.sum(GroceryBill.grand_total), 0.0),
+        func.coalesce(func.sum(GroceryBill.total_tax), 0.0),
+        func.count(GroceryBill.id),
+    ).filter(
         GroceryBill.store_id == store.id,
         GroceryBill.is_deleted == False
-    ).order_by(GroceryBill.created_at.desc()).limit(100).all()
+    ).first()
 
-    total_revenue = sum(float(b.grand_total or 0.0) for b in bills)
-    total_tax = sum(float(b.total_tax or 0.0) for b in bills)
+    total_revenue = float(agg[0] or 0.0) if agg else 0.0
+    total_tax = float(agg[1] or 0.0) if agg else 0.0
+    bills_count = int(agg[2] or 0) if agg else 0
+
+    recent_bills = db.query(GroceryBill).filter(
+        GroceryBill.store_id == store.id,
+        GroceryBill.is_deleted == False
+    ).order_by(GroceryBill.created_at.desc()).limit(20).all()
 
     return {
         "period": period,
         "total_revenue": round(total_revenue, 2),
         "total_tax_collected": round(total_tax, 2),
-        "bills_count": len(bills),
+        "bills_count": bills_count,
         "recent_bills": [
             {
                 "invoice_code": b.invoice_code,
@@ -106,6 +116,6 @@ def get_sales_report(
                 "grand_total": b.grand_total,
                 "total_tax": b.total_tax,
                 "payment_status": b.payment_status
-            } for b in bills[:20]
+            } for b in recent_bills
         ]
     }

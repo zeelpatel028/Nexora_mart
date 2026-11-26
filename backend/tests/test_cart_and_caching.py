@@ -21,12 +21,33 @@ def test_cart_and_caching():
     print("=" * 60)
 
     db = SessionLocal()
+    test_email = "cart_cache_test@nexoramart.com"
+    created_temp = False
     try:
         user = db.query(User).filter(User.email == "demo@nmart.com").first()
-        assert user is not None, "Demo user must exist"
-
-        store = db.query(Store).filter(Store.user_id == user.id).first()
-        assert store is not None, "Demo store must exist"
+        if not user:
+            existing = db.query(User).filter(User.email == test_email).first()
+            if existing:
+                db.delete(existing)
+                db.commit()
+            from app.models.store_type import StoreType
+            from app.schemas.auth_schema import UserRegisterRequest
+            from app.services.auth_service import AuthService
+            st = db.query(StoreType).filter(StoreType.code == "grocery").first()
+            user, store, _, _ = AuthService.register_user(
+                db,
+                UserRegisterRequest(
+                    name="Cart Tester",
+                    email=test_email,
+                    password="CartPassword123!",
+                    store_type_id=st.id if st else None,
+                    storeType="Grocery Store" if not st else None,
+                ),
+            )
+            created_temp = True
+        else:
+            store = db.query(Store).filter(Store.user_id == user.id).first()
+        assert store is not None, "Store must exist"
 
         prod = db.query(Product).filter(Product.store_id == store.id).first()
         if not prod:
@@ -96,6 +117,11 @@ def test_cart_and_caching():
         print("ALL CART, WISHLIST & REDIS CACHING TESTS PASSED!")
         print("=" * 60)
     finally:
+        if created_temp:
+            u = db.query(User).filter(User.email == test_email).first()
+            if u:
+                db.delete(u)
+                db.commit()
         db.close()
 
 if __name__ == "__main__":

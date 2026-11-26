@@ -54,7 +54,7 @@ class GrocerySettingService:
             GrocerySettingService.get_or_create_settings(db, store_id)
             setting = db.query(GrocerySetting).filter(GrocerySetting.store_id == store_id).first()
 
-        for key, val in data.dict(exclude_unset=True).items():
+        for key, val in data.model_dump(exclude_unset=True).items():
             if val is not None:
                 setattr(setting, key, val)
 

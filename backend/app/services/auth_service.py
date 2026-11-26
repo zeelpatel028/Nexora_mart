@@ -33,8 +33,7 @@ class AuthService:
         ident = email.strip().lower()
         return db.query(User).filter(
             (User.email.ilike(ident)) |
-            (User.phone == ident) |
-            (User.first_name.ilike(ident))
+            (User.phone == ident)
         ).first()
 
     @staticmethod
@@ -59,11 +58,34 @@ class AuthService:
 
         if not store_type and request_data.storeType:
             st_name = request_data.storeType.strip()
-            store_type = db.query(StoreType).filter(
-                (StoreType.code.ilike(st_name)) |
-                (StoreType.name.ilike(f"%{st_name}%")),
-                StoreType.is_active == True
-            ).first()
+            alias_map = {
+                "supermarket": "grocery",
+                "supermarket & grocery": "grocery",
+                "retail & supermarket": "grocery",
+                "medical store": "medical",
+                "pharmacy": "medical",
+                "pharmacy & medical": "medical",
+                "electronics store": "mobile_electronics",
+                "mobile accessories": "mobile_electronics",
+                "electronics & mobile": "mobile_electronics",
+                "clothing & fashion": "clothing",
+                "vegetable & fruit shop": "grocery",
+                "hardware store": "plastic",
+                "stationery store": "plastic",
+                "footwear store": "clothing",
+            }
+            mapped_code = alias_map.get(st_name.lower())
+            if mapped_code:
+                store_type = db.query(StoreType).filter(
+                    StoreType.code == mapped_code,
+                    StoreType.is_active == True
+                ).first()
+            if not store_type:
+                store_type = db.query(StoreType).filter(
+                    (StoreType.code.ilike(st_name)) |
+                    (StoreType.name.ilike(f"%{st_name}%")),
+                    StoreType.is_active == True
+                ).first()
 
         if not store_type:
             raise ValueError("Invalid or inactive store type. Please select a valid store type.")
@@ -243,15 +265,17 @@ class AuthService:
         ident = request_data.email.strip().lower()
         user = db.query(User).filter(
             (User.email.ilike(ident)) |
-            (User.phone == ident) |
-            (User.first_name.ilike(ident))
+            (User.phone == ident)
         ).first()
 
         if not user or not verify_password(request_data.password, user.hashed_password):
             raise ValueError("Invalid credentials. Please verify your email and password.")
 
         if not user.is_active:
-            raise ValueError("This user account has been deactivated.")
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="This user account has been deactivated."
+            )
 
         user.last_login = datetime.datetime.now(datetime.timezone.utc)
 

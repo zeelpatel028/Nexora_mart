@@ -1,7 +1,7 @@
 import datetime
 from typing import Optional, List, Dict, Any, Tuple
 from sqlalchemy.orm import Session
-from sqlalchemy import func, or_
+from sqlalchemy import func, or_, case
 from fastapi import HTTPException, status
 from .models import GrocerySupplier
 from .schemas import GrocerySupplierCreate, GrocerySupplierUpdate
@@ -18,20 +18,23 @@ class GrocerySupplierService:
             GrocerySupplier.is_deleted == False
         ).scalar() or 0
 
-        # Query purchase orders for pending totals
+        # Aggregate purchase orders in SQL
         from ..grocery_purchase_order.models import GroceryPurchaseOrder
-        orders = db.query(
-            GroceryPurchaseOrder.status,
-            GroceryPurchaseOrder.payment_status,
-            GroceryPurchaseOrder.total_amount
+        agg = db.query(
+            func.coalesce(func.sum(case((GroceryPurchaseOrder.status == "placed", 1), else_=0)), 0),
+            func.coalesce(
+                func.sum(case((GroceryPurchaseOrder.payment_status == "pending", GroceryPurchaseOrder.total_amount), else_=0.0)),
+                0.0,
+            ),
+            func.coalesce(func.sum(GroceryPurchaseOrder.total_amount), 0.0),
         ).filter(
             GroceryPurchaseOrder.store_id == store_id,
             GroceryPurchaseOrder.is_deleted == False
-        ).all()
+        ).first()
 
-        pending_orders = sum(1 for o in orders if o.status == "placed")
-        pending_payments = sum(float(o.total_amount or 0.0) for o in orders if o.payment_status == "pending")
-        total_purchase = sum(float(o.total_amount or 0.0) for o in orders)
+        pending_orders = int(agg[0] or 0) if agg else 0
+        pending_payments = float(agg[1] or 0.0) if agg else 0.0
+        total_purchase = float(agg[2] or 0.0) if agg else 0.0
 
         return {
             "total_suppliers": total_suppliers,
@@ -125,7 +128,10 @@ class GrocerySupplierService:
                 "is_active": s.is_active,
                 "total_orders_count": agg["total_orders"],
                 "total_purchase_amount": agg["total_amt"],
-                "pending_payment_amount": agg["pending_amt"]
+                "pending_payment_amount": agg["pending_amt"],
+                "total_orders": agg["total_orders"],
+                "total_purchases": agg["total_amt"],
+                "pending_balance": agg["pending_amt"]
             })
 
         set_cached_suppliers(store_id, cache_key, {"items": results, "total": total})
@@ -196,7 +202,15 @@ class GrocerySupplierService:
                 "is_active": supplier.is_active,
                 "total_orders_count": total_orders,
                 "total_purchase_amount": total_amt,
-                "pending_payment_amount": pending_amt
+                "pending_payment_amount": pending_amt,
+                "total_orders": total_orders,
+                "total_purchases": total_amt,
+                "pending_balance": pending_amt,
+            },
+            "metrics": {
+                "total_orders": total_orders,
+                "total_amount": round(total_amt, 2),
+                "pending_amount": round(pending_amt, 2),
             },
             "orders": [
                 {
@@ -224,7 +238,7 @@ class GrocerySupplierService:
         if not supplier:
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Supplier not found")
 
-        for key, val in data.dict(exclude_unset=True).items():
+        for key, val in data.model_dump(exclude_unset=True).items():
             if val is not None:
                 setattr(supplier, key, val)
 

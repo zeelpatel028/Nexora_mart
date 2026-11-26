@@ -2,7 +2,7 @@ import datetime
 from typing import Optional, List
 from fastapi import APIRouter, Depends, Query, status, HTTPException
 from sqlalchemy.orm import Session
-from sqlalchemy import or_
+from sqlalchemy import or_, func, case
 from ...api.dependencies import get_db, get_current_user, get_current_store
 from ...models.user import User
 from ...models.store import Store
@@ -27,20 +27,34 @@ def get_supplier_dashboard_metrics(
     user: User = Depends(get_current_user)
 ):
     """Supplier Dashboard Metrics: Total Suppliers, Pending Orders, Pending Payments, Total Purchase Amount."""
-    total_suppliers = db.query(Supplier).filter(Supplier.store_id == store.id, Supplier.is_active == True).count()
-    
-    purchases = db.query(Purchase).filter(Purchase.store_id == store.id).all()
-    pending_orders = [p for p in purchases if not (p.notes and "RECEIVED" in p.notes)]
-    pending_payments = [p for p in purchases if p.payment_status in ("Pending", "Partially Paid", "UNPAID", "PARTIAL")]
+    total_suppliers = db.query(func.count(Supplier.id)).filter(
+        Supplier.store_id == store.id,
+        Supplier.is_active == True
+    ).scalar() or 0
 
-    total_purchase_amount = sum(float(p.total_amount or 0.0) for p in purchases)
-    total_pending_payments = sum(max(0.0, float(p.total_amount or 0.0) - float(p.paid_amount or 0.0)) for p in pending_payments)
+    pending_order_expr = case(
+        (or_(Purchase.notes.is_(None), ~Purchase.notes.contains("RECEIVED")), 1),
+        else_=0,
+    )
+    pending_pay_expr = case(
+        (
+            Purchase.payment_status.in_(["Pending", "Partially Paid", "UNPAID", "PARTIAL"]),
+            func.coalesce(Purchase.total_amount, 0.0) - func.coalesce(Purchase.paid_amount, 0.0),
+        ),
+        else_=0.0,
+    )
+
+    agg = db.query(
+        func.coalesce(func.sum(pending_order_expr), 0),
+        func.coalesce(func.sum(Purchase.total_amount), 0.0),
+        func.coalesce(func.sum(pending_pay_expr), 0.0),
+    ).filter(Purchase.store_id == store.id).first()
 
     return {
         "total_suppliers": total_suppliers,
-        "total_pending_orders": len(pending_orders),
-        "total_pending_payments": round(total_pending_payments, 2),
-        "total_purchase_amount": round(total_purchase_amount, 2)
+        "total_pending_orders": int(agg[0] or 0) if agg else 0,
+        "total_pending_payments": round(max(0.0, float(agg[2] or 0.0)), 2) if agg else 0.0,
+        "total_purchase_amount": round(float(agg[1] or 0.0), 2) if agg else 0.0,
     }
 
 @router.get("", response_model=List[SupplierResponse])
@@ -61,11 +75,27 @@ def list_suppliers(
     offset = (max(page, 1) - 1) * limit
     suppliers = query.order_by(Supplier.name).offset(offset).limit(limit).all()
 
+    supp_ids = [s.id for s in suppliers]
+    agg_map = {}
+    if supp_ids:
+        rows = db.query(
+            Purchase.supplier_id,
+            func.count(Purchase.id),
+            func.coalesce(func.sum(Purchase.total_amount), 0.0),
+            func.coalesce(
+                func.sum(func.coalesce(Purchase.total_amount, 0.0) - func.coalesce(Purchase.paid_amount, 0.0)),
+                0.0,
+            ),
+        ).filter(
+            Purchase.store_id == store.id,
+            Purchase.supplier_id.in_(supp_ids),
+        ).group_by(Purchase.supplier_id).all()
+        for sid, cnt, tot_amt, pend_amt in rows:
+            agg_map[sid] = (int(cnt or 0), float(tot_amt or 0.0), max(0.0, float(pend_amt or 0.0)))
+
     results = []
     for s in suppliers:
-        purchases = db.query(Purchase).filter(Purchase.supplier_id == s.id, Purchase.store_id == store.id).all()
-        pending_amt = sum(max(0.0, float(p.total_amount or 0.0) - float(p.paid_amount or 0.0)) for p in purchases)
-
+        cnt, tot_amt, pending_amt = agg_map.get(s.id, (0, 0.0, 0.0))
         res = SupplierResponse(
             id=s.id,
             store_id=s.store_id,
@@ -78,8 +108,8 @@ def list_suppliers(
             gst_number=s.gst_number,
             balance=round(pending_amt if pending_amt > 0 else (s.balance or 0.0), 2),
             is_active=s.is_active,
-            total_orders_count=len(purchases),
-            total_purchase_amount=sum(float(p.total_amount or 0.0) for p in purchases),
+            total_orders_count=cnt,
+            total_purchase_amount=round(tot_amt, 2),
             pending_payment_amount=round(pending_amt, 2)
         )
         results.append(res)
