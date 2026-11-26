@@ -1,4 +1,6 @@
+import os
 import sys
+import threading
 from pathlib import Path
 
 # Ensure the backend root directory is in sys.path so 'app.*' imports work reliably
@@ -17,7 +19,7 @@ from fastapi.responses import JSONResponse
 from fastapi.exceptions import RequestValidationError, ResponseValidationError
 from starlette.exceptions import HTTPException as StarletteHTTPException
 from starlette.middleware.gzip import GZipMiddleware
-from sqlalchemy import text
+from sqlalchemy import inspect, text
 
 logger = logging.getLogger("nmart.api")
 
@@ -124,23 +126,25 @@ def seed_initial_data():
                     db.commit()
     except Exception as e:
         db.rollback()
-        logger.error(f"Error seeding initial data: {e}")
-        print(f"Error seeding initial data: {e}")
+        logger.error(f"Error seeding initial data: {e}", exc_info=True)
     finally:
         db.close()
 
 
 def initialize_database():
     try:
-        Base.metadata.create_all(bind=engine)
+        # Never use create_all as a replacement for Alembic on populated production DBs
+        if engine.dialect.name == "sqlite" or not inspect(engine).has_table("users"):
+            Base.metadata.create_all(bind=engine)
         seed_initial_data()
     except Exception as e:
-        logger.warning(f"Notice: Database initialization ({e})")
+        logger.error(f"Database initialization error: {e}", exc_info=True)
 
 
 @asynccontextmanager
 async def lifespan(_app: FastAPI):
-    initialize_database()
+    # Run initial seeding in a background daemon thread so Uvicorn binds $PORT immediately
+    threading.Thread(target=initialize_database, name="startup-seed", daemon=True).start()
     yield
 
 
@@ -378,7 +382,7 @@ if __name__ == "__main__":
     import uvicorn
     uvicorn.run(
         "app.main:app",
-        host=settings.HOST,
-        port=settings.PORT,
+        host=os.getenv("HOST", settings.HOST),
+        port=int(os.getenv("PORT", settings.PORT)),
         reload=settings.is_dev
     )

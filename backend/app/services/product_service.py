@@ -541,6 +541,7 @@ class ProductService:
                     db.add(ProductVariant(
                         store_id=ctx.store_id,
                         product_id=product.id,
+                        name=v.variant_name[:150],
                         variant_name=v.variant_name,
                         sku=v.sku,
                         barcode=v.barcode,

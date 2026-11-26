@@ -1,5 +1,5 @@
 import logging
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, selectinload
 from ..models.category import Category, CategoryField
 from ..models.brand import Brand
 from ..models.unit import Unit
@@ -195,36 +195,42 @@ SYSTEM_UNITS = [
 
 def seed_categories_and_fields(db: Session):
     """
-    Seeds the 8 standardized store categories and their specific product field definitions.
-    Safe and idempotent - updates existing categories or creates missing ones without deleting data.
-    Preserves all existing store, user, and product records.
+    Seeds the 8 standardized store categories, store types, units, and store defaults.
+    Safe and idempotent — batch-preloads existing rows to avoid blocking remote DB
+    round-trips on startup while preserving all existing user, store, and product data.
     """
     try:
-        # 1. Seed Units
+        from sqlalchemy import or_
+
+        # 1. Seed System Units (global units have store_id IS NULL)
+        existing_unit_symbols = {
+            row[0]
+            for row in db.query(Unit.symbol).filter(Unit.store_id.is_(None)).all()
+            if row[0]
+        }
         for unit_data in SYSTEM_UNITS:
-            existing_unit = db.query(Unit).filter(Unit.symbol == unit_data["symbol"]).first()
-            if not existing_unit:
-                unit = Unit(
+            if unit_data["symbol"] not in existing_unit_symbols:
+                db.add(Unit(
                     name=unit_data["name"],
                     symbol=unit_data["symbol"],
                     store_id=None,
                     is_base_unit=True
-                )
-                db.add(unit)
+                ))
+                existing_unit_symbols.add(unit_data["symbol"])
 
-        # 2. Seed Categories & Fields
+        # 2. Seed Categories & Fields (single batch query with eager fields load)
+        all_existing_cats = db.query(ShopCategory).options(selectinload(ShopCategory.attributes)).all()
+        cat_by_code = {c.code: c for c in all_existing_cats if c.code}
+        cat_by_name = {c.name: c for c in all_existing_cats if c.name}
+
         for cat_data in INITIAL_CATEGORIES:
             aliases = cat_data.get("legacy_aliases", [])
-            query_filters = [
-                ShopCategory.code == cat_data["code"],
-                ShopCategory.name == cat_data["name"],
-            ]
-            for alias in aliases:
-                query_filters.append(ShopCategory.name == alias)
-                query_filters.append(ShopCategory.code == alias)
-
-            from sqlalchemy import or_
-            category = db.query(ShopCategory).filter(or_(*query_filters)).first()
+            category = cat_by_code.get(cat_data["code"]) or cat_by_name.get(cat_data["name"])
+            if not category:
+                for alias in aliases:
+                    category = cat_by_code.get(alias) or cat_by_name.get(alias)
+                    if category:
+                        break
 
             if not category:
                 category = ShopCategory(
@@ -237,15 +243,15 @@ def seed_categories_and_fields(db: Session):
                 )
                 db.add(category)
                 db.flush()
+                cat_by_code[category.code] = category
+                cat_by_name[category.name] = category
             else:
-                # Update to official standardized name & code
                 category.name = cat_data["name"]
                 category.code = cat_data["code"]
                 category.description = cat_data["description"]
                 category.icon = cat_data["icon"]
                 category.is_system = True
                 category.is_active = True
-                db.flush()
 
             # Sync fields for category
             existing_fields = {f.field_name: f for f in category.fields}
@@ -262,7 +268,7 @@ def seed_categories_and_fields(db: Session):
                     f.display_order = field_data.get("display_order", 0)
                     f.is_variant_field = field_data.get("is_variant_field", False)
                 else:
-                    new_field = CategoryField(
+                    db.add(CategoryField(
                         category_id=category.id,
                         field_name=field_name,
                         field_label=field_data["field_label"],
@@ -273,15 +279,17 @@ def seed_categories_and_fields(db: Session):
                         placeholder=field_data.get("placeholder"),
                         display_order=field_data.get("display_order", 0),
                         is_variant_field=field_data.get("is_variant_field", False)
-                    )
-                    db.add(new_field)
+                    ))
+        db.flush()
 
         # 3. Seed 8 Standardized Store Types
         store_type_map = {}
+        existing_store_types = db.query(StoreType).all()
+        st_by_code = {st.code: st for st in existing_store_types if st.code}
+        st_by_name = {st.name: st for st in existing_store_types if st.name}
+
         for st_data in STORE_TYPES_DATA:
-            st = db.query(StoreType).filter(
-                (StoreType.code == st_data["code"]) | (StoreType.name == st_data["name"])
-            ).first()
+            st = st_by_code.get(st_data["code"]) or st_by_name.get(st_data["name"])
             if not st:
                 st = StoreType(
                     code=st_data["code"],
@@ -298,20 +306,24 @@ def seed_categories_and_fields(db: Session):
                 st.icon = st_data["icon"]
                 st.description = st_data["description"]
                 st.is_active = True
-                db.flush()
             store_type_map[st.code] = st
             store_type_map[st.name.lower()] = st
 
+        db.flush()
+
         # 4. Ensure existing users have valid shop_category, shop_category_id, and Store linked
-        grocery_cat = db.query(ShopCategory).filter(ShopCategory.code == "GROCERY").first() or db.query(ShopCategory).first()
+        all_shop_cats = db.query(ShopCategory).all()
+        grocery_cat = next((c for c in all_shop_cats if c.code == "GROCERY"), None) or (all_shop_cats[0] if all_shop_cats else None)
+        stores_by_user = {s.user_id: s for s in db.query(Store).all() if s.user_id is not None}
+
         users = db.query(User).all()
         for user in users:
             target_cat = None
             cat_name = user.shop_category or user.store_type
             if cat_name:
                 cat_lower = cat_name.lower()
-                for cat in db.query(ShopCategory).all():
-                    if cat.name.lower() in cat_lower or cat.code.lower() in cat_lower or cat_lower in cat.name.lower():
+                for cat in all_shop_cats:
+                    if cat.name.lower() in cat_lower or (cat.code and cat.code.lower() in cat_lower) or cat_lower in cat.name.lower():
                         target_cat = cat
                         break
             if not target_cat:
@@ -319,8 +331,9 @@ def seed_categories_and_fields(db: Session):
 
             target_st = None
             if cat_name:
+                cat_lower = cat_name.lower()
                 for k, v in store_type_map.items():
-                    if k in cat_name.lower() or cat_name.lower() in k:
+                    if k in cat_lower or cat_lower in k:
                         target_st = v
                         break
             if not target_st:
@@ -334,7 +347,7 @@ def seed_categories_and_fields(db: Session):
                 if not user.shop_category_id:
                     user.shop_category_id = target_cat.id
 
-                existing_store = db.query(Store).filter(Store.user_id == user.id).first()
+                existing_store = stores_by_user.get(user.id)
                 if not existing_store:
                     store_name = f"{user.first_name}'s {target_cat.name}"
                     new_store = Store(
@@ -350,19 +363,27 @@ def seed_categories_and_fields(db: Session):
                     )
                     db.add(new_store)
                     db.flush()
+                    stores_by_user[user.id] = new_store
                 else:
                     if not existing_store.shop_category_id:
                         existing_store.shop_category_id = target_cat.id
                     if not existing_store.store_type_id and target_st:
                         existing_store.store_type_id = target_st.id
 
-        # 5. Seed StoreTypeProductField and StoreTypeFieldOption from STORE_TYPE_DETAIL_CONFIGS
+        # 5. Seed StoreTypeProductField and StoreTypeFieldOption (batch preloaded)
+        existing_st_fields = {
+            (f.store_type_code, f.field_name): f
+            for f in db.query(StoreTypeProductField).all()
+        }
+        existing_st_opts = {
+            (o.field_id, o.option_value)
+            for o in db.query(StoreTypeFieldOption.field_id, StoreTypeFieldOption.option_value).all()
+        }
+
         for st_code, st_info in STORE_TYPE_DETAIL_CONFIGS.items():
             for idx, f in enumerate(st_info["fields"]):
-                existing_f = db.query(StoreTypeProductField).filter(
-                    StoreTypeProductField.store_type_code == st_code,
-                    StoreTypeProductField.field_name == f["name"]
-                ).first()
+                key = (st_code, f["name"])
+                existing_f = existing_st_fields.get(key)
                 if not existing_f:
                     existing_f = StoreTypeProductField(
                         store_type_code=st_code,
@@ -377,14 +398,11 @@ def seed_categories_and_fields(db: Session):
                     )
                     db.add(existing_f)
                     db.flush()
+                    existing_st_fields[key] = existing_f
 
                 if f.get("options"):
                     for o_idx, opt_str in enumerate(f["options"]):
-                        ex_opt = db.query(StoreTypeFieldOption).filter(
-                            StoreTypeFieldOption.field_id == existing_f.id,
-                            StoreTypeFieldOption.option_value == opt_str
-                        ).first()
-                        if not ex_opt:
+                        if (existing_f.id, opt_str) not in existing_st_opts:
                             db.add(StoreTypeFieldOption(
                                 field_id=existing_f.id,
                                 option_label=opt_str,
@@ -392,40 +410,54 @@ def seed_categories_and_fields(db: Session):
                                 display_order=o_idx + 1,
                                 is_default=(opt_str == f.get("default"))
                             ))
+                            existing_st_opts.add((existing_f.id, opt_str))
 
         # 6. Ensure all stores have StoreUser, StoreSetting, default categories, and default brand
+        existing_store_users = {
+            (su.store_id, su.user_id)
+            for su in db.query(StoreUser.store_id, StoreUser.user_id).all()
+        }
+        existing_setting_store_ids = {
+            row[0] for row in db.query(StoreSetting.store_id).all()
+        }
+        stores_with_categories = {
+            row[0] for row in db.query(Category.store_id).distinct().all()
+        }
+        stores_with_brands = {
+            row[0] for row in db.query(Brand.store_id).distinct().all()
+        }
+
         all_stores = db.query(Store).all()
         for s in all_stores:
-            # StoreUser
-            ex_su = db.query(StoreUser).filter(StoreUser.store_id == s.id, StoreUser.user_id == s.user_id).first()
-            if not ex_su:
+            if s.user_id is not None and (s.id, s.user_id) not in existing_store_users:
                 db.add(StoreUser(store_id=s.id, user_id=s.user_id, role="OWNER", is_active=True))
+                existing_store_users.add((s.id, s.user_id))
 
-            # StoreSetting (safe legacy check)
-            try:
-                ex_set = db.query(StoreSetting).filter(StoreSetting.store_id == s.id).first()
-                if not ex_set:
-                    db.add(StoreSetting(store_id=s.id, allow_negative_stock=False, low_stock_threshold=5, enable_barcode_scanner=True, tax_inclusive_pricing=False))
-            except Exception:
-                db.rollback()
+            if s.id not in existing_setting_store_ids:
+                db.add(StoreSetting(
+                    store_id=s.id,
+                    store_name=(s.name or "Tulsi Mart")[:200],
+                    allow_negative_stock=False,
+                    low_stock_threshold=5,
+                    enable_barcode_scanner=True,
+                    tax_inclusive_pricing=False,
+                ))
+                existing_setting_store_ids.add(s.id)
 
-            # Store default categories
-            cat_count = db.query(Category).filter(Category.store_id == s.id).count()
-            if cat_count == 0:
-                default_cat_names = ["General", "Premium", "Special"]
-                for c_name in default_cat_names:
+            if s.id not in stores_with_categories:
+                for c_name in ("General", "Premium", "Special"):
                     db.add(Category(store_id=s.id, name=c_name, code=c_name.lower(), is_active=True))
+                stores_with_categories.add(s.id)
 
-            # Store default brand
-            brand_count = db.query(Brand).filter(Brand.store_id == s.id).count()
-            if brand_count == 0:
+            if s.id not in stores_with_brands:
                 db.add(Brand(store_id=s.id, name="General Brand", code="gen", is_active=True))
+                stores_with_brands.add(s.id)
 
         db.commit()
         logger.info("Successfully seeded 8 standardized store types, categories, units, and synced existing user stores.")
     except Exception as e:
         db.rollback()
         logger.error(f"Error seeding categories: {e}", exc_info=True)
-        raise e
+        raise
 
 

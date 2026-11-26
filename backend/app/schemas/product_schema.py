@@ -26,7 +26,7 @@ class PricingResponse(PricingBase):
     model_config = ConfigDict(from_attributes=True)
     id: str
     store_id: int
-    product_id: str
+    product_id: Union[int, str]
 
 
 # --- Inventory Schemas ---
@@ -46,7 +46,7 @@ class InventoryResponse(InventoryBase):
     model_config = ConfigDict(from_attributes=True)
     id: str
     store_id: int
-    product_id: str
+    product_id: Union[int, str]
     last_stock_update: Optional[datetime] = None
 
 
@@ -66,7 +66,7 @@ class AlertCreate(AlertBase):
 class AlertResponse(AlertBase):
     model_config = ConfigDict(from_attributes=True)
     id: str
-    product_id: str
+    product_id: Union[int, str]
 
 
 # --- Images Schemas ---
@@ -81,8 +81,8 @@ class ImageCreate(ImageBase):
 
 class ImageResponse(ImageBase):
     model_config = ConfigDict(from_attributes=True)
-    id: str
-    product_id: str
+    id: Union[int, str]
+    product_id: Union[int, str]
 
 
 # --- Variants Schemas ---
@@ -102,8 +102,8 @@ class VariantCreate(VariantBase):
 
 class VariantResponse(VariantBase):
     model_config = ConfigDict(from_attributes=True)
-    id: str
-    product_id: str
+    id: Union[int, str]
+    product_id: Union[int, str]
 
 ProductVariantCreate = VariantCreate
 ProductVariantResponse = VariantResponse
@@ -128,7 +128,7 @@ class BatchCreate(BatchBase):
 class BatchResponse(BatchBase):
     model_config = ConfigDict(from_attributes=True)
     id: str
-    product_id: str
+    product_id: Union[int, str]
 
 
 # --- Serial Numbers Schemas ---
@@ -145,7 +145,7 @@ class SerialNumberCreate(SerialNumberBase):
 class SerialNumberResponse(SerialNumberBase):
     model_config = ConfigDict(from_attributes=True)
     id: str
-    product_id: str
+    product_id: Union[int, str]
 
 
 # --- Store-Specific Detail Schemas ---
