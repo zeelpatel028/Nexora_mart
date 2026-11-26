@@ -261,7 +261,7 @@ class ProductAlert(Base):
 class ProductImage(Base):
     __tablename__ = "product_images"
 
-    id = Column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()), index=True)
+    id = Column(Integer, primary_key=True, index=True, autoincrement=True)
     store_id = Column(Integer, ForeignKey("stores.id", ondelete="CASCADE"), nullable=False, index=True)
     product_id = Column(Integer, ForeignKey("products.id", ondelete="CASCADE"), nullable=False, index=True)
     image_url = Column(String(500), nullable=False)
@@ -279,9 +279,10 @@ ProductImages = ProductImage  # Backward compatibility alias
 class ProductVariant(Base):
     __tablename__ = "product_variants"
 
-    id = Column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()), index=True)
+    id = Column(Integer, primary_key=True, index=True, autoincrement=True)
     store_id = Column(Integer, ForeignKey("stores.id", ondelete="CASCADE"), nullable=False, index=True)
     product_id = Column(Integer, ForeignKey("products.id", ondelete="CASCADE"), nullable=False, index=True)
+    name = Column(String(150), nullable=False, default="")
     variant_name = Column(String(200), nullable=False)
     sku = Column(String(100), nullable=True, index=True)
     barcode = Column(String(100), nullable=True, index=True)

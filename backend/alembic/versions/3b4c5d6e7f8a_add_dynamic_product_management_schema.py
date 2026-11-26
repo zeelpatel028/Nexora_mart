@@ -79,7 +79,7 @@ def upgrade() -> None:
     if 'store_settings' not in tables:
         op.create_table(
             'store_settings',
-            sa.Column('id', sa.String(36), nullable=False),
+            sa.Column('id', sa.Integer(), autoincrement=True, nullable=False),
             sa.Column('store_id', sa.Integer(), sa.ForeignKey('stores.id', ondelete='CASCADE'), nullable=False),
             sa.Column('allow_negative_stock', sa.Boolean(), server_default=sa.text('0'), nullable=False),
             sa.Column('low_stock_threshold', sa.Integer(), server_default='5', nullable=False),

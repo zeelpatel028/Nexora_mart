@@ -15,6 +15,7 @@ from ..models.store import (
     DocumentSequence,
 )
 from ..models.store_type import StoreType
+from ..models.store_setting import StoreSetting
 from ..models.refresh_token import RefreshToken
 from ..schemas.auth_schema import UserRegisterRequest, UserLoginRequest
 from ..utils.security import (
@@ -206,6 +207,15 @@ class AuthService:
                 dark_mode_default=False
             )
             db.add(cfg)
+
+            db.add(StoreSetting(
+                store_id=store.id,
+                store_name=(store.name or "Tulsi Mart")[:200],
+                allow_negative_stock=False,
+                low_stock_threshold=5,
+                enable_barcode_scanner=True,
+                tax_inclusive_pricing=False,
+            ))
 
             # Standard document sequences
             sequences = [

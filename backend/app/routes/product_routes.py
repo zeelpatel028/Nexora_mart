@@ -491,6 +491,7 @@ def create_product_variant(
     variant = ProductVariant(
         store_id=ctx.store_id,
         product_id=product.id,
+        name=request.variant_name[:150],
         variant_name=request.variant_name,
         sku=request.sku,
         barcode=request.barcode,

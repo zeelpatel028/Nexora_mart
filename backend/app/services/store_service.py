@@ -12,6 +12,7 @@ from ..models.store import (
 )
 from ..models.user import User
 from ..models.store_user import StoreUser
+from ..models.store_setting import StoreSetting
 
 class StoreService:
     @staticmethod
@@ -144,6 +145,15 @@ class StoreService:
                 dark_mode_default=False
             )
             db.add(cfg)
+
+            db.add(StoreSetting(
+                store_id=store.id,
+                store_name=(store.name or "Tulsi Mart")[:200],
+                allow_negative_stock=False,
+                low_stock_threshold=5,
+                enable_barcode_scanner=True,
+                tax_inclusive_pricing=False,
+            ))
 
             # Document sequences
             for doc_type, prefix in [('INVOICE', 'INV'), ('ORDER', 'ORD'), ('PURCHASE', 'PUR'), ('RETURN', 'RET'), ('REFUND', 'REF')]:
