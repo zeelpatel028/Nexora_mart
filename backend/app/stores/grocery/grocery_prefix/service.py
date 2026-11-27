@@ -2,9 +2,38 @@ import datetime
 from typing import Dict
 from sqlalchemy.orm import Session
 from fastapi import HTTPException, status
-from .models import GroceryPrefix, GroceryIdCounter
+from .models import GroceryPrefix, GroceryIdCounter, GroceryStorePrefix
 from .cache import get_cached_prefixes, set_cached_prefixes, invalidate_prefixes_cache
 from ....utils.id_generator import DEFAULT_PREFIXES, preview_next_id, generate_next_id, get_store_code
+
+
+_KEY_TO_COLUMN = {
+    "invoice": "invoice_prefix",
+    "debit_customer": "debit_customer_prefix",
+    "walk_in_customer": "walk_in_customer_prefix",
+    "supplier": "supplier_prefix",
+    "order": "order_prefix",
+    "product": "product_prefix",
+    "employee": "employee_prefix",
+    "return": "return_prefix",
+    "refund": "refund_prefix",
+    "expense": "expense_prefix",
+}
+
+
+def _sync_store_prefix_row(db: Session, store_id: int, values: Dict[str, str]):
+    from ....models.store import Store
+    store = db.query(Store).filter(Store.id == store_id).first()
+    uid = store.user_id if store else None
+    row = db.query(GroceryStorePrefix).filter(GroceryStorePrefix.store_id == store_id).first()
+    if not row:
+        row = GroceryStorePrefix(store_id=store_id, user_id=uid)
+        db.add(row)
+    elif row.user_id is None and uid is not None:
+        row.user_id = uid
+    for k, col in _KEY_TO_COLUMN.items():
+        if k in values:
+            setattr(row, col, values[k])
 
 
 class GroceryPrefixService:
@@ -13,6 +42,10 @@ class GroceryPrefixService:
         cached = get_cached_prefixes(store_id)
         if cached is not None:
             return cached
+
+        from ....models.store import Store
+        store = db.query(Store).filter(Store.id == store_id).first()
+        uid = store.user_id if store else None
 
         rows = db.query(GroceryPrefix).filter(
             GroceryPrefix.store_id == store_id,
@@ -25,11 +58,14 @@ class GroceryPrefixService:
         for k, default_val in DEFAULT_PREFIXES.items():
             if k not in current_dict:
                 missing = True
-                pfx = GroceryPrefix(store_id=store_id, key=k, prefix_value=default_val)
+                pfx = GroceryPrefix(store_id=store_id, user_id=uid, key=k, prefix_value=default_val)
                 db.add(pfx)
                 current_dict[k] = default_val
 
+        _sync_store_prefix_row(db, store_id, current_dict)
         if missing:
+            db.commit()
+        else:
             db.commit()
 
         set_cached_prefixes(store_id, current_dict)
@@ -74,6 +110,7 @@ class GroceryPrefixService:
             else:
                 db.add(GroceryPrefix(store_id=store_id, key=k, prefix_value=val))
 
+        _sync_store_prefix_row(db, store_id, merged)
         db.commit()
         invalidate_prefixes_cache(store_id)
         return GroceryPrefixService.get_or_create_prefixes(db, store_id)

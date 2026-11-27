@@ -16,6 +16,7 @@ class GroceryCustomer(Base):
 
     id = Column(Integer, primary_key=True, autoincrement=True, index=True)
     store_id = Column(Integer, ForeignKey("stores.id", ondelete="CASCADE"), nullable=False, index=True)
+    user_id = Column(Integer, ForeignKey("users.id", ondelete="SET NULL"), nullable=True, index=True)
     customer_code = Column(String(100), nullable=False, index=True)
     name = Column(String(255), nullable=False, index=True)
     phone = Column(String(50), nullable=False)

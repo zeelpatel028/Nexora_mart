@@ -89,6 +89,11 @@ def run_db_migrations():
             logger.info("Alembic database migrations up to date.")
     except Exception as e:
         logger.warning(f"Notice: Automatic migration runner encountered ({e})")
+    try:
+        from app.migrations import ensure_grocery_schema
+        ensure_grocery_schema(engine)
+    except Exception as e:
+        logger.warning(f"Notice: Grocery schema sync encountered ({e})")
 
 
 def seed_initial_data():

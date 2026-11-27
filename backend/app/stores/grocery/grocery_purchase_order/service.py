@@ -3,11 +3,13 @@ from typing import Optional, List, Tuple
 from sqlalchemy.orm import Session
 from sqlalchemy import or_
 from fastapi import HTTPException, status
-from .models import GroceryPurchaseOrder
+from .models import GroceryPurchaseOrder, GroceryOrder, GroceryOrderItem
 from .schemas import PurchaseOrderCreate, PurchaseOrderReceiveRequest, PurchaseOrderPaymentRequest
 from .cache import invalidate_orders_cache
 from ..grocery_product.models import GroceryProduct, GroceryProductBatch, GroceryStockMovement
 from ..grocery_supplier.models import GrocerySupplier
+from ..grocery_finance.models import GroceryPayment
+from ....models.store import Store
 from ....utils.id_generator import generate_next_id
 
 
@@ -112,8 +114,12 @@ class GroceryPurchaseOrderService:
             except Exception:
                 pass
 
+        store = db.query(Store).filter(Store.id == store_id).first()
+        uid = store.user_id if store else None
+
         order = GroceryPurchaseOrder(
             store_id=store_id,
+            user_id=uid,
             order_code=order_code,
             order_number=order_code,
             paid_amount=0.0,
@@ -128,6 +134,36 @@ class GroceryPurchaseOrderService:
             payment_status="pending"
         )
         db.add(order)
+
+        # Normalized grocery_orders + grocery_order_items mirror
+        g_order = GroceryOrder(
+            store_id=store_id,
+            user_id=uid,
+            order_code=order_code,
+            supplier_id=supplier.id,
+            total_amount=total_amt,
+            paid_amount=0.0,
+            expected_delivery_date=exp_date,
+            status="placed",
+            payment_status="pending",
+        )
+        db.add(g_order)
+        db.flush()
+        db.add(
+            GroceryOrderItem(
+                store_id=store_id,
+                user_id=uid,
+                order_id=g_order.id,
+                product_id=product.id,
+                product_name=product.name,
+                ordered_qty=data.qty,
+                received_qty=0.0,
+                unit=data.unit,
+                purchase_price=data.purchase_price,
+                line_total=total_amt,
+            )
+        )
+
         db.commit()
         db.refresh(order)
         invalidate_orders_cache(store_id)
@@ -186,40 +222,58 @@ class GroceryPurchaseOrderService:
                 pass
 
         now = datetime.datetime.now(datetime.timezone.utc)
+        recv_qty = float(data.received_quantity) if data.received_quantity is not None else float(order.qty)
 
         # Single atomic database transaction:
-        # 1. Increase product stock
-        product.available_stock += order.qty
+        # 1. Increase product stock by actual received quantity
+        product.available_stock += recv_qty
         product.updated_at = now
 
         # 2. Record stock movement
         movement = GroceryStockMovement(
             store_id=store_id,
+            user_id=order.user_id,
             product_id=product.id,
             type="order_received",
-            qty=order.qty,
+            qty=recv_qty,
             ref_id=order.order_code
         )
         db.add(movement)
 
-        # 3. Create batch record if expiry or tracking enabled
-        if product.expiry_alert_enabled and parsed_expiry:
-            batch = GroceryProductBatch(
-                store_id=store_id,
-                product_id=product.id,
-                purchase_order_id=order.id,
-                qty=order.qty,
-                remaining_qty=order.qty,
-                expiry_date=parsed_expiry,
-                received_at=now
-            )
-            db.add(batch)
+        # 3. Always create batch record on receive (never overwriting older batches!)
+        batch = GroceryProductBatch(
+            store_id=store_id,
+            user_id=order.user_id,
+            product_id=product.id,
+            purchase_order_id=order.id,
+            qty=recv_qty,
+            remaining_qty=recv_qty,
+            expiry_date=parsed_expiry,
+            received_at=now
+        )
+        db.add(batch)
 
-        # 4. Mark order as received
+        # 4. Mark order as received and recalculate actual billed total if partial qty entered
+        order.qty = recv_qty
+        order.total_amount = round(recv_qty * float(order.purchase_price or 0.0), 2)
         order.status = "received"
         order.received_at = now
         order.expiry_date = parsed_expiry
         order.updated_at = now
+
+        g_ord = db.query(GroceryOrder).filter(
+            GroceryOrder.store_id == store_id,
+            GroceryOrder.order_code == order.order_code,
+        ).first()
+        if g_ord:
+            g_ord.status = "received"
+            g_ord.received_at = now
+            g_ord.total_amount = order.total_amount
+            g_ord.updated_at = now
+            for it in g_ord.items:
+                it.received_qty = recv_qty
+                it.line_total = order.total_amount
+                it.expiry_date = parsed_expiry
 
         db.commit()
         invalidate_orders_cache(store_id)
@@ -228,6 +282,7 @@ class GroceryPurchaseOrderService:
             "success": True,
             "message": f"Order {order.order_code} successfully received. Stock updated.",
             "order_code": order.order_code,
+            "received_quantity": recv_qty,
             "available_stock": product.available_stock,
             "status": order.status,
             "payment_status": order.payment_status
@@ -244,9 +299,35 @@ class GroceryPurchaseOrderService:
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Purchase order not found")
 
         now = datetime.datetime.now(datetime.timezone.utc)
+        pay_amt = float(data.amount) if data.amount is not None else float(order.total_amount or 0.0)
+        order.paid_amount = pay_amt
         order.payment_status = "paid"
         order.paid_at = now
         order.updated_at = now
+
+        g_ord = db.query(GroceryOrder).filter(
+            GroceryOrder.store_id == store_id,
+            GroceryOrder.order_code == order.order_code,
+        ).first()
+        if g_ord:
+            g_ord.paid_amount = pay_amt
+            g_ord.payment_status = "paid"
+            g_ord.paid_at = now
+            g_ord.updated_at = now
+
+        db.add(
+            GroceryPayment(
+                store_id=store_id,
+                user_id=order.user_id,
+                reference_type="supplier_order",
+                reference_id=order.id,
+                reference_code=order.order_code,
+                amount=round(pay_amt, 2),
+                payment_method=(data.payment_method or "CASH").upper(),
+                payment_date=now,
+                notes=data.notes or f"Supplier order payment {order.order_code}",
+            )
+        )
 
         db.commit()
         invalidate_orders_cache(store_id)
