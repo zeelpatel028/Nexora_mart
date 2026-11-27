@@ -57,16 +57,21 @@ export const PrivacyPolicyScreen: React.FC = () => {
           style={[
             styles.banner,
             {
-              backgroundColor: isDark ? '#123330' : '#E0F2F1',
-              borderColor: '#00897B',
+              backgroundColor: isDark ? colors.badgeOrangeBg : brandColors.lightOrange,
+              borderColor: brandColors.primaryOrange,
             },
           ]}
         >
-          <View style={[styles.shieldBox, { backgroundColor: isDark ? '#0F2624' : '#FFFFFF' }]}>
-            <AppIcon name="shield" size={24} color="#00897B" />
+          <View style={[styles.shieldBox, { backgroundColor: isDark ? colors.surface : '#FFFFFF' }]}>
+            <AppIcon name="shield" size={24} color={brandColors.primaryOrange} />
           </View>
           <View style={{ flex: 1 }}>
-            <Text style={[styles.bannerTitle, { color: isDark ? '#80CBC4' : '#00695C' }]}>
+            <Text
+              style={[
+                styles.bannerTitle,
+                { color: isDark ? colors.badgeOrangeText : brandColors.darkOrange },
+              ]}
+            >
               Your Business Privacy Comes First
             </Text>
             <Text style={[styles.bannerSub, { color: colors.textSecondary }]}>

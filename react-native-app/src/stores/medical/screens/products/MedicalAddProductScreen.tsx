@@ -19,7 +19,7 @@ import {
   MedicalPackagingDetails,
   MedicalProductFormData,
 } from '../../utils/storeTypes';
-import { ProductBatchItem } from '../../utils/commonTypesIndex';
+import { ProductBatchItem } from '../../utils/commonTypes';
 import { validateMedicalProduct } from '../../utils/storeValidations';
 import { medicalProductService } from '../../services/storeProductService';
 

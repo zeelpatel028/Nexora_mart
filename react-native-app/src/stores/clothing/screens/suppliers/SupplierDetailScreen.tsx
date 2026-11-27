@@ -19,14 +19,12 @@ import { useTheme } from '../../hooks/useTheme';
 import { useSettings } from '../../../../navigation/context/SettingsContext';
 import supplierApi from '../../services/supplierApi';
 import AppHeader from '../../components/layout/AppHeader';
-import ScreenContainer from '../../components/layout/ScreenContainer';
 import AppCard from '../../components/common/AppCard';
 import AppButton from '../../components/common/AppButton';
 import AppInput from '../../components/common/AppInput';
 import AppDropdown from '../../components/common/AppDropdown';
 import AppIcon from '../../components/icons/AppIcon';
-import formatCurrency from '../../utils/formatCurrency';
-import formatDate from '../../utils/formatDate';
+import { formatCurrency, formatDate } from '../../utils/formatters';
 
 const PAYMENT_METHODS = [
   { label: 'Bank Transfer (IMPS/NEFT/RTGS)', value: 'BANK_TRANSFER' },
@@ -41,7 +39,7 @@ export const SupplierDetailScreen: React.FC = () => {
   const supplierId = route.params?.supplierId;
   const initialName = route.params?.supplierName;
 
-  const { colors, isDark } = useTheme();
+  const { colors, brandColors, isDark } = useTheme();
   const { currency, currencySymbol } = useSettings();
 
   const [details, setDetails] = useState<any | null>(null);
@@ -150,13 +148,13 @@ export const SupplierDetailScreen: React.FC = () => {
 
   if (loading && !refreshing) {
     return (
-      <ScreenContainer>
+      <View style={{ flex: 1, backgroundColor: colors.background }}>
         <AppHeader title={initialName || 'Supplier Details'} showBack />
         <View style={styles.centerBox}>
-          <ActivityIndicator size="large" color="#7C3AED" />
-          <Text style={styles.loadingText}>Loading supplier ledger...</Text>
+          <ActivityIndicator size="large" color={brandColors.primaryOrange} />
+          <Text style={[styles.loadingText, { color: colors.textSecondary }]}>Loading supplier ledger...</Text>
         </View>
-      </ScreenContainer>
+      </View>
     );
   }
 
@@ -171,13 +169,13 @@ export const SupplierDetailScreen: React.FC = () => {
   const payments = details?.payments || [];
 
   return (
-    <ScreenContainer scrollable={false}>
+    <View style={{ flex: 1, backgroundColor: colors.background }}>
       <AppHeader
         title={supp.company_name || supp.name}
         showBack
         rightAction={
           <TouchableOpacity onPress={handleShareStatement} style={styles.shareBtn}>
-            <AppIcon name="Share2" size={18} color="#7C3AED" />
+            <AppIcon name="Share2" size={18} color={brandColors.primaryOrange} />
           </TouchableOpacity>
         }
       />
@@ -186,37 +184,45 @@ export const SupplierDetailScreen: React.FC = () => {
         showsVerticalScrollIndicator={false}
         contentContainerStyle={styles.scrollContainer}
         refreshControl={
-          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={['#7C3AED']} />
+          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={[brandColors.primaryOrange]} />
         }
       >
         {/* 1. Supplier Profile Card */}
         <AppCard style={styles.profileCard}>
           <View style={styles.profileHeader}>
-            <View style={styles.avatar}>
-              <AppIcon name="Truck" size={24} color="#7C3AED" />
+            <View
+              style={[
+                styles.avatar,
+                {
+                  backgroundColor: isDark ? colors.badgeOrangeBg : brandColors.lightOrange,
+                  borderColor: isDark ? brandColors.darkOrange : '#FFE0B2',
+                },
+              ]}
+            >
+              <AppIcon name="Truck" size={24} color={brandColors.primaryOrange} />
             </View>
             <View style={{ flex: 1, marginLeft: 12 }}>
-              <Text style={styles.suppName}>{supp.company_name || supp.name}</Text>
+              <Text style={[styles.suppName, { color: colors.textPrimary }]}>{supp.company_name || supp.name}</Text>
               {supp.company_name && supp.name ? (
-                <Text style={styles.suppContact}>Contact Person: {supp.name}</Text>
+                <Text style={[styles.suppContact, { color: colors.textSecondary }]}>Contact Person: {supp.name}</Text>
               ) : null}
               {supp.phone ? (
                 <TouchableOpacity onPress={handleCall} style={styles.phoneClickRow}>
-                  <AppIcon name="Phone" size={13} color="#7C3AED" />
-                  <Text style={styles.phoneClickText}>{supp.phone}</Text>
+                  <AppIcon name="Phone" size={13} color={brandColors.primaryOrange} />
+                  <Text style={[styles.phoneClickText, { color: brandColors.primaryOrange }]}>{supp.phone}</Text>
                 </TouchableOpacity>
               ) : null}
               {supp.gst_number ? (
-                <Text style={styles.gstText}>GSTIN: {supp.gst_number}</Text>
+                <Text style={[styles.gstText, { color: colors.textSecondary }]}>GSTIN: {supp.gst_number}</Text>
               ) : null}
               {supp.address ? (
-                <Text style={styles.addressText}>{supp.address}</Text>
+                <Text style={[styles.addressText, { color: colors.textSecondary }]}>{supp.address}</Text>
               ) : null}
             </View>
           </View>
 
           {/* Quick Action Buttons */}
-          <View style={styles.quickActionsRow}>
+          <View style={[styles.quickActionsRow, { borderTopColor: colors.borderLight }]}>
             {supp.phone && (
               <AppButton
                 title="Call"
@@ -231,7 +237,7 @@ export const SupplierDetailScreen: React.FC = () => {
                 setPayAmount(String(summ.payable_balance || supp.balance || ''));
                 setShowPayModal(true);
               }}
-              style={{ flex: 1, marginRight: 8, backgroundColor: '#7C3AED' }}
+              style={{ flex: 1, marginRight: 8 }}
             />
             <AppButton
               title="Statement"
@@ -245,19 +251,19 @@ export const SupplierDetailScreen: React.FC = () => {
         {/* 2. Summary Metrics */}
         <View style={styles.metricsGrid}>
           <AppCard style={styles.metricCard}>
-            <Text style={styles.metricLabel}>TOTAL ORDERS</Text>
-            <Text style={styles.metricValue}>{summ.total_orders ?? orders.length}</Text>
+            <Text style={[styles.metricLabel, { color: colors.textSecondary }]}>TOTAL ORDERS</Text>
+            <Text style={[styles.metricValue, { color: colors.textPrimary }]}>{summ.total_orders ?? orders.length}</Text>
           </AppCard>
 
           <AppCard style={styles.metricCard}>
-            <Text style={styles.metricLabel}>TOTAL PURCHASES</Text>
-            <Text style={styles.metricValue}>
+            <Text style={[styles.metricLabel, { color: colors.textSecondary }]}>TOTAL PURCHASES</Text>
+            <Text style={[styles.metricValue, { color: colors.textPrimary }]}>
               {formatCurrency(summ.total_purchases, currency)}
             </Text>
           </AppCard>
 
           <AppCard style={styles.metricCard}>
-            <Text style={styles.metricLabel}>TOTAL PAID</Text>
+            <Text style={[styles.metricLabel, { color: colors.textSecondary }]}>TOTAL PAID</Text>
             <Text style={[styles.metricValue, { color: '#16A34A' }]}>
               {formatCurrency(summ.total_paid, currency)}
             </Text>
@@ -272,21 +278,33 @@ export const SupplierDetailScreen: React.FC = () => {
         </View>
 
         {/* 3. Section Tabs: Orders vs Payments */}
-        <View style={styles.filterTabs}>
+        <View style={[styles.filterTabs, { backgroundColor: colors.surfaceSubtle }]}>
           <TouchableOpacity
-            style={[styles.filterTab, activeTab === 'orders' && styles.filterTabActive]}
+            style={[styles.filterTab, activeTab === 'orders' && [styles.filterTabActive, { backgroundColor: colors.surface }]]}
             onPress={() => setActiveTab('orders')}
           >
-            <Text style={[styles.filterTabText, activeTab === 'orders' && styles.filterTabTextActive]}>
+            <Text
+              style={[
+                styles.filterTabText,
+                { color: colors.textSecondary },
+                activeTab === 'orders' && [styles.filterTabTextActive, { color: brandColors.primaryOrange }],
+              ]}
+            >
               Purchase Orders ({orders.length})
             </Text>
           </TouchableOpacity>
 
           <TouchableOpacity
-            style={[styles.filterTab, activeTab === 'payments' && styles.filterTabActive]}
+            style={[styles.filterTab, activeTab === 'payments' && [styles.filterTabActive, { backgroundColor: colors.surface }]]}
             onPress={() => setActiveTab('payments')}
           >
-            <Text style={[styles.filterTabText, activeTab === 'payments' && styles.filterTabTextActive]}>
+            <Text
+              style={[
+                styles.filterTabText,
+                { color: colors.textSecondary },
+                activeTab === 'payments' && [styles.filterTabTextActive, { color: brandColors.primaryOrange }],
+              ]}
+            >
               Payment History ({payments.length})
             </Text>
           </TouchableOpacity>
@@ -295,17 +313,17 @@ export const SupplierDetailScreen: React.FC = () => {
         {/* 4. Tab Content */}
         {activeTab === 'orders' ? (
           orders.length === 0 ? (
-            <View style={styles.emptyBox}>
-              <AppIcon name="Package" size={36} color="#CBD5E1" />
-              <Text style={styles.emptyText}>No purchase orders for this supplier.</Text>
+            <View style={[styles.emptyBox, { backgroundColor: colors.cardBg, borderColor: colors.cardBorder }]}>
+              <AppIcon name="Package" size={36} color={colors.textMuted} />
+              <Text style={[styles.emptyText, { color: colors.textSecondary }]}>No purchase orders for this supplier.</Text>
             </View>
           ) : (
             orders.map((ord: any) => (
               <AppCard key={ord.id} style={styles.itemCard}>
                 <View style={styles.itemHeader}>
                   <View>
-                    <Text style={styles.itemNumber}>{ord.order_number || `ORD-${ord.id}`}</Text>
-                    <Text style={styles.itemDate}>{formatDate(ord.created_at || '')}</Text>
+                    <Text style={[styles.itemNumber, { color: colors.textPrimary }]}>{ord.order_number || `ORD-${ord.id}`}</Text>
+                    <Text style={[styles.itemDate, { color: colors.textSecondary }]}>{formatDate(ord.created_at || '')}</Text>
                   </View>
                   <View style={[styles.badge, ord.order_status === 'RECEIVED' ? styles.badgeGreen : styles.badgeAmber]}>
                     <Text style={[styles.badgeText, ord.order_status === 'RECEIVED' ? styles.badgeTextGreen : styles.badgeTextAmber]}>
@@ -313,11 +331,11 @@ export const SupplierDetailScreen: React.FC = () => {
                     </Text>
                   </View>
                 </View>
-                <View style={styles.itemFooter}>
-                  <Text style={styles.itemAmount}>
+                <View style={[styles.itemFooter, { borderTopColor: colors.borderLight }]}>
+                  <Text style={[styles.itemAmount, { color: colors.textPrimary }]}>
                     Total: {formatCurrency(ord.total_amount, currency)}
                   </Text>
-                  <Text style={styles.itemSub}>
+                  <Text style={[styles.itemSub, { color: colors.textSecondary }]}>
                     Payment: {ord.payment_status || 'PENDING'}
                   </Text>
                 </View>
@@ -326,17 +344,17 @@ export const SupplierDetailScreen: React.FC = () => {
           )
         ) : (
           payments.length === 0 ? (
-            <View style={styles.emptyBox}>
-              <AppIcon name="CreditCard" size={36} color="#CBD5E1" />
-              <Text style={styles.emptyText}>No payment records found.</Text>
+            <View style={[styles.emptyBox, { backgroundColor: colors.cardBg, borderColor: colors.cardBorder }]}>
+              <AppIcon name="CreditCard" size={36} color={colors.textMuted} />
+              <Text style={[styles.emptyText, { color: colors.textSecondary }]}>No payment records found.</Text>
             </View>
           ) : (
             payments.map((pmt: any) => (
               <AppCard key={pmt.id} style={styles.itemCard}>
                 <View style={styles.itemHeader}>
                   <View>
-                    <Text style={styles.itemNumber}>Paid: {formatCurrency(pmt.amount, currency)}</Text>
-                    <Text style={styles.itemDate}>{formatDate(pmt.created_at || pmt.payment_date || '')}</Text>
+                    <Text style={[styles.itemNumber, { color: colors.textPrimary }]}>Paid: {formatCurrency(pmt.amount, currency)}</Text>
+                    <Text style={[styles.itemDate, { color: colors.textSecondary }]}>{formatDate(pmt.created_at || pmt.payment_date || '')}</Text>
                   </View>
                   <View style={[styles.badge, styles.badgeGreen]}>
                     <Text style={[styles.badgeText, styles.badgeTextGreen]}>
@@ -345,7 +363,7 @@ export const SupplierDetailScreen: React.FC = () => {
                   </View>
                 </View>
                 {pmt.notes ? (
-                  <Text style={styles.pmtNotes}>Ref: {pmt.notes}</Text>
+                  <Text style={[styles.pmtNotes, { color: colors.textSecondary }]}>Ref: {pmt.notes}</Text>
                 ) : null}
               </AppCard>
             ))
@@ -356,9 +374,9 @@ export const SupplierDetailScreen: React.FC = () => {
       {/* Pay Supplier Modal */}
       <Modal visible={showPayModal} transparent animationType="slide">
         <View style={styles.modalOverlay}>
-          <View style={styles.modalContent}>
-            <Text style={styles.modalTitle}>Record Supplier Payment</Text>
-            <Text style={styles.modalSub}>
+          <View style={[styles.modalContent, { backgroundColor: colors.surface }]}>
+            <Text style={[styles.modalTitle, { color: colors.textPrimary }]}>Record Supplier Payment</Text>
+            <Text style={[styles.modalSub, { color: colors.textSecondary }]}>
               Paying {supp.company_name || supp.name} will be debited from payable balance.
             </Text>
 
@@ -402,13 +420,13 @@ export const SupplierDetailScreen: React.FC = () => {
                 title="Confirm Payment"
                 onPress={handlePaySupplier}
                 loading={submittingPayment}
-                style={{ flex: 1, backgroundColor: '#7C3AED' }}
+                style={{ flex: 1 }}
               />
             </View>
           </View>
         </View>
       </Modal>
-    </ScreenContainer>
+    </View>
   );
 };
 
@@ -443,9 +461,9 @@ const styles = StyleSheet.create({
     width: 48,
     height: 48,
     borderRadius: 24,
-    backgroundColor: '#F3E8FF',
+    backgroundColor: '#FFF3E0',
     borderWidth: 1,
-    borderColor: '#E9D5FF',
+    borderColor: '#FFE0B2',
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -468,7 +486,7 @@ const styles = StyleSheet.create({
   phoneClickText: {
     fontSize: 13,
     fontWeight: '700',
-    color: '#7C3AED',
+    color: '#F57C00',
   },
   gstText: {
     fontSize: 11,
@@ -536,7 +554,7 @@ const styles = StyleSheet.create({
     color: '#64748B',
   },
   filterTabTextActive: {
-    color: '#7C3AED',
+    color: '#F57C00',
     fontWeight: '700',
   },
   emptyBox: {

@@ -16,12 +16,10 @@ import { useSettings } from '../../../../navigation/context/SettingsContext';
 import { useStore } from '../../../../navigation/context/StoreContext';
 import billingApi from '../../services/billingApi';
 import AppHeader from '../../components/layout/AppHeader';
-import ScreenContainer from '../../components/layout/ScreenContainer';
 import AppCard from '../../components/common/AppCard';
 import AppButton from '../../components/common/AppButton';
 import AppIcon from '../../components/icons/AppIcon';
-import formatCurrency from '../../utils/formatCurrency';
-import formatDate from '../../utils/formatDate';
+import { formatCurrency, formatDate } from '../../utils/formatters';
 
 type InvoiceScreenRouteProp = RouteProp<RootStackParamList, 'Invoice'>;
 
@@ -105,25 +103,25 @@ export const InvoiceScreen: React.FC = () => {
 
   if (loading) {
     return (
-      <ScreenContainer>
+      <View style={{ flex: 1, backgroundColor: colors.background }}>
         <AppHeader title="Tax Invoice" showBack />
         <View style={styles.centerBox}>
           <ActivityIndicator size="large" color="#F57C00" />
-          <Text style={styles.loadingText}>Loading invoice details...</Text>
+          <Text style={[styles.loadingText, { color: colors.textSecondary }]}>Loading invoice details...</Text>
         </View>
-      </ScreenContainer>
+      </View>
     );
   }
 
   if (!invoice) {
     return (
-      <ScreenContainer>
+      <View style={{ flex: 1, backgroundColor: colors.background }}>
         <AppHeader title="Tax Invoice" showBack />
         <View style={styles.centerBox}>
-          <AppIcon name="AlertCircle" size={48} color="#94A3B8" />
-          <Text style={styles.notFoundText}>Invoice not found.</Text>
+          <AppIcon name="AlertCircle" size={48} color={colors.textMuted} />
+          <Text style={[styles.notFoundText, { color: colors.textSecondary }]}>Invoice not found.</Text>
         </View>
-      </ScreenContainer>
+      </View>
     );
   }
 
@@ -133,7 +131,7 @@ export const InvoiceScreen: React.FC = () => {
   const sgst = Number(invoice.tax_amount || 0) / 2;
 
   return (
-    <ScreenContainer scrollable={false}>
+    <View style={{ flex: 1, backgroundColor: colors.background }}>
       <AppHeader
         title="Tax Invoice"
         subtitle={invoice.invoice_number || `INV-${invoice.id}`}
@@ -312,7 +310,7 @@ export const InvoiceScreen: React.FC = () => {
           />
         </View>
       </ScrollView>
-    </ScreenContainer>
+    </View>
   );
 };
 

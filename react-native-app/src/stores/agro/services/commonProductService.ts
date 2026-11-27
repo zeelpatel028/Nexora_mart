@@ -1,7 +1,7 @@
 import apiClient from '../../../api/apiClient';
 import Endpoints from '../../../api/endpoints';
 import { Category, Brand } from '../../../api/types';
-import { UnitConversionRule } from '../utils/commonTypesIndex';
+import { UnitConversionRule } from '../utils/commonTypes';
 
 export interface CommonFormDataMaster {
   categories: Category[];

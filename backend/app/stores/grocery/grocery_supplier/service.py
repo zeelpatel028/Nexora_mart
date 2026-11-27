@@ -139,9 +139,12 @@ class GrocerySupplierService:
 
     @staticmethod
     def create_supplier(db: Session, store_id: int, data: GrocerySupplierCreate) -> GrocerySupplier:
+        from ....models.store import Store
+        st = db.query(Store).filter(Store.id == store_id).first()
         code = generate_next_id(db, store_id, "supplier")
         supplier = GrocerySupplier(
             store_id=store_id,
+            user_id=st.user_id if st else None,
             supplier_code=code,
             store_name=data.store_name.strip(),
             seller_name=data.seller_name.strip(),
@@ -173,6 +176,7 @@ class GrocerySupplierService:
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Supplier not found")
 
         from ..grocery_purchase_order.models import GroceryPurchaseOrder
+        from ..grocery_finance.models import GroceryPayment
         orders = db.query(GroceryPurchaseOrder).filter(
             GroceryPurchaseOrder.store_id == store_id,
             GroceryPurchaseOrder.supplier_id == supplier_id,
@@ -182,11 +186,21 @@ class GrocerySupplierService:
         total_orders = len(orders)
         total_amt = sum(float(o.total_amount or 0.0) for o in orders)
         pending_amt = sum(float(o.total_amount or 0.0) for o in orders if o.payment_status == "pending")
+        received_orders = [o for o in orders if o.status == "received"]
+        order_ids = [o.id for o in orders]
+        pmts = []
+        if order_ids:
+            pmts = db.query(GroceryPayment).filter(
+                GroceryPayment.store_id == store_id,
+                GroceryPayment.reference_type == "supplier_order",
+                GroceryPayment.reference_id.in_(order_ids),
+            ).order_by(GroceryPayment.id.desc()).all()
 
         return {
             "supplier": {
                 "id": supplier.id,
                 "store_id": supplier.store_id,
+                "user_id": supplier.user_id,
                 "supplier_code": supplier.supplier_code,
                 "store_name": supplier.store_name,
                 "seller_name": supplier.seller_name,
@@ -201,6 +215,7 @@ class GrocerySupplierService:
                 "upi_id": supplier.upi_id,
                 "is_active": supplier.is_active,
                 "total_orders_count": total_orders,
+                "received_orders_count": len(received_orders),
                 "total_purchase_amount": total_amt,
                 "pending_payment_amount": pending_amt,
                 "total_orders": total_orders,
@@ -209,6 +224,7 @@ class GrocerySupplierService:
             },
             "metrics": {
                 "total_orders": total_orders,
+                "received_orders": len(received_orders),
                 "total_amount": round(total_amt, 2),
                 "pending_amount": round(pending_amt, 2),
             },
@@ -225,7 +241,28 @@ class GrocerySupplierService:
                     "payment_status": o.payment_status,
                     "created_at": str(o.created_at)
                 } for o in orders
-            ]
+            ],
+            "received_orders": [
+                {
+                    "id": o.id,
+                    "order_code": o.order_code,
+                    "qty": o.qty,
+                    "unit": o.unit,
+                    "total_amount": o.total_amount,
+                    "received_at": str(o.received_at) if o.received_at else None,
+                    "payment_status": o.payment_status,
+                } for o in received_orders
+            ],
+            "payments": [
+                {
+                    "id": p.id,
+                    "reference_code": p.reference_code,
+                    "amount": p.amount,
+                    "payment_method": p.payment_method,
+                    "payment_date": str(p.payment_date),
+                    "notes": p.notes,
+                } for p in pmts
+            ],
         }
 
     @staticmethod

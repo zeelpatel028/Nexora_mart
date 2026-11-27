@@ -19,14 +19,12 @@ import { useTheme } from '../../hooks/useTheme';
 import { useSettings } from '../../../../navigation/context/SettingsContext';
 import customerApi from '../../services/customerApi';
 import AppHeader from '../../components/layout/AppHeader';
-import ScreenContainer from '../../components/layout/ScreenContainer';
 import AppCard from '../../components/common/AppCard';
 import AppButton from '../../components/common/AppButton';
 import AppInput from '../../components/common/AppInput';
 import AppDropdown from '../../components/common/AppDropdown';
 import AppIcon from '../../components/icons/AppIcon';
-import formatCurrency from '../../utils/formatCurrency';
-import formatDate from '../../utils/formatDate';
+import { formatCurrency, formatDate } from '../../utils/formatters';
 
 type CustomerDetailNavProp = NativeStackNavigationProp<RootStackParamList>;
 type CustomerDetailRouteProp = RouteProp<RootStackParamList, 'CustomerDetail'>;
@@ -153,13 +151,13 @@ export const CustomerDetailScreen: React.FC = () => {
 
   if (loading && !refreshing) {
     return (
-      <ScreenContainer>
+      <View style={{ flex: 1, backgroundColor: colors.background }}>
         <AppHeader title={initialName || 'Customer Ledger'} showBack />
         <View style={styles.centerBox}>
           <ActivityIndicator size="large" color="#F57C00" />
-          <Text style={styles.loadingText}>Loading customer records...</Text>
+          <Text style={[styles.loadingText, { color: colors.textSecondary }]}>Loading customer records...</Text>
         </View>
-      </ScreenContainer>
+      </View>
     );
   }
 
@@ -173,7 +171,7 @@ export const CustomerDetailScreen: React.FC = () => {
   const bills = details?.bills || [];
 
   return (
-    <ScreenContainer scrollable={false}>
+    <View style={{ flex: 1, backgroundColor: colors.background }}>
       <AppHeader
         title={cust.name}
         showBack
@@ -428,7 +426,7 @@ export const CustomerDetailScreen: React.FC = () => {
           </View>
         </View>
       </Modal>
-    </ScreenContainer>
+    </View>
   );
 };
 

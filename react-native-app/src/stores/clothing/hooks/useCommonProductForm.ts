@@ -6,7 +6,7 @@ import {
   BaseProductUnitInfo,
   StoreTypeCode,
   ProductUnitOption,
-} from '../utils/commonTypesIndex';
+} from '../utils/commonTypes';
 import {
   DEFAULT_BASIC_INFO,
   DEFAULT_PRICING_INFO,
@@ -14,12 +14,12 @@ import {
   DEFAULT_UNIT_INFO,
   DEFAULT_PRODUCT_UNITS,
   STORE_TYPE_SKU_PREFIXES,
-} from '../utils/commonConstantsIndex';
+} from '../utils/commonConstants';
 import {
   validateCommonBasicInfo,
   validateCommonPricingInfo,
   validateCommonInventoryInfo,
-} from '../utils/commonValidationsIndex';
+} from '../utils/commonValidations';
 import {
   calculateProfit,
   calculateMarginPercentage,
@@ -27,7 +27,7 @@ import {
   calculateNetPrice,
 } from '../utils/calculations';
 import { generateProductSku } from '../utils/skuGenerator';
-import { commonProductService } from '../services/productFormServices';
+import { commonProductService } from '../services/commonProductService';
 import { Category, Brand } from '../../../api/types';
 
 interface UseCommonProductFormOptions {

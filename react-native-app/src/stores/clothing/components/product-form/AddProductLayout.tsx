@@ -13,8 +13,8 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTheme } from '../../hooks/useTheme';
 import { useScreenSystemBar } from '../../utils/systemBar';
 import { ArrowLeftIcon, CheckIcon, BookmarkIcon } from '../branding/Icons';
-import { StoreTypeCode } from '../../utils/commonTypesIndex';
-import { STORE_TYPE_METADATA } from '../../utils/commonConstantsIndex';
+import { StoreTypeCode } from '../../utils/commonTypes';
+import { STORE_TYPE_METADATA } from '../../utils/commonConstants';
 
 interface AddProductLayoutProps {
   storeType: StoreTypeCode;
@@ -71,8 +71,16 @@ export const AddProductLayout: React.FC<AddProductLayoutProps> = ({
             },
           ]}
         >
-          <TouchableOpacity style={styles.backButton} onPress={onBack} disabled={isLoading} activeOpacity={0.7}>
-            <ArrowLeftIcon size={20} color={colors.textPrimary} />
+          <TouchableOpacity
+            style={[
+              styles.backButton,
+              { backgroundColor: colors.surfaceSubtle },
+            ]}
+            onPress={onBack}
+            disabled={isLoading}
+            activeOpacity={0.7}
+          >
+            <ArrowLeftIcon size={19} color={colors.textPrimary} />
           </TouchableOpacity>
 
           <View style={styles.titleContainer}>
@@ -80,8 +88,8 @@ export const AddProductLayout: React.FC<AddProductLayoutProps> = ({
               <Text style={[styles.title, { color: colors.textPrimary }]} numberOfLines={1}>
                 {pageTitle}
               </Text>
-              <View style={[styles.badge, { backgroundColor: meta.badgeColor + '20' }]}>
-                <Text style={[styles.badgeText, { color: meta.badgeColor }]}>{meta.displayName}</Text>
+              <View style={[styles.badge, { backgroundColor: colors.badgeOrangeBg }]}>
+                <Text style={[styles.badgeText, { color: colors.badgeOrangeText }]}>{meta.displayName}</Text>
               </View>
             </View>
           </View>
@@ -152,13 +160,16 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: 16,
-    paddingBottom: 8,
+    paddingBottom: 12,
     borderBottomWidth: 1,
     gap: 12,
   },
   backButton: {
-    padding: 4,
-    marginLeft: -4,
+    width: 38,
+    height: 38,
+    borderRadius: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   titleContainer: {
     flex: 1,
@@ -169,8 +180,9 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   title: {
-    fontSize: 17,
-    fontWeight: '700',
+    fontSize: 18,
+    fontWeight: '800',
+    letterSpacing: -0.2,
     flexShrink: 1,
   },
   badge: {

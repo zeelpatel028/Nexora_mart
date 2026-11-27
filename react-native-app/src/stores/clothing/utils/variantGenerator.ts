@@ -1,4 +1,4 @@
-import { ProductVariantItem } from './commonTypesIndex';
+import { ProductVariantItem } from './commonTypes';
 import { generateVariantSku } from './skuGenerator';
 
 /**

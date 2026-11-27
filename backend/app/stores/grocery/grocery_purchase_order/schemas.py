@@ -12,11 +12,15 @@ class PurchaseOrderCreate(BaseModel):
 
 
 class PurchaseOrderReceiveRequest(BaseModel):
+    received_quantity: Optional[float] = Field(None, gt=0)
     expiry_date: Optional[str] = None  # Required if product.expiry_alert_enabled is True
 
 
 class PurchaseOrderPaymentRequest(BaseModel):
     paid: bool = True
+    amount: Optional[float] = Field(None, gt=0)
+    payment_method: str = "CASH"
+    notes: Optional[str] = None
 
 
 class PurchaseOrderResponse(BaseModel):

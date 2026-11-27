@@ -22,6 +22,7 @@ class GrocerySettingService:
 
             setting = GrocerySetting(
                 store_id=store_id,
+                user_id=getattr(store, "user_id", None) if store else None,
                 theme="system",
                 language="en",
                 currency_code=curr_code,

@@ -2,7 +2,7 @@ import React from 'react';
 import { View, Text, StyleSheet, TextInput, TouchableOpacity, ScrollView } from 'react-native';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import { useTheme } from '../../hooks/useTheme';
-import { ProductVariantItem } from '../../utils/commonTypesIndex';
+import { ProductVariantItem } from '../../utils/commonTypes';
 
 interface CommonVariantTableProps {
   variants: ProductVariantItem[];

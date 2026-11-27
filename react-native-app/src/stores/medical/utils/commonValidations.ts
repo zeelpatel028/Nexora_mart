@@ -6,7 +6,7 @@ import {
   ValidationResult,
   ProductBatchItem,
   ProductVariantItem,
-} from './commonTypesIndex';
+} from './commonTypes';
 
 export function validateCommonBasicInfo(basic: BaseProductBasicInfo): Record<string, string> {
   const errors: Record<string, string> = {};

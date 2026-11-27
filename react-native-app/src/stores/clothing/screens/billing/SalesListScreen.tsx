@@ -15,8 +15,8 @@ import { RootStackParamList } from '../../../../navigation/types';
 import { useTheme } from '../../hooks/useTheme';
 import { salesService } from '../../services';
 import { Sale } from '../../../../api/types';
-import Header from '../../components/common/Header';
-import Card from '../../components/common/Card';
+import AppHeader from '../../components/layout/AppHeader';
+import AppCard from '../../components/common/AppCard';
 import Badge from '../../components/common/Badge';
 import EmptyState from '../../components/common/EmptyState';
 import {
@@ -154,7 +154,7 @@ export const SalesListScreen: React.FC = () => {
     const isDebit = item.payment_method === 'DEBIT_CUSTOMER' || item.balance_amount && item.balance_amount > 0;
 
     return (
-      <Card
+      <AppCard
         style={styles.saleCard}
         onPress={() => setSelectedSaleForReceipt(item)}
       >
@@ -227,21 +227,32 @@ export const SalesListScreen: React.FC = () => {
             </TouchableOpacity>
           </View>
         </View>
-      </Card>
+      </AppCard>
     );
   };
 
   return (
     <View style={{ flex: 1, backgroundColor: colors.background }}>
-      {/* Header */}
-      <Header
+      <AppHeader
         title="View Bills"
         showBack
         onBack={() => navigation.goBack()}
-        rightAction={{
-          icon: <ShoppingCartIcon size={20} color={brandColors.primary} />,
-          onPress: () => navigation.navigate('PosBilling'),
-        }}
+        rightAction={
+          <TouchableOpacity
+            onPress={() => navigation.navigate('PosBilling')}
+            style={{
+              width: 38,
+              height: 38,
+              borderRadius: 12,
+              backgroundColor: brandColors.lightOrange,
+              alignItems: 'center',
+              justifyContent: 'center',
+            }}
+            activeOpacity={0.8}
+          >
+            <ShoppingCartIcon size={18} color={brandColors.primaryOrange} />
+          </TouchableOpacity>
+        }
       />
 
       {/* Date Filter Bar: Today (default), Yesterday, Week, Custom Date, All */}

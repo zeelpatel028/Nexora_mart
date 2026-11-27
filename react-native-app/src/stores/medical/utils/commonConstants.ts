@@ -8,7 +8,7 @@ import {
   BaseProductUnitInfo,
   ProductUnitOption,
   StoreTypeCode,
-} from './commonTypesIndex';
+} from './commonTypes';
 
 export const GST_RATE_OPTIONS = [
   { label: '0% (Exempt / Nil)', value: 0 },
@@ -85,49 +85,49 @@ export const STORE_TYPE_METADATA: Record<
   grocery: {
     displayName: 'Grocery Store',
     icon: 'basket-outline',
-    badgeColor: '#10B981',
+    badgeColor: '#F57C00',
     description: 'Food items, FMCG, perishables, weight & batch expiry',
   },
   clothing: {
     displayName: 'Clothing Store',
     icon: 'shirt-outline',
-    badgeColor: '#6366F1',
+    badgeColor: '#F57C00',
     description: 'Apparel, fabric, size-color variants & measurements',
   },
   medical: {
     displayName: 'Medical Store',
     icon: 'medkit-outline',
-    badgeColor: '#EF4444',
+    badgeColor: '#F57C00',
     description: 'Medicines, batches, FEFO, composition & Rx schedules',
   },
   electronics: {
     displayName: 'Electronics Store',
     icon: 'hardware-chip-outline',
-    badgeColor: '#3B82F6',
+    badgeColor: '#F57C00',
     description: 'Gadgets, serial / IMEI tracking, warranty & specs',
   },
   plastic: {
     displayName: 'Plastic Store',
     icon: 'cube-outline',
-    badgeColor: '#EC4899',
+    badgeColor: '#F57C00',
     description: 'Containers, material grades, dimensions & food-grade cert',
   },
   handloom: {
     displayName: 'Handloom Store',
     icon: 'color-palette-outline',
-    badgeColor: '#8B5CF6',
+    badgeColor: '#F57C00',
     description: 'Crafts, artisan details, weaving techniques & GI tags',
   },
   furniture: {
     displayName: 'Furniture Store',
     icon: 'business-outline',
-    badgeColor: '#F59E0B',
+    badgeColor: '#F57C00',
     description: 'Wood types, finishes, dimensions, assembly & warranty',
   },
   agro: {
     displayName: 'Agro Store',
     icon: 'leaf-outline',
-    badgeColor: '#14B8A6',
+    badgeColor: '#F57C00',
     description: 'Seeds, fertilizers, crop medicines, active ingredients & expiry',
   },
 };

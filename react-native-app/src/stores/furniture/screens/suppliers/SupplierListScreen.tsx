@@ -9,7 +9,7 @@ import {
   Modal,
   Alert,
 } from 'react-native';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, useRoute } from '@react-navigation/native';
 import { useFocusEffect } from '../../hooks/useFocusEffect';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../../../../navigation/types';
@@ -17,19 +17,19 @@ import { useTheme } from '../../hooks/useTheme';
 import { useSettings } from '../../../../navigation/context/SettingsContext';
 import supplierApi from '../../services/supplierApi';
 import AppHeader from '../../components/layout/AppHeader';
-import ScreenContainer from '../../components/layout/ScreenContainer';
 import AppCard from '../../components/common/AppCard';
 import AppButton from '../../components/common/AppButton';
 import AppInput from '../../components/common/AppInput';
 import AppIcon from '../../components/icons/AppIcon';
-import formatCurrency from '../../utils/formatCurrency';
 import SupplierCardSkeleton from '../../components/skeletons/SupplierCardSkeleton';
+import { formatCurrency } from '../../utils/formatters';
 
 type SupplierNavProp = NativeStackNavigationProp<RootStackParamList>;
 
 export const SupplierListScreen: React.FC = () => {
   const navigation = useNavigation<SupplierNavProp>();
-  const { colors, isDark } = useTheme();
+  const route = useRoute<any>();
+  const { colors, brandColors, isDark } = useTheme();
   const { currency, currencySymbol } = useSettings();
 
   const [suppliers, setSuppliers] = useState<any[]>([]);
@@ -49,7 +49,15 @@ export const SupplierListScreen: React.FC = () => {
   const [refreshing, setRefreshing] = useState(false);
 
   // New Supplier Modal
-  const [showAddModal, setShowAddModal] = useState(false);
+  const [showAddModal, setShowAddModal] = useState(
+    route.name === 'AddSupplier' || Boolean(route.params?.openAdd)
+  );
+
+  useEffect(() => {
+    if (route.name === 'AddSupplier' || route.params?.openAdd) {
+      setShowAddModal(true);
+    }
+  }, [route.name, route.params?.openAdd]);
   const [name, setName] = useState('');
   const [companyName, setCompanyName] = useState('');
   const [phone, setPhone] = useState('');
@@ -143,24 +151,32 @@ export const SupplierListScreen: React.FC = () => {
       >
         <AppCard style={styles.supplierCard}>
           <View style={styles.cardHeader}>
-            <View style={styles.avatarBox}>
-              <AppIcon name="Truck" size={20} color="#7C3AED" />
+            <View
+              style={[
+                styles.avatarBox,
+                {
+                  backgroundColor: isDark ? colors.badgeOrangeBg : brandColors.lightOrange,
+                  borderColor: isDark ? brandColors.darkOrange : '#FFE0B2',
+                },
+              ]}
+            >
+              <AppIcon name="Truck" size={20} color={brandColors.primaryOrange} />
             </View>
             <View style={{ flex: 1, marginLeft: 12 }}>
-              <Text style={styles.companyName}>{item.company_name || item.name}</Text>
+              <Text style={[styles.companyName, { color: colors.textPrimary }]}>{item.company_name || item.name}</Text>
               {item.company_name && item.name ? (
-                <Text style={styles.contactName}>Contact: {item.name}</Text>
+                <Text style={[styles.contactName, { color: colors.textSecondary }]}>Contact: {item.name}</Text>
               ) : null}
               {item.phone ? (
                 <View style={styles.phoneRow}>
-                  <AppIcon name="Phone" size={12} color="#64748B" />
-                  <Text style={styles.phoneText}>{item.phone}</Text>
+                  <AppIcon name="Phone" size={12} color={colors.textSecondary} />
+                  <Text style={[styles.phoneText, { color: colors.textSecondary }]}>{item.phone}</Text>
                 </View>
               ) : null}
             </View>
 
             <View style={{ alignItems: 'flex-end' }}>
-              <Text style={styles.balanceLabel}>Payable Balance</Text>
+              <Text style={[styles.balanceLabel, { color: colors.textMuted }]}>Payable Balance</Text>
               <Text
                 style={[
                   styles.balanceAmount,
@@ -172,16 +188,16 @@ export const SupplierListScreen: React.FC = () => {
             </View>
           </View>
 
-          <View style={styles.cardFooter}>
+          <View style={[styles.cardFooter, { borderTopColor: colors.borderLight }]}>
             <View style={styles.ordersTag}>
-              <AppIcon name="Package" size={12} color="#64748B" />
-              <Text style={styles.ordersText}>
+              <AppIcon name="Package" size={12} color={colors.textSecondary} />
+              <Text style={[styles.ordersText, { color: colors.textSecondary }]}>
                 {item.total_orders ?? item.orders_count ?? 0} Orders
               </Text>
             </View>
             <View style={styles.viewDetailRow}>
-              <Text style={styles.viewDetailText}>Supplier Ledger</Text>
-              <AppIcon name="ChevronRight" size={14} color="#7C3AED" />
+              <Text style={[styles.viewDetailText, { color: brandColors.primaryOrange }]}>Supplier Ledger</Text>
+              <AppIcon name="ChevronRight" size={14} color={brandColors.primaryOrange} />
             </View>
           </View>
         </AppCard>
@@ -190,14 +206,14 @@ export const SupplierListScreen: React.FC = () => {
   };
 
   return (
-    <ScreenContainer scrollable={false}>
+    <View style={{ flex: 1, backgroundColor: colors.background }}>
       <AppHeader
         title="Suppliers & Vendors"
         showBack
         rightAction={
           <TouchableOpacity
             onPress={() => setShowAddModal(true)}
-            style={styles.headerAddBtn}
+            style={[styles.headerAddBtn, { backgroundColor: brandColors.primaryOrange }]}
           >
             <AppIcon name="Plus" size={18} color="#FFFFFF" />
             <Text style={styles.headerAddBtnText}>Add</Text>
@@ -207,19 +223,30 @@ export const SupplierListScreen: React.FC = () => {
 
       <View style={styles.content}>
         {/* 1. Dashboard Metrics Summary Bar */}
-        <View style={styles.summaryBar}>
+        <View
+          style={[
+            styles.summaryBar,
+            { backgroundColor: colors.surface, borderBottomColor: colors.cardBorder },
+          ]}
+        >
           <View style={styles.summaryBox}>
-            <Text style={styles.summaryLabel}>SUPPLIERS</Text>
-            <Text style={styles.summaryVal}>{metrics.total_suppliers}</Text>
-            <Text style={styles.summarySub}>Active</Text>
+            <Text style={[styles.summaryLabel, { color: colors.textSecondary }]}>SUPPLIERS</Text>
+            <Text style={[styles.summaryVal, { color: colors.textPrimary }]}>{metrics.total_suppliers}</Text>
+            <Text style={[styles.summarySub, { color: colors.textMuted }]}>Active</Text>
           </View>
 
-          <View style={[styles.summaryBox, styles.summaryBoxMiddle]}>
-            <Text style={styles.summaryLabel}>PENDING ORDERS</Text>
-            <Text style={[styles.summaryVal, { color: '#F59E0B' }]}>
+          <View
+            style={[
+              styles.summaryBox,
+              styles.summaryBoxMiddle,
+              { borderColor: colors.borderLight },
+            ]}
+          >
+            <Text style={[styles.summaryLabel, { color: colors.textSecondary }]}>PENDING ORDERS</Text>
+            <Text style={[styles.summaryVal, { color: brandColors.primaryOrange }]}>
               {metrics.pending_orders}
             </Text>
-            <Text style={styles.summarySub}>Awaiting</Text>
+            <Text style={[styles.summarySub, { color: colors.textMuted }]}>Awaiting</Text>
           </View>
 
           <View style={styles.summaryBox}>
@@ -227,7 +254,7 @@ export const SupplierListScreen: React.FC = () => {
             <Text style={[styles.summaryVal, { color: '#DC2626' }]}>
               {formatCurrency(metrics.pending_payments, currency)}
             </Text>
-            <Text style={styles.summarySub}>To Pay</Text>
+            <Text style={[styles.summarySub, { color: colors.textMuted }]}>To Pay</Text>
           </View>
         </View>
 
@@ -237,7 +264,7 @@ export const SupplierListScreen: React.FC = () => {
             placeholder="Search supplier by name, company, or phone..."
             value={search}
             onChangeText={setSearch}
-            leftIcon={<AppIcon name="Search" size={16} color="#94A3B8" />}
+            leftIcon={<AppIcon name="Search" size={16} color={colors.textMuted} />}
           />
         </View>
 
@@ -262,14 +289,14 @@ export const SupplierListScreen: React.FC = () => {
               <RefreshControl
                 refreshing={refreshing}
                 onRefresh={onRefresh}
-                colors={['#7C3AED']}
+                colors={[brandColors.primaryOrange]}
               />
             }
             ListEmptyComponent={
               <View style={styles.emptyBox}>
-                <AppIcon name="Truck" size={48} color="#CBD5E1" />
-                <Text style={styles.emptyTitle}>No Suppliers Registered</Text>
-                <Text style={styles.emptySub}>
+                <AppIcon name="Truck" size={48} color={colors.textMuted} />
+                <Text style={[styles.emptyTitle, { color: colors.textPrimary }]}>No Suppliers Registered</Text>
+                <Text style={[styles.emptySub, { color: colors.textSecondary }]}>
                   Add vendors to create purchase orders and manage payables.
                 </Text>
                 <AppButton
@@ -286,8 +313,8 @@ export const SupplierListScreen: React.FC = () => {
       {/* Add Supplier Modal */}
       <Modal visible={showAddModal} transparent animationType="slide">
         <View style={styles.modalOverlay}>
-          <View style={styles.modalContent}>
-            <Text style={styles.modalTitle}>Add New Supplier</Text>
+          <View style={[styles.modalContent, { backgroundColor: colors.surface }]}>
+            <Text style={[styles.modalTitle, { color: colors.textPrimary }]}>Add New Supplier</Text>
             <AppInput
               label="Contact Person Name *"
               placeholder="e.g. Bharat Kumar"
@@ -345,7 +372,7 @@ export const SupplierListScreen: React.FC = () => {
           </View>
         </View>
       </Modal>
-    </ScreenContainer>
+    </View>
   );
 };
 
@@ -356,10 +383,10 @@ const styles = StyleSheet.create({
   headerAddBtn: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#7C3AED',
-    paddingVertical: 5,
+    backgroundColor: '#F57C00',
+    paddingVertical: 6,
     paddingHorizontal: 12,
-    borderRadius: 6,
+    borderRadius: 10,
     gap: 4,
   },
   headerAddBtnText: {
@@ -421,9 +448,9 @@ const styles = StyleSheet.create({
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: '#F3E8FF',
+    backgroundColor: '#FFF3E0',
     borderWidth: 1,
-    borderColor: '#E9D5FF',
+    borderColor: '#FFE0B2',
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -490,7 +517,7 @@ const styles = StyleSheet.create({
   viewDetailText: {
     fontSize: 12,
     fontWeight: '700',
-    color: '#7C3AED',
+    color: '#F57C00',
   },
   emptyBox: {
     alignItems: 'center',

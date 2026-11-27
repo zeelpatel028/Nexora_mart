@@ -12,6 +12,7 @@ class GroceryBackup(Base):
 
     id = Column(Integer, primary_key=True, autoincrement=True, index=True)
     store_id = Column(Integer, ForeignKey("stores.id", ondelete="CASCADE"), nullable=False, index=True)
+    user_id = Column(Integer, ForeignKey("users.id", ondelete="SET NULL"), nullable=True, index=True)
     file_url = Column(String(500), nullable=False)
     size = Column(Integer, default=0, nullable=False)
     created_at = Column(DateTime, default=lambda: datetime.datetime.now(datetime.timezone.utc), nullable=False)

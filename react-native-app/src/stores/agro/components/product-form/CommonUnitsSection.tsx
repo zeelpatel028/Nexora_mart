@@ -1,9 +1,9 @@
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { useTheme } from '../../hooks/useTheme';
-import { BaseProductUnitInfo, ProductUnitOption } from '../../utils/commonTypesIndex';
+import { BaseProductUnitInfo, ProductUnitOption } from '../../utils/commonTypes';
 import { CommonDropdown } from './CommonDropdown';
-import { DEFAULT_PRODUCT_UNITS } from '../../utils/commonConstantsIndex';
+import { DEFAULT_PRODUCT_UNITS } from '../../utils/commonConstants';
 
 interface CommonUnitsSectionProps {
   data: BaseProductUnitInfo;

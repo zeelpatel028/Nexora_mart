@@ -19,15 +19,14 @@ type TabIconKey = 'home' | 'customers' | 'billing' | 'products' | 'grid';
 interface TabMeta {
   label: string;
   icon: TabIconKey;
-  semanticColor: string;
 }
 
 const TAB_META: Record<string, TabMeta> = {
-  DashboardTab: { label: 'Home', icon: 'home', semanticColor: '#F57C00' },
-  CustomerTab: { label: 'Customer', icon: 'customers', semanticColor: '#2EAD64' },
-  PosTab: { label: 'Make Bill', icon: 'billing', semanticColor: '#8B5CF6' },
-  ProductsTab: { label: 'Products', icon: 'products', semanticColor: '#2196F3' },
-  MoreTab: { label: 'More', icon: 'grid', semanticColor: '#64748B' },
+  DashboardTab: { label: 'Home', icon: 'home' },
+  CustomerTab: { label: 'Customer', icon: 'customers' },
+  PosTab: { label: 'Make Bill', icon: 'billing' },
+  ProductsTab: { label: 'Products', icon: 'products' },
+  MoreTab: { label: 'More', icon: 'grid' },
 };
 
 const TabSvgIcon: React.FC<{ name: TabIconKey; color: string; size?: number }> = ({
@@ -164,7 +163,7 @@ export const FloatingTabBar: React.FC<BottomTabBarProps> = ({
           styles.floatingBar,
           {
             backgroundColor: isDark ? colors.tabBarBg : '#FFFFFF',
-            borderColor: isDark ? colors.tabBarBorder : '#ECEFF5',
+            borderColor: colors.cardBorder,
             shadowColor: isDark ? '#000000' : '#0F172A',
           },
         ]}
@@ -204,7 +203,6 @@ export const FloatingTabBar: React.FC<BottomTabBarProps> = ({
           const meta = TAB_META[route.name] || {
             label: route.name,
             icon: 'grid' as TabIconKey,
-            semanticColor: brandColors.primaryOrange,
           };
 
           const onPress = () => {
@@ -225,14 +223,7 @@ export const FloatingTabBar: React.FC<BottomTabBarProps> = ({
             });
           };
 
-          const iconColor = isFocused
-            ? meta.icon === 'grid'
-              ? brandColors.primaryOrange
-              : meta.semanticColor
-            : isDark
-            ? '#7E8BA3'
-            : meta.semanticColor + 'AA';
-
+          const iconColor = isFocused ? brandColors.primaryOrange : colors.textSecondary;
           const labelColor = isFocused ? brandColors.primaryOrange : colors.textSecondary;
           const isCenterBill = route.name === 'PosTab';
 
@@ -287,18 +278,18 @@ export const FloatingTabBar: React.FC<BottomTabBarProps> = ({
 };
 
 const styles = StyleSheet.create({
-  outerWrap: { paddingHorizontal: 12, paddingTop: 4 },
+  outerWrap: { paddingHorizontal: 14, paddingTop: 4 },
   floatingBar: {
     flexDirection: 'row',
     alignItems: 'center',
-    height: 64,
+    height: 62,
     paddingHorizontal: 6,
-    borderRadius: 22,
+    borderRadius: 18,
     borderWidth: 1,
-    shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.08,
-    shadowRadius: 14,
-    elevation: 8,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.07,
+    shadowRadius: 12,
+    elevation: 6,
     position: 'relative',
   },
   activeIndicatorWrap: {
@@ -309,7 +300,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     paddingHorizontal: 4,
   },
-  activePill: { width: '100%', height: '100%', borderRadius: 16 },
+  activePill: { width: '100%', height: '100%', borderRadius: 14 },
   activeTopLine: {
     position: 'absolute',
     top: -6,

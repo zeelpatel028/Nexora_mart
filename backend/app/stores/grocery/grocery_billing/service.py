@@ -3,11 +3,12 @@ from typing import Optional, List, Tuple, Dict, Any
 from sqlalchemy.orm import Session, selectinload
 from sqlalchemy import or_
 from fastapi import HTTPException, status
-from .models import GroceryBill, GroceryBillItem
+from .models import GroceryBill, GroceryBillItem, GroceryInvoice
 from .schemas import MakeBillRequest
 from .cache import invalidate_billing_cache
-from ..grocery_product.models import GroceryProduct, GroceryStockMovement
+from ..grocery_product.models import GroceryProduct, GroceryProductBatch, GroceryStockMovement
 from ..grocery_khata_customer.models import GroceryCustomer
+from ..grocery_finance.models import GroceryPayment
 from ....models.store import Store
 from ....utils.id_generator import generate_next_id
 from ....utils.pdf import generate_invoice_pdf
@@ -18,6 +19,16 @@ class GroceryBillingService:
     def make_bill(db: Session, store: Store, user_id: int, data: MakeBillRequest) -> dict:
         if not data.items:
             raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="At least one item is required.")
+
+        # Idempotent duplicate-bill protection
+        if data.idempotency_key:
+            existing_bill = db.query(GroceryBill).filter(
+                GroceryBill.store_id == store.id,
+                GroceryBill.idempotency_key == data.idempotency_key,
+                GroceryBill.is_deleted == False,
+            ).first()
+            if existing_bill:
+                return GroceryBillingService.get_invoice_detail(db, store.id, existing_bill.id)
 
         cust_type = data.customer_type.lower().strip()
         customer = None
@@ -61,7 +72,7 @@ class GroceryBillingService:
                     detail=f"Product '{item_in.product_name}' not found."
                 )
 
-            # Check stock
+            # Check stock (prevent negative stock)
             if prod.available_stock < item_in.qty:
                 raise HTTPException(
                     status_code=status.HTTP_400_BAD_REQUEST,
@@ -82,13 +93,28 @@ class GroceryBillingService:
             total_tax_amount += line_tax
             grand_total_amount += line_tot
 
-            # Reduce product stock
-            prod.available_stock -= item_in.qty
+            # Reduce product stock & deduct active batches FEFO
+            prod.available_stock = round(prod.available_stock - item_in.qty, 4)
             prod.updated_at = now
+
+            rem_to_deduct = float(item_in.qty)
+            active_batches = db.query(GroceryProductBatch).filter(
+                GroceryProductBatch.store_id == store.id,
+                GroceryProductBatch.product_id == prod.id,
+                GroceryProductBatch.remaining_qty > 0,
+                GroceryProductBatch.is_deleted == False,
+            ).order_by(GroceryProductBatch.expiry_date.asc(), GroceryProductBatch.received_at.asc()).all()
+            for b in active_batches:
+                if rem_to_deduct <= 0:
+                    break
+                take = min(float(b.remaining_qty), rem_to_deduct)
+                b.remaining_qty = round(float(b.remaining_qty) - take, 4)
+                rem_to_deduct -= take
 
             # Stock movement
             movement = GroceryStockMovement(
                 store_id=store.id,
+                user_id=user_id,
                 product_id=prod.id,
                 type="sale",
                 qty=item_in.qty,
@@ -111,13 +137,20 @@ class GroceryBillingService:
             )
             bill_items.append(b_item)
 
-        # Payment status: Walk-in is paid immediately; Khata is unpaid by default
-        is_paid = (cust_type == "walk_in")
+        discount_val = min(float(data.discount_amount or 0.0), grand_total_amount)
+        final_grand_total = round(max(0.0, grand_total_amount - discount_val), 2)
+
+        # Payment status: Walk-in is paid immediately; Khata is unpaid by default unless paid in full
+        is_paid = (cust_type == "walk_in") or (
+            data.paid_amount is not None and float(data.paid_amount) >= final_grand_total and final_grand_total > 0
+        )
+        paid_val = final_grand_total if is_paid else float(data.paid_amount or 0.0)
         payment_status_val = "paid" if is_paid else "unpaid"
         paid_at_val = now if is_paid else None
 
         bill = GroceryBill(
             store_id=store.id,
+            user_id=user_id,
             invoice_code=invoice_code,
             customer_type=cust_type,
             customer_id=customer.id if customer else None,
@@ -126,7 +159,11 @@ class GroceryBillingService:
             walk_in_address=data.walk_in_address if cust_type == "walk_in" else None,
             subtotal=round(total_subtotal, 2),
             total_tax=round(total_tax_amount, 2),
-            grand_total=round(grand_total_amount, 2),
+            discount_amount=round(discount_val, 2),
+            grand_total=final_grand_total,
+            paid_amount=round(paid_val, 2),
+            payment_method=(data.payment_method or ("KHATA" if cust_type == "khata" else "CASH")).upper(),
+            idempotency_key=data.idempotency_key,
             payment_status=payment_status_val,
             paid_at=paid_at_val,
             template_id=data.template_id or "modern_orange",
@@ -141,6 +178,37 @@ class GroceryBillingService:
             db.add(bi)
         for sm in stock_movements:
             db.add(sm)
+
+        db.add(
+            GroceryInvoice(
+                store_id=store.id,
+                user_id=user_id,
+                bill_id=bill.id,
+                customer_id=bill.customer_id,
+                invoice_number=invoice_code,
+                subtotal=bill.subtotal,
+                total_tax=bill.total_tax,
+                grand_total=bill.grand_total,
+                payment_status=payment_status_val,
+                template_id=bill.template_id,
+                invoice_date=now,
+            )
+        )
+
+        if paid_val > 0:
+            db.add(
+                GroceryPayment(
+                    store_id=store.id,
+                    user_id=user_id,
+                    reference_type="bill",
+                    reference_id=bill.id,
+                    reference_code=invoice_code,
+                    amount=round(paid_val, 2),
+                    payment_method=bill.payment_method,
+                    payment_date=now,
+                    notes=f"Invoice {invoice_code}",
+                )
+            )
 
         db.commit()
         db.refresh(bill)

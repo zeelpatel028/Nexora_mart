@@ -21,7 +21,7 @@ import {
   AgroSeedDetails,
   AgroProductFormData,
 } from '../../utils/storeTypes';
-import { ProductBatchItem } from '../../utils/commonTypesIndex';
+import { ProductBatchItem } from '../../utils/commonTypes';
 import { validateAgroProduct } from '../../utils/storeValidations';
 import { agroProductService } from '../../services/storeProductService';
 

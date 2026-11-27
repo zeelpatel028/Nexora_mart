@@ -2,7 +2,7 @@ import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import { useTheme } from '../hooks/useTheme';
-import { ProductVariantItem } from '../utils/commonTypesIndex';
+import { ProductVariantItem } from '../utils/commonTypes';
 import { CommonFormCard } from './product-form/CommonFormCard';
 import { CommonMultiSelect } from './product-form/CommonMultiSelect';
 import { CommonVariantTable } from './product-form/CommonVariantTable';

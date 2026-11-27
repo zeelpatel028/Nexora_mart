@@ -5,10 +5,10 @@ import { RootStackParamList } from '../../../../navigation/types';
 import { useTheme } from '../../hooks/useTheme';
 import { salesService } from '../../services';
 import { Sale } from '../../../../api/types';
-import Header from '../../components/common/Header';
-import Card from '../../components/common/Card';
+import AppHeader from '../../components/layout/AppHeader';
+import AppCard from '../../components/common/AppCard';
 import Badge from '../../components/common/Badge';
-import Button from '../../components/common/Button';
+import AppButton from '../../components/common/AppButton';
 import Loader from '../../components/common/Loader';
 import { CloseIcon, CheckIcon } from '../../components/branding/Icons';
 import { formatCurrency, formatDateTime } from '../../utils/formatters';
@@ -117,7 +117,7 @@ export const SaleDetailScreen: React.FC = () => {
   if (loading) {
     return (
       <View style={{ flex: 1, backgroundColor: colors.background }}>
-        <Header title="Invoice Details" showBack onBack={() => navigation.goBack()} />
+        <AppHeader title="Invoice Details" showBack onBack={() => navigation.goBack()} />
         <Loader message="Loading invoice line items..." />
       </View>
     );
@@ -126,7 +126,7 @@ export const SaleDetailScreen: React.FC = () => {
   if (!sale) {
     return (
       <View style={{ flex: 1, backgroundColor: colors.background }}>
-        <Header title="Invoice Details" showBack onBack={() => navigation.goBack()} />
+        <AppHeader title="Invoice Details" showBack onBack={() => navigation.goBack()} />
         <View style={{ padding: 40, alignItems: 'center' }}>
           <Text style={{ color: colors.textPrimary, fontSize: 16 }}>Invoice not found.</Text>
         </View>
@@ -136,7 +136,7 @@ export const SaleDetailScreen: React.FC = () => {
 
   return (
     <View style={{ flex: 1, backgroundColor: colors.background }}>
-      <Header
+      <AppHeader
         title={`Invoice #${sale.invoice_number}`}
         showBack
         onBack={() => navigation.goBack()}
@@ -144,7 +144,7 @@ export const SaleDetailScreen: React.FC = () => {
 
       <ScrollView contentContainerStyle={styles.scrollContent}>
         {/* Invoice Summary Card */}
-        <Card>
+        <AppCard>
           <View style={styles.headerRow}>
             <View>
               <Text style={[styles.invoiceTitle, { color: colors.textPrimary }]}>
@@ -165,10 +165,10 @@ export const SaleDetailScreen: React.FC = () => {
               variant={sale.payment_status === 'PAID' ? 'success' : 'warning'}
             />
           </View>
-        </Card>
+        </AppCard>
 
         {/* Line Items Card */}
-        <Card>
+        <AppCard>
           <Text style={[styles.sectionTitle, { color: colors.textPrimary }]}>Purchased Items</Text>
 
           {sale.items && sale.items.length > 0 ? (
@@ -238,10 +238,10 @@ export const SaleDetailScreen: React.FC = () => {
               </Text>
             </View>
           </View>
-        </Card>
+        </AppCard>
 
         {/* Sales Return Action Card */}
-        <Card style={{ marginTop: 16 }}>
+        <AppCard style={{ marginTop: 16 }}>
           <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
             <View style={{ flex: 1, paddingRight: 12 }}>
               <Text style={[styles.sectionTitle, { color: colors.textPrimary, marginBottom: 2 }]}>
@@ -256,10 +256,10 @@ export const SaleDetailScreen: React.FC = () => {
               onPress={openReturnModal}
               activeOpacity={0.7}
             >
-              <Text style={[styles.returnActionBtnText, { color: '#DC2626' }]}>↩️ Return Items</Text>
+              <Text style={[styles.returnActionBtnText, { color: '#DC2626' }]}>Return Items</Text>
             </TouchableOpacity>
           </View>
-        </Card>
+        </AppCard>
       </ScrollView>
 
       {/* Return Processing Modal */}
@@ -417,17 +417,20 @@ export const SaleDetailScreen: React.FC = () => {
             </ScrollView>
 
             <View style={styles.modalFooter}>
-              <Button
+              <AppButton
                 title="Cancel"
                 variant="outline"
                 onPress={() => setShowReturnModal(false)}
+                fullWidth={false}
                 style={{ flex: 1, marginRight: 8 }}
               />
-              <Button
+              <AppButton
                 title={submittingReturn ? 'Processing...' : 'Confirm Return'}
+                variant="danger"
                 onPress={handleConfirmReturn}
                 loading={submittingReturn}
-                style={{ flex: 1.5, backgroundColor: '#EF4444' }}
+                fullWidth={false}
+                style={{ flex: 1.5 }}
               />
             </View>
           </View>

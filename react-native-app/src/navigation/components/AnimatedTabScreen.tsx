@@ -23,20 +23,27 @@ export const AnimatedTabScreen: React.FC<AnimatedTabScreenProps> = ({ children }
     }
 
     if (isFocused) {
-      opacity.setValue(0.82);
-      translateY.setValue(8);
+      opacity.stopAnimation();
+      translateY.stopAnimation();
+      opacity.setValue(0.86);
+      translateY.setValue(6);
       Animated.parallel([
         Animated.timing(opacity, {
           toValue: 1,
-          duration: 180,
+          duration: 160,
           useNativeDriver: true,
         }),
         Animated.timing(translateY, {
           toValue: 0,
-          duration: 180,
+          duration: 160,
           useNativeDriver: true,
         }),
       ]).start();
+    } else {
+      opacity.stopAnimation();
+      translateY.stopAnimation();
+      opacity.setValue(1);
+      translateY.setValue(0);
     }
   }, [isFocused, opacity, translateY]);
 

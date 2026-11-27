@@ -22,6 +22,9 @@ from .grocery_prefix.router import router as prefix_router
 from .grocery_setting.router import router as setting_router
 from .grocery_backup.router import router as backup_router
 from .grocery_lookup.router import router as lookup_router
+from .grocery_finance.router import router as finance_router
+from .grocery_returns.router import router as returns_router
+from .grocery_employees.router import router as employees_router
 from .dashboard_router import router as dashboard_router
 
 router = APIRouter()
@@ -35,4 +38,7 @@ router.include_router(prefix_router)
 router.include_router(setting_router)
 router.include_router(backup_router)
 router.include_router(lookup_router)
+router.include_router(finance_router)
+router.include_router(returns_router)
+router.include_router(employees_router)
 router.include_router(dashboard_router)

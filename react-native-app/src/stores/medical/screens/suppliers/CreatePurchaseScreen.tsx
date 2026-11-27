@@ -13,10 +13,10 @@ import { useNavigation } from '@react-navigation/native';
 import { useTheme } from '../../hooks/useTheme';
 import { purchaseService, partnerService, productService } from '../../services';
 import { Supplier, Product } from '../../../../api/types';
-import Header from '../../components/common/Header';
-import Input from '../../components/common/Input';
-import Button from '../../components/common/Button';
-import Card from '../../components/common/Card';
+import AppHeader from '../../components/layout/AppHeader';
+import AppInput from '../../components/common/AppInput';
+import AppButton from '../../components/common/AppButton';
+import AppCard from '../../components/common/AppCard';
 import { BuildingIcon, CloseIcon } from '../../components/branding/Icons';
 import { formatCurrency } from '../../utils/formatters';
 
@@ -157,11 +157,11 @@ export const CreatePurchaseScreen: React.FC = () => {
       style={{ flex: 1, backgroundColor: colors.background }}
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}
     >
-      <Header title="Record Purchase Order" showBack onBack={() => navigation.goBack()} />
+      <AppHeader title="Record Purchase Order" showBack onBack={() => navigation.goBack()} />
 
       <ScrollView contentContainerStyle={styles.scrollContent} keyboardShouldPersistTaps="handled">
         {/* Supplier & Header */}
-        <Card>
+        <AppCard>
           <Text style={[styles.sectionTitle, { color: colors.textPrimary }]}>Select Supplier</Text>
           <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: 12 }}>
             {suppliers.map((s) => {
@@ -194,23 +194,23 @@ export const CreatePurchaseScreen: React.FC = () => {
             })}
           </ScrollView>
 
-          <Input
+          <AppInput
             label="Supplier Invoice / Bill #"
             placeholder="e.g. INV-2026-904"
             value={invoiceNumber}
             onChangeText={setInvoiceNumber}
           />
 
-          <Input
+          <AppInput
             label="Payment Method"
             placeholder="BANK_TRANSFER / CASH / CREDIT"
             value={paymentMethod}
             onChangeText={setPaymentMethod}
           />
-        </Card>
+        </AppCard>
 
         {/* Line Items */}
-        <Card>
+        <AppCard>
           <View style={styles.lineHeaderRow}>
             <Text style={[styles.sectionTitle, { color: colors.textPrimary, marginBottom: 0 }]}>
               Items to Inward ({lines.length})
@@ -267,7 +267,7 @@ export const CreatePurchaseScreen: React.FC = () => {
 
               <View style={styles.row}>
                 <View style={{ flex: 1, marginRight: 6 }}>
-                  <Input
+                  <AppInput
                     label="Qty"
                     keyboardType="numeric"
                     value={line.quantity}
@@ -275,7 +275,7 @@ export const CreatePurchaseScreen: React.FC = () => {
                   />
                 </View>
                 <View style={{ flex: 1, marginLeft: 6 }}>
-                  <Input
+                  <AppInput
                     label="Unit Cost (₹)"
                     keyboardType="numeric"
                     value={line.unit_cost}
@@ -286,7 +286,7 @@ export const CreatePurchaseScreen: React.FC = () => {
 
               <View style={styles.row}>
                 <View style={{ flex: 1, marginRight: 6 }}>
-                  <Input
+                  <AppInput
                     label="Batch"
                     placeholder="Batch #"
                     value={line.batch_number}
@@ -294,7 +294,7 @@ export const CreatePurchaseScreen: React.FC = () => {
                   />
                 </View>
                 <View style={{ flex: 1, marginLeft: 6 }}>
-                  <Input
+                  <AppInput
                     label="Expiry"
                     placeholder="YYYY-MM-DD"
                     value={line.expiry_date}
@@ -312,9 +312,9 @@ export const CreatePurchaseScreen: React.FC = () => {
               {formatCurrency(totalEstimate)}
             </Text>
           </View>
-        </Card>
+        </AppCard>
 
-        <Button
+        <AppButton
           title="Save & Inward Stock"
           onPress={handleSubmit}
           loading={submitting}

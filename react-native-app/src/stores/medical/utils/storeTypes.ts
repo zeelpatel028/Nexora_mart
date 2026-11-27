@@ -4,7 +4,7 @@ import {
   BaseProductInventoryInfo,
   BaseProductUnitInfo,
   ProductBatchItem,
-} from './commonTypesIndex';
+} from './commonTypes';
 
 export interface MedicalSpecifications {
   genericName?: string;

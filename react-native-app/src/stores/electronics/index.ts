@@ -31,15 +31,15 @@ export function getScreen(name: string): React.ComponentType<any> {
       return require('./screens/billing/InvoiceScreen').default;
     case 'ProductsTab':
     case 'ProductList':
-      return require('./screens/products/ProductListScreen').default;
+      return require('./screens/products/ProductInventoryScreen').default;
     case 'Inventory':
-      return require('./screens/products/InventoryScreen').default;
+      return require('./screens/products/ProductInventoryScreen').default;
     case 'ProductDetail':
       return require('./screens/products/ProductDetailScreen').default;
     case 'AddProduct':
-      return require('./screens/products/AddProductScreen').default;
+      return require('./screens/products/ElectronicsAddProductScreen').default;
     case 'EditProduct':
-      return require('./screens/products/EditProductScreen').default;
+      return require('./screens/products/ElectronicsEditProductScreen').default;
     case 'MoreTab':
       return require('./screens/dashboard/MoreMenuScreen').default;
     case 'SupplierList':

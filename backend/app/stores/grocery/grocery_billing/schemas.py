@@ -17,6 +17,10 @@ class MakeBillRequest(BaseModel):
     walk_in_name: Optional[str] = "Walk-in Customer"
     walk_in_phone: Optional[str] = None
     walk_in_address: Optional[str] = None
+    discount_amount: float = Field(0.0, ge=0)
+    paid_amount: Optional[float] = Field(None, ge=0)
+    payment_method: str = "CASH"
+    idempotency_key: Optional[str] = None
     template_id: Optional[str] = "modern_orange"
     items: List[BillItemInput] = Field(..., min_length=1)
 

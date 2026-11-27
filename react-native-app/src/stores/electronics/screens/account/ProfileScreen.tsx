@@ -19,7 +19,7 @@ import { useTheme } from '../../hooks/useTheme';
 import { useScreenSystemBar } from '../../utils/systemBar';
 import { storeService, authService } from '../../services';
 import { Store } from '../../../../api/types';
-import Header from '../../components/common/Header';
+import AppHeader from '../../components/layout/AppHeader';
 import {
   UserIcon,
   BuildingIcon,
@@ -190,7 +190,7 @@ export const ProfileScreen: React.FC = () => {
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
       {/* 1. Top Header */}
-      <Header title="Account" />
+      <AppHeader title="Store Information" showBack />
 
       <ScrollView
         showsVerticalScrollIndicator={false}

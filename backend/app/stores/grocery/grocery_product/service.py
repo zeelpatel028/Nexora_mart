@@ -120,9 +120,13 @@ class GroceryProductService:
 
     @staticmethod
     def create_product(db: Session, store_id: int, data: GroceryProductCreate) -> GroceryProduct:
+        from ....models.store import Store
+        st = db.query(Store).filter(Store.id == store_id).first()
+        uid = st.user_id if st else None
         code = generate_next_id(db, store_id, "product")
         product = GroceryProduct(
             store_id=store_id,
+            user_id=uid,
             product_code=code,
             name=data.name.strip(),
             product_name=data.name.strip(),
@@ -146,6 +150,7 @@ class GroceryProductService:
         if data.available_stock > 0:
             movement = GroceryStockMovement(
                 store_id=store_id,
+                user_id=uid,
                 product_id=product.id,
                 type="adjust",
                 qty=data.available_stock,

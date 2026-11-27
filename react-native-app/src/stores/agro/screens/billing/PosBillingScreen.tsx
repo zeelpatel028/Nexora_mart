@@ -21,15 +21,14 @@ import { customerApi } from '../../services/customerApi';
 import { productService } from '../../services';
 import { Product } from '../../../../api/types';
 import AppHeader from '../../components/layout/AppHeader';
-import ScreenContainer from '../../components/layout/ScreenContainer';
 import AppCard from '../../components/common/AppCard';
 import AppButton from '../../components/common/AppButton';
 import AppInput from '../../components/common/AppInput';
 import AppDropdown from '../../components/common/AppDropdown';
 import SearchDropdown from '../../components/common/SearchDropdown';
 import AppIcon from '../../components/icons/AppIcon';
-import formatCurrency from '../../utils/formatCurrency';
 import TableSkeleton from '../../components/skeletons/TableSkeleton';
+import { formatCurrency } from '../../utils/formatters';
 
 type PosNavProp = NativeStackNavigationProp<RootStackParamList>;
 
@@ -338,7 +337,7 @@ export const PosBillingScreen: React.FC = () => {
   );
 
   return (
-    <ScreenContainer scrollable={false}>
+    <View style={{ flex: 1, backgroundColor: colors.background }}>
       <AppHeader
         title="Make Bill / POS"
         subtitle={currentStore?.name || 'Tulsi Mart POS'}
@@ -360,23 +359,28 @@ export const PosBillingScreen: React.FC = () => {
       >
         {/* 1. Customer Type Selector */}
         <AppCard style={styles.sectionCard}>
-          <Text style={styles.sectionTitle}>1. Customer Type</Text>
+          <Text style={[styles.sectionTitle, { color: colors.textPrimary }]}>1. Customer Type</Text>
           <View style={styles.customerTypeRow}>
             <TouchableOpacity
               style={[
                 styles.typeToggleBtn,
+                { backgroundColor: colors.surfaceSubtle, borderColor: colors.border },
                 customerType === 'WALK_IN' && styles.typeToggleBtnActive,
               ]}
               onPress={() => setCustomerType('WALK_IN')}
             >
               <AppIcon
                 name="Users"
-                size={18}
-                color={customerType === 'WALK_IN' ? '#FFFFFF' : '#666666'}
+                size={16}
+                color={customerType === 'WALK_IN' ? '#FFFFFF' : colors.textSecondary}
               />
               <Text
+                numberOfLines={1}
+                adjustsFontSizeToFit
+                minimumFontScale={0.8}
                 style={[
                   styles.typeToggleText,
+                  { color: colors.textSecondary },
                   customerType === 'WALK_IN' && styles.typeToggleTextActive,
                 ]}
               >
@@ -387,18 +391,23 @@ export const PosBillingScreen: React.FC = () => {
             <TouchableOpacity
               style={[
                 styles.typeToggleBtn,
+                { backgroundColor: colors.surfaceSubtle, borderColor: colors.border },
                 customerType === 'KHATA' && styles.typeToggleBtnActive,
               ]}
               onPress={() => setCustomerType('KHATA')}
             >
               <AppIcon
                 name="CreditCard"
-                size={18}
-                color={customerType === 'KHATA' ? '#FFFFFF' : '#666666'}
+                size={16}
+                color={customerType === 'KHATA' ? '#FFFFFF' : colors.textSecondary}
               />
               <Text
+                numberOfLines={1}
+                adjustsFontSizeToFit
+                minimumFontScale={0.8}
                 style={[
                   styles.typeToggleText,
+                  { color: colors.textSecondary },
                   customerType === 'KHATA' && styles.typeToggleTextActive,
                 ]}
               >
@@ -409,21 +418,23 @@ export const PosBillingScreen: React.FC = () => {
 
           {customerType === 'WALK_IN' ? (
             <View style={styles.walkInRow}>
-              <View style={{ flex: 1, marginRight: 8 }}>
+              <View style={{ flex: 1.15, marginRight: 8 }}>
                 <AppInput
                   label="Customer Name (Optional)"
                   placeholder="e.g. Rahul Sharma"
                   value={walkInName}
                   onChangeText={setWalkInName}
+                  inputStyle={{ fontSize: 13 }}
                 />
               </View>
-              <View style={{ flex: 1 }}>
+              <View style={{ flex: 0.85 }}>
                 <AppInput
                   label="Phone (Optional)"
-                  placeholder="e.g. 9876543210"
+                  placeholder="9876543210"
                   value={walkInPhone}
                   onChangeText={setWalkInPhone}
                   keyboardType="phone-pad"
+                  inputStyle={{ fontSize: 13 }}
                 />
               </View>
             </View>
@@ -689,7 +700,7 @@ export const PosBillingScreen: React.FC = () => {
           </View>
         </View>
       </Modal>
-    </ScreenContainer>
+    </View>
   );
 };
 
@@ -718,22 +729,23 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    paddingVertical: 10,
+    paddingVertical: 11,
     paddingHorizontal: 8,
-    borderRadius: 8,
+    borderRadius: 12,
     borderWidth: 1,
     borderColor: '#E2E8F0',
     backgroundColor: '#F8FAFC',
-    gap: 6,
+    gap: 5,
   },
   typeToggleBtnActive: {
     backgroundColor: '#F57C00',
     borderColor: '#F57C00',
   },
   typeToggleText: {
-    fontSize: 13,
+    fontSize: 12.5,
     fontWeight: '600',
     color: '#475569',
+    flexShrink: 1,
   },
   typeToggleTextActive: {
     color: '#FFFFFF',

@@ -8,7 +8,7 @@ import { BottomTabNavigationProp } from '@react-navigation/bottom-tabs';
 
 export type MainTabParamList = {
   DashboardTab: undefined;
-  CustomerTab: undefined;
+  CustomerTab: { openAdd?: boolean } | undefined;
   PosTab: undefined;
   ProductsTab: undefined;
   MoreTab: undefined;
@@ -30,7 +30,6 @@ export type RootStackParamList = {
 
   // Inventory Screens
   Inventory: undefined;
-  ExpiryAlerts: undefined;
 
   // Orders & POS Screens
   PosBilling: undefined;
@@ -44,11 +43,11 @@ export type RootStackParamList = {
   PurchaseOrder?: undefined;
 
   // Partner Screens
-  CustomerList: undefined;
+  CustomerList: { openAdd?: boolean } | undefined;
   CustomerDetail: { customerId: number; customerName?: string };
-  SupplierList: undefined;
+  SupplierList: { openAdd?: boolean } | undefined;
   SupplierDetail: { supplierId: number; supplierName?: string };
-  AddSupplier?: undefined;
+  AddSupplier?: { openAdd?: boolean };
 
   // Khata & Ledger
   Khata: undefined;

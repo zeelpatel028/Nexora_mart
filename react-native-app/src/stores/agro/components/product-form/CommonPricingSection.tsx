@@ -1,9 +1,9 @@
 import React from 'react';
 import { View, Text, StyleSheet, TextInput } from 'react-native';
 import { useTheme } from '../../hooks/useTheme';
-import { BaseProductPricingInfo } from '../../utils/commonTypesIndex';
+import { BaseProductPricingInfo } from '../../utils/commonTypes';
 import { CommonDropdown } from './CommonDropdown';
-import { GST_RATE_OPTIONS, TAX_TREATMENT_OPTIONS } from '../../utils/commonConstantsIndex';
+import { GST_RATE_OPTIONS, TAX_TREATMENT_OPTIONS } from '../../utils/commonConstants';
 import { calculateProfitMargin } from '../../utils/calculations';
 
 interface CommonPricingSectionProps {

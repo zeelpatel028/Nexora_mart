@@ -8,6 +8,7 @@ export interface KpiCardItem {
   title: string;
   value: string;
   sub: string;
+  subColor?: string;
   icon: IconName;
   accent: string;
   tintBg: string;
@@ -49,7 +50,7 @@ export const DashboardKpiGrid: React.FC<DashboardKpiGridProps> = React.memo(({ c
           <Text style={[styles.kpiValue, { color: colors.textPrimary }]} numberOfLines={1}>
             {loading ? '...' : card.value}
           </Text>
-          <Text style={[styles.kpiSub, { color: card.accent }]} numberOfLines={1}>
+          <Text style={[styles.kpiSub, { color: card.subColor || card.accent }]} numberOfLines={1}>
             {card.sub}
           </Text>
         </TouchableOpacity>

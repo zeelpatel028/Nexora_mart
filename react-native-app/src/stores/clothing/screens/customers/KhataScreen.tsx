@@ -9,7 +9,7 @@ import {
   Modal,
   Alert,
 } from 'react-native';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, useRoute } from '@react-navigation/native';
 import { useFocusEffect } from '../../hooks/useFocusEffect';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../../../../navigation/types';
@@ -17,19 +17,20 @@ import { useTheme } from '../../hooks/useTheme';
 import { useSettings } from '../../../../navigation/context/SettingsContext';
 import customerApi from '../../services/customerApi';
 import AppHeader from '../../components/layout/AppHeader';
-import ScreenContainer from '../../components/layout/ScreenContainer';
 import AppCard from '../../components/common/AppCard';
 import AppButton from '../../components/common/AppButton';
 import AppInput from '../../components/common/AppInput';
 import AppIcon from '../../components/icons/AppIcon';
-import formatCurrency from '../../utils/formatCurrency';
 import CustomerCardSkeleton from '../../components/skeletons/CustomerCardSkeleton';
+import { formatCurrency } from '../../utils/formatters';
 
 type KhataNavProp = NativeStackNavigationProp<RootStackParamList>;
 
 export const KhataScreen: React.FC = () => {
   const navigation = useNavigation<KhataNavProp>();
-  const { colors, isDark } = useTheme();
+  const route = useRoute<any>();
+  const isTabScreen = route.name === 'CustomerTab';
+  const { colors, brandColors, isDark } = useTheme();
   const { currency, currencySymbol } = useSettings();
 
   const [customers, setCustomers] = useState<any[]>([]);
@@ -48,6 +49,13 @@ export const KhataScreen: React.FC = () => {
 
   // New Customer Modal
   const [showAddModal, setShowAddModal] = useState(false);
+
+  useEffect(() => {
+    if (route.params?.openAdd) {
+      setShowAddModal(true);
+      (navigation as any).setParams?.({ openAdd: undefined });
+    }
+  }, [route.params?.openAdd, navigation]);
   const [name, setName] = useState('');
   const [phone, setPhone] = useState('');
   const [address, setAddress] = useState('');
@@ -134,21 +142,29 @@ export const KhataScreen: React.FC = () => {
       >
         <AppCard style={styles.customerCard}>
           <View style={styles.cardHeader}>
-            <View style={styles.avatarBox}>
-              <AppIcon name="Users" size={20} color="#F57C00" />
+            <View
+              style={[
+                styles.avatarBox,
+                {
+                  backgroundColor: isDark ? colors.badgeOrangeBg : brandColors.lightOrange,
+                  borderColor: isDark ? brandColors.darkOrange : '#FFE0B2',
+                },
+              ]}
+            >
+              <AppIcon name="Users" size={20} color={brandColors.primaryOrange} />
             </View>
             <View style={{ flex: 1, marginLeft: 12 }}>
-              <Text style={styles.customerName}>{item.name}</Text>
+              <Text style={[styles.customerName, { color: colors.textPrimary }]}>{item.name}</Text>
               {item.phone ? (
                 <View style={styles.phoneRow}>
-                  <AppIcon name="Phone" size={12} color="#64748B" />
-                  <Text style={styles.phoneText}>{item.phone}</Text>
+                  <AppIcon name="Phone" size={12} color={colors.textSecondary} />
+                  <Text style={[styles.phoneText, { color: colors.textSecondary }]}>{item.phone}</Text>
                 </View>
               ) : null}
             </View>
 
             <View style={{ alignItems: 'flex-end' }}>
-              <Text style={styles.balanceLabel}>Pending Khata</Text>
+              <Text style={[styles.balanceLabel, { color: colors.textMuted }]}>Pending Khata</Text>
               <Text
                 style={[
                   styles.balanceAmount,
@@ -160,16 +176,16 @@ export const KhataScreen: React.FC = () => {
             </View>
           </View>
 
-          <View style={styles.cardFooter}>
+          <View style={[styles.cardFooter, { borderTopColor: colors.borderLight }]}>
             <View style={styles.billCountTag}>
-              <AppIcon name="Receipt" size={12} color="#64748B" />
-              <Text style={styles.billCountText}>
+              <AppIcon name="Receipt" size={12} color={colors.textSecondary} />
+              <Text style={[styles.billCountText, { color: colors.textSecondary }]}>
                 {item.total_bills ?? item.bills_count ?? 0} Bills
               </Text>
             </View>
             <View style={styles.viewDetailRow}>
-              <Text style={styles.viewDetailText}>View Ledger</Text>
-              <AppIcon name="ChevronRight" size={14} color="#F57C00" />
+              <Text style={[styles.viewDetailText, { color: brandColors.primaryOrange }]}>View Ledger</Text>
+              <AppIcon name="ChevronRight" size={14} color={brandColors.primaryOrange} />
             </View>
           </View>
         </AppCard>
@@ -178,14 +194,14 @@ export const KhataScreen: React.FC = () => {
   };
 
   return (
-    <ScreenContainer scrollable={false}>
+    <View style={{ flex: 1, backgroundColor: colors.background }}>
       <AppHeader
         title="Customer"
-        showBack={false}
+        showBack={!isTabScreen}
         rightAction={
           <TouchableOpacity
             onPress={() => setShowAddModal(true)}
-            style={styles.headerAddBtn}
+            style={[styles.headerAddBtn, { backgroundColor: brandColors.primaryOrange }]}
           >
             <AppIcon name="Plus" size={18} color="#FFFFFF" />
             <Text style={styles.headerAddBtnText}>Add</Text>
@@ -195,19 +211,30 @@ export const KhataScreen: React.FC = () => {
 
       <View style={styles.content}>
         {/* 1. Dashboard Summary Cards */}
-        <View style={styles.summaryBar}>
+        <View
+          style={[
+            styles.summaryBar,
+            { backgroundColor: colors.surface, borderBottomColor: colors.cardBorder },
+          ]}
+        >
           <View style={styles.summaryBox}>
-            <Text style={styles.summaryLabel}>TOTAL KHATA</Text>
-            <Text style={styles.summaryVal}>{metrics.total_customers}</Text>
-            <Text style={styles.summarySub}>Customers</Text>
+            <Text style={[styles.summaryLabel, { color: colors.textSecondary }]}>TOTAL KHATA</Text>
+            <Text style={[styles.summaryVal, { color: colors.textPrimary }]}>{metrics.total_customers}</Text>
+            <Text style={[styles.summarySub, { color: colors.textMuted }]}>Customers</Text>
           </View>
 
-          <View style={[styles.summaryBox, styles.summaryBoxMiddle]}>
-            <Text style={styles.summaryLabel}>PENDING BILLS</Text>
-            <Text style={[styles.summaryVal, { color: '#F59E0B' }]}>
+          <View
+            style={[
+              styles.summaryBox,
+              styles.summaryBoxMiddle,
+              { borderColor: colors.borderLight },
+            ]}
+          >
+            <Text style={[styles.summaryLabel, { color: colors.textSecondary }]}>PENDING BILLS</Text>
+            <Text style={[styles.summaryVal, { color: brandColors.primaryOrange }]}>
               {metrics.total_pending_bills}
             </Text>
-            <Text style={styles.summarySub}>Unsettled</Text>
+            <Text style={[styles.summarySub, { color: colors.textMuted }]}>Unsettled</Text>
           </View>
 
           <View style={styles.summaryBox}>
@@ -215,7 +242,7 @@ export const KhataScreen: React.FC = () => {
             <Text style={[styles.summaryVal, { color: '#DC2626' }]}>
               {formatCurrency(metrics.total_pending_amount, currency)}
             </Text>
-            <Text style={styles.summarySub}>Outstanding</Text>
+            <Text style={[styles.summarySub, { color: colors.textMuted }]}>Outstanding</Text>
           </View>
         </View>
 
@@ -225,7 +252,7 @@ export const KhataScreen: React.FC = () => {
             placeholder="Search customer by name or phone..."
             value={search}
             onChangeText={setSearch}
-            leftIcon={<AppIcon name="Search" size={16} color="#94A3B8" />}
+            leftIcon={<AppIcon name="Search" size={16} color={colors.textMuted} />}
           />
         </View>
 
@@ -250,14 +277,14 @@ export const KhataScreen: React.FC = () => {
               <RefreshControl
                 refreshing={refreshing}
                 onRefresh={onRefresh}
-                colors={['#F57C00']}
+                colors={[brandColors.primaryOrange]}
               />
             }
             ListEmptyComponent={
               <View style={styles.emptyBox}>
-                <AppIcon name="Users" size={48} color="#CBD5E1" />
-                <Text style={styles.emptyTitle}>No Khata Customers Found</Text>
-                <Text style={styles.emptySub}>
+                <AppIcon name="Users" size={48} color={colors.textMuted} />
+                <Text style={[styles.emptyTitle, { color: colors.textPrimary }]}>No Khata Customers Found</Text>
+                <Text style={[styles.emptySub, { color: colors.textSecondary }]}>
                   Add regular customers to give credit and track ledger.
                 </Text>
                 <AppButton
@@ -274,8 +301,8 @@ export const KhataScreen: React.FC = () => {
       {/* Add Customer Modal */}
       <Modal visible={showAddModal} transparent animationType="slide">
         <View style={styles.modalOverlay}>
-          <View style={styles.modalContent}>
-            <Text style={styles.modalTitle}>Add New Khata Customer</Text>
+          <View style={[styles.modalContent, { backgroundColor: colors.surface }]}>
+            <Text style={[styles.modalTitle, { color: colors.textPrimary }]}>Add New Khata Customer</Text>
             <AppInput
               label="Customer Full Name *"
               placeholder="e.g. Ramesh Bhai Shah"
@@ -320,7 +347,7 @@ export const KhataScreen: React.FC = () => {
           </View>
         </View>
       </Modal>
-    </ScreenContainer>
+    </View>
   );
 };
 

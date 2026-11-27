@@ -10,9 +10,7 @@ import {
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { Colors } from '../../utils/themeColors';
-import { formatCurrency } from '../../utils/formatCurrency';
-import { formatDate } from '../../utils/formatDate';
-import ScreenContainer from '../../components/layout/ScreenContainer';
+import { useTheme } from '../../hooks/useTheme';
 import AppHeader from '../../components/layout/AppHeader';
 import AppCard from '../../components/common/AppCard';
 import AppButton from '../../components/common/AppButton';
@@ -27,6 +25,7 @@ import purchaseOrderApi from '../../services/purchaseOrderApi';
 import storePrefixApi from '../../services/storePrefixApi';
 import supplierApi from '../../services/supplierApi';
 import apiClient from '../../../../api/apiClient';
+import { formatCurrency, formatDate } from '../../utils/formatters';
 
 const PAYMENT_METHODS = [
   { label: 'Bank Transfer (IMPS/NEFT)', value: 'BANK_TRANSFER' },
@@ -37,6 +36,7 @@ const PAYMENT_METHODS = [
 
 export const PurchaseOrderScreen: React.FC = () => {
   const navigation = useNavigation<any>();
+  const { colors, brandColors } = useTheme();
 
   // State
   const [orders, setOrders] = useState<any[]>([]);
@@ -333,9 +333,10 @@ export const PurchaseOrderScreen: React.FC = () => {
   };
 
   return (
-    <View style={styles.screen}>
+    <View style={[styles.screen, { backgroundColor: colors.background }]}>
       <AppHeader
         title="Purchase Orders"
+        showBack
         onBack={() => navigation.goBack()}
         rightAction={
           <TouchableOpacity
@@ -643,7 +644,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#FEF3C7',
   },
   badgeInfo: {
-    backgroundColor: '#E0F2FE',
+    backgroundColor: '#FFF3E0',
   },
   badgeText: {
     fontSize: 11,
@@ -656,7 +657,7 @@ const styles = StyleSheet.create({
     color: '#B45309',
   },
   badgeTextInfo: {
-    color: '#0369A1',
+    color: '#E65100',
   },
   cardBody: {
     paddingVertical: 10,
@@ -695,10 +696,10 @@ const styles = StyleSheet.create({
   receiveBtn: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: Colors.iconColors.orders,
+    backgroundColor: Colors.primaryOrange,
     paddingHorizontal: 14,
     paddingVertical: 8,
-    borderRadius: 8,
+    borderRadius: 10,
     marginRight: 8,
   },
   receiveBtnText: {

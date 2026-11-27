@@ -18,7 +18,7 @@ import {
   ClothingMeasurements,
   ClothingProductFormData,
 } from '../../utils/storeTypes';
-import { ProductVariantItem } from '../../utils/commonTypesIndex';
+import { ProductVariantItem } from '../../utils/commonTypes';
 import { validateClothingProduct } from '../../utils/storeValidations';
 import { clothingProductService } from '../../services/storeProductService';
 

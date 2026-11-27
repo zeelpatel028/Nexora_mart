@@ -11,15 +11,15 @@ import {
   ScrollView,
   Alert,
 } from 'react-native';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, useRoute } from '@react-navigation/native';
 import { useFocusEffect } from '../../hooks/useFocusEffect';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../../../../navigation/types';
 import { useTheme } from '../../hooks/useTheme';
 import { productService, categoryService } from '../../services';
 import { Product, Category } from '../../../../api/types';
-import Header from '../../components/common/Header';
-import Card from '../../components/common/Card';
+import AppHeader from '../../components/layout/AppHeader';
+import AppCard from '../../components/common/AppCard';
 import Badge from '../../components/common/Badge';
 import EmptyState from '../../components/common/EmptyState';
 import Loader from '../../components/common/Loader';
@@ -38,6 +38,8 @@ type ProductInventoryNavProp = NativeStackNavigationProp<RootStackParamList>;
 
 export const ProductInventoryScreen: React.FC = () => {
   const navigation = useNavigation<ProductInventoryNavProp>();
+  const route = useRoute<any>();
+  const showBack = route.name === 'Inventory' || route.name === 'ProductList';
   const { colors, brandColors, isDark } = useTheme();
 
   const [products, setProducts] = useState<Product[]>([]);
@@ -133,7 +135,7 @@ export const ProductInventoryScreen: React.FC = () => {
     const unitSym = item.unit || 'pcs';
 
     return (
-      <Card
+      <AppCard
         style={[
           styles.productCard,
           {
@@ -222,19 +224,33 @@ export const ProductInventoryScreen: React.FC = () => {
             </View>
           </View>
         </View>
-      </Card>
+      </AppCard>
     );
   };
 
   return (
     <View style={[styles.screen, { backgroundColor: colors.background }]}>
-      {/* 1. Header (Clean Page Title without subtitles) */}
-      <Header
+      <AppHeader
         title="Product & Inventory"
-        rightAction={{
-          icon: <PlusIcon size={18} color="#FFFFFF" strokeWidth={2.5} />,
-          onPress: () => navigation.navigate('AddProduct', { categoryId: selectedCatId }),
-        }}
+        showBack={showBack}
+        rightAction={
+          <TouchableOpacity
+            onPress={() => navigation.navigate('AddProduct', { categoryId: selectedCatId })}
+            style={{
+              flexDirection: 'row',
+              alignItems: 'center',
+              backgroundColor: brandColors.primaryOrange,
+              paddingVertical: 6,
+              paddingHorizontal: 12,
+              borderRadius: 10,
+              gap: 4,
+            }}
+            activeOpacity={0.8}
+          >
+            <PlusIcon size={16} color="#FFFFFF" strokeWidth={2.5} />
+            <Text style={{ color: '#FFFFFF', fontSize: 13, fontWeight: '700' }}>Add</Text>
+          </TouchableOpacity>
+        }
       />
 
       {/* 2. Search Bar */}

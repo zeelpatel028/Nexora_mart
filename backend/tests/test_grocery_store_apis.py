@@ -49,6 +49,8 @@ class TestGroceryStoreAPIs(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         Base.metadata.create_all(bind=engine)
+        from app.migrations import ensure_grocery_schema
+        ensure_grocery_schema(engine)
 
     def setUp(self):
         self.db = SessionLocal()

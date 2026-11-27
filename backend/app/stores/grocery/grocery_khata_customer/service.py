@@ -6,7 +6,8 @@ from fastapi import HTTPException, status
 from .models import GroceryCustomer
 from .schemas import GroceryCustomerCreate, GroceryCustomerUpdate, CustomerPaymentPayload
 from .cache import get_cached_customers, set_cached_customers, invalidate_customers_cache
-from ..grocery_billing.models import GroceryBill
+from ..grocery_billing.models import GroceryBill, GroceryInvoice
+from ..grocery_finance.models import GroceryPayment
 from ....utils.id_generator import generate_next_id
 from ....utils.pdf import generate_khata_statement_pdf
 
@@ -127,9 +128,12 @@ class GroceryKhataCustomerService:
 
     @staticmethod
     def create_customer(db: Session, store_id: int, data: GroceryCustomerCreate) -> GroceryCustomer:
+        from ....models.store import Store
+        st = db.query(Store).filter(Store.id == store_id).first()
         code = generate_next_id(db, store_id, "debit_customer")
         customer = GroceryCustomer(
             store_id=store_id,
+            user_id=st.user_id if st else None,
             customer_code=code,
             name=data.name.strip(),
             phone=data.phone.strip(),
@@ -253,12 +257,29 @@ class GroceryKhataCustomerService:
             if remaining_payment >= bill.grand_total:
                 remaining_payment -= bill.grand_total
                 bill.payment_status = "paid"
+                bill.paid_amount = bill.grand_total
                 bill.paid_at = now
                 bill.updated_at = now
+                inv = db.query(GroceryInvoice).filter(GroceryInvoice.bill_id == bill.id).first()
+                if inv:
+                    inv.payment_status = "paid"
                 settled_count += 1
             else:
-                # Partial settlement - for simplicity in this bill row, if partial we reduce or note
                 break
+
+        db.add(
+            GroceryPayment(
+                store_id=store_id,
+                user_id=customer.user_id,
+                reference_type="khata",
+                reference_id=customer.id,
+                reference_code=customer.customer_code,
+                amount=round(float(data.amount), 2),
+                payment_method=(data.payment_method or "CASH").upper(),
+                payment_date=now,
+                notes=data.notes or f"Khata payment from {customer.name}",
+            )
+        )
 
         db.commit()
         invalidate_customers_cache(store_id)

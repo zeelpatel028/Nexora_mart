@@ -143,11 +143,18 @@ export const ReportsScreen: React.FC = () => {
             onPress={() => navigation.navigate('InventoryValuation')}
             style={[
               styles.valBadgeBtn,
-              { backgroundColor: isDark ? '#123330' : '#E0F2F1' },
+              { backgroundColor: isDark ? colors.badgeOrangeBg : brandColors.lightOrange },
             ]}
           >
-            <AppIcon name="pie" size={16} color="#00897B" />
-            <Text style={styles.valBadgeText}>Valuation</Text>
+            <AppIcon name="pie" size={16} color={brandColors.primaryOrange} />
+            <Text
+              style={[
+                styles.valBadgeText,
+                { color: isDark ? colors.badgeOrangeText : brandColors.primaryOrange },
+              ]}
+            >
+              Valuation
+            </Text>
           </TouchableOpacity>
         }
       />
@@ -229,10 +236,10 @@ export const ReportsScreen: React.FC = () => {
           <AppCard>
             <View style={styles.cardHeader}>
               <Text style={[styles.sectionTitle, { color: colors.textPrimary }]}>Sales Chart</Text>
-              <AppIcon name="trending" size={18} color="#00897B" />
+              <AppIcon name="trending" size={18} color={brandColors.primaryOrange} />
             </View>
             {chartData.length > 0 ? (
-              <SalesBarChart data={chartData} barColor="#00897B" />
+              <SalesBarChart data={chartData} barColor={brandColors.primaryOrange} />
             ) : (
               <Text style={[styles.emptyNote, { color: colors.textSecondary }]}>
                 No chart points recorded for the selected date range.
@@ -349,7 +356,7 @@ const styles = StyleSheet.create({
     paddingVertical: 6,
     borderRadius: 10,
   },
-  valBadgeText: { color: '#00897B', fontSize: 12, fontWeight: '800' },
+  valBadgeText: { fontSize: 12, fontWeight: '800' },
   periodBar: {
     flexDirection: 'row',
     padding: 5,

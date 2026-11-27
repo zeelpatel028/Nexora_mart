@@ -14,10 +14,10 @@ import { RootStackParamList } from '../../../../navigation/types';
 import { useTheme } from '../../hooks/useTheme';
 import { productService } from '../../services';
 import { Product } from '../../../../api/types';
-import Header from '../../components/common/Header';
-import Card from '../../components/common/Card';
+import AppHeader from '../../components/layout/AppHeader';
+import AppCard from '../../components/common/AppCard';
 import Badge from '../../components/common/Badge';
-import Button from '../../components/common/Button';
+import AppButton from '../../components/common/AppButton';
 import Loader from '../../components/common/Loader';
 import {
   PackageIcon,
@@ -83,7 +83,7 @@ export const ProductDetailScreen: React.FC = () => {
   if (loading) {
     return (
       <View style={{ flex: 1, backgroundColor: colors.background }}>
-        <Header title="Product Details" showBack onBack={() => navigation.goBack()} />
+        <AppHeader title="Product Details" showBack onBack={() => navigation.goBack()} />
         <Loader message="Loading specifications..." />
       </View>
     );
@@ -92,7 +92,7 @@ export const ProductDetailScreen: React.FC = () => {
   if (!product) {
     return (
       <View style={{ flex: 1, backgroundColor: colors.background }}>
-        <Header title="Product Details" showBack onBack={() => navigation.goBack()} />
+        <AppHeader title="Product Details" showBack onBack={() => navigation.goBack()} />
         <View style={styles.notFound}>
           <Text style={{ color: colors.textPrimary, fontSize: 16 }}>Product not found.</Text>
         </View>
@@ -144,19 +144,31 @@ export const ProductDetailScreen: React.FC = () => {
 
   return (
     <View style={{ flex: 1, backgroundColor: colors.background }}>
-      <Header
+      <AppHeader
         title={productName}
         showBack
         onBack={() => navigation.goBack()}
-        rightAction={{
-          icon: <EditIcon size={18} color={brandColors.primary} />,
-          onPress: () => navigation.navigate('EditProduct', { productId: product.id }),
-        }}
+        rightAction={
+          <TouchableOpacity
+            onPress={() => navigation.navigate('EditProduct', { productId: product.id })}
+            style={{
+              width: 38,
+              height: 38,
+              borderRadius: 12,
+              backgroundColor: isDark ? colors.badgeOrangeBg : brandColors.lightOrange,
+              alignItems: 'center',
+              justifyContent: 'center',
+            }}
+            activeOpacity={0.8}
+          >
+            <EditIcon size={17} color={brandColors.primaryOrange} />
+          </TouchableOpacity>
+        }
       />
 
       <ScrollView contentContainerStyle={styles.scrollContent}>
         {/* Product Media Card */}
-        <Card style={styles.mediaCard}>
+        <AppCard style={styles.mediaCard}>
           {product.image_url ? (
             <Image source={{ uri: product.image_url }} style={styles.image} resizeMode="contain" />
           ) : (
@@ -191,10 +203,10 @@ export const ProductDetailScreen: React.FC = () => {
               SKU: {product.sku || 'N/A'}{product.barcode ? ` | Barcode: ${product.barcode}` : ''}
             </Text>
           </View>
-        </Card>
+        </AppCard>
 
         {/* Pricing & Stock Card */}
-        <Card>
+        <AppCard>
           <Text style={[styles.cardHeading, { color: colors.textPrimary }]}>Pricing & Inventory</Text>
           <View style={styles.infoGrid}>
             <View style={styles.infoCol}>
@@ -230,11 +242,11 @@ export const ProductDetailScreen: React.FC = () => {
               </Text>
             </View>
           </View>
-        </Card>
+        </AppCard>
 
         {/* Dynamic Store Specifications */}
         {storeAttributes.length > 0 && (
-          <Card>
+          <AppCard>
             <Text style={[styles.cardHeading, { color: colors.textPrimary }]}>
               Store Specifications ({product.category?.name || product.category_name || 'Retail'})
             </Text>
@@ -250,12 +262,12 @@ export const ProductDetailScreen: React.FC = () => {
                 </View>
               ))}
             </View>
-          </Card>
+          </AppCard>
         )}
 
         {/* Batches if applicable */}
         {product.batches && product.batches.length > 0 && (
-          <Card>
+          <AppCard>
             <Text style={[styles.cardHeading, { color: colors.textPrimary }]}>Active Batches</Text>
             {product.batches.map((b, i) => (
               <View key={i} style={[styles.attributeRow, { borderBottomColor: colors.borderLight }]}>
@@ -273,12 +285,12 @@ export const ProductDetailScreen: React.FC = () => {
                 </Text>
               </View>
             ))}
-          </Card>
+          </AppCard>
         )}
 
         {/* Product Variants (if applicable) */}
         {product.variants && product.variants.length > 0 && (
-          <Card>
+          <AppCard>
             <Text style={[styles.cardHeading, { color: colors.textPrimary }]}>Product Variants</Text>
             {product.variants.map((v, i) => (
               <View key={i} style={[styles.variantRow, { borderBottomColor: colors.borderLight }]}>
@@ -300,12 +312,12 @@ export const ProductDetailScreen: React.FC = () => {
                 </View>
               </View>
             ))}
-          </Card>
+          </AppCard>
         )}
 
         {/* Prominent Edit Product Button */}
         <View style={styles.actionBtnRow}>
-          <Button
+          <AppButton
             title="Edit Product"
             variant="primary"
             style={{ flex: 1 }}
@@ -314,13 +326,12 @@ export const ProductDetailScreen: React.FC = () => {
         </View>
 
         {/* Deactivate Button */}
-        <Button
+        <AppButton
           title="Delete Product"
           variant="danger"
-          size="sm"
           loading={deleting}
           onPress={handleDelete}
-          style={{ marginTop: 12 }}
+          style={{ marginTop: 8 }}
         />
       </ScrollView>
     </View>

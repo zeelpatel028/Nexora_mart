@@ -4,7 +4,7 @@ import {
   BaseProductInventoryInfo,
   BaseProductUnitInfo,
   ProductVariantItem,
-} from './commonTypesIndex';
+} from './commonTypes';
 
 export interface HandloomSpecifications {
   productType: string;

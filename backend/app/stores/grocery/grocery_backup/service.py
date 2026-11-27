@@ -9,8 +9,9 @@ from ..grocery_supplier.models import GrocerySupplier
 from ..grocery_khata_customer.models import GroceryCustomer
 from ..grocery_purchase_order.models import GroceryPurchaseOrder
 from ..grocery_billing.models import GroceryBill, GroceryBillItem
-from ..grocery_prefix.models import GroceryPrefix
+from ..grocery_prefix.models import GroceryPrefix, GroceryStorePrefix
 from ..grocery_setting.models import GrocerySetting
+from ..grocery_finance.models import GroceryExpense, GroceryPayment
 from ....models.store import Store
 
 
@@ -97,8 +98,24 @@ class GroceryBackupService:
             "bill_sound_id": st.bill_sound_id if st else "sound_gpay"
         }
 
+        # 6. Expenses
+        exps = db.query(GroceryExpense).filter(
+            GroceryExpense.store_id == store.id,
+            GroceryExpense.is_deleted == False
+        ).all()
+        exp_data = [
+            {
+                "expense_code": e.expense_code,
+                "category": e.category,
+                "amount": e.amount,
+                "payment_method": e.payment_method,
+                "description": e.description,
+                "expense_date": str(e.expense_date),
+            } for e in exps
+        ]
+
         backup_payload = {
-            "version": "1.0",
+            "version": "1.1",
             "app": "Tulsi Mart",
             "store_type": "grocery",
             "exported_at": now_str,
@@ -112,7 +129,8 @@ class GroceryBackupService:
             "settings": st_data,
             "products": prod_data,
             "suppliers": supp_data,
-            "customers": cust_data
+            "customers": cust_data,
+            "expenses": exp_data,
         }
 
         raw_json = json.dumps(backup_payload)
@@ -120,6 +138,7 @@ class GroceryBackupService:
 
         backup_record = GroceryBackup(
             store_id=store.id,
+            user_id=store.user_id,
             file_url=f"/backups/backup_{store.id}_{int(datetime.datetime.now().timestamp())}.json",
             size=size_bytes
         )
@@ -163,8 +182,9 @@ class GroceryBackupService:
         if st_data and isinstance(st_data, dict):
             st = db.query(GrocerySetting).filter(GrocerySetting.store_id == store.id).first()
             if not st:
-                st = GrocerySetting(store_id=store.id)
+                st = GrocerySetting(store_id=store.id, user_id=store.user_id)
                 db.add(st)
+            st.user_id = store.user_id
             for k in ("theme", "language", "currency_code", "currency_symbol", "bill_template_id", "bill_sound_enabled", "bill_sound_id"):
                 if k in st_data:
                     setattr(st, k, st_data[k])
@@ -173,13 +193,17 @@ class GroceryBackupService:
         # Restore Prefixes
         pfx_data = data.get("prefixes")
         if pfx_data and isinstance(pfx_data, dict):
+            from ..grocery_prefix.service import _sync_store_prefix_row
             for k, val in pfx_data.items():
                 pfx = db.query(GroceryPrefix).filter(GroceryPrefix.store_id == store.id, GroceryPrefix.key == k).first()
                 if pfx:
                     pfx.prefix_value = str(val).strip().upper()
+                    pfx.user_id = store.user_id
                     pfx.updated_at = now
                 else:
-                    db.add(GroceryPrefix(store_id=store.id, key=k, prefix_value=str(val).strip().upper()))
+                    db.add(GroceryPrefix(store_id=store.id, user_id=store.user_id, key=k, prefix_value=str(val).strip().upper()))
+            db.flush()
+            _sync_store_prefix_row(db, store.id, store.user_id)
 
         db.commit()
         return {

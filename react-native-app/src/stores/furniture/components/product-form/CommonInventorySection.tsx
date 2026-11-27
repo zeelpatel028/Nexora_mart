@@ -1,7 +1,7 @@
 import React from 'react';
 import { View, Text, StyleSheet, TextInput, Switch } from 'react-native';
 import { useTheme } from '../../hooks/useTheme';
-import { BaseProductInventoryInfo } from '../../utils/commonTypesIndex';
+import { BaseProductInventoryInfo } from '../../utils/commonTypes';
 
 interface CommonInventorySectionProps {
   data: BaseProductInventoryInfo;

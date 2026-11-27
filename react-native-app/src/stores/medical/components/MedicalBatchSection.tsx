@@ -1,5 +1,5 @@
 import React from 'react';
-import { ProductBatchItem } from '../utils/commonTypesIndex';
+import { ProductBatchItem } from '../utils/commonTypes';
 import { CommonFormCard } from './product-form/CommonFormCard';
 import { CommonBatchTable } from './product-form/CommonBatchTable';
 

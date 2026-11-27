@@ -4,8 +4,8 @@ import { useNavigation } from '@react-navigation/native';
 import { useTheme } from '../../hooks/useTheme';
 import { reportService } from '../../services';
 import { InventoryValuation } from '../../../../api/types';
-import Header from '../../components/common/Header';
-import Card from '../../components/common/Card';
+import AppHeader from '../../components/layout/AppHeader';
+import AppCard from '../../components/common/AppCard';
 import Badge from '../../components/common/Badge';
 import Loader from '../../components/common/Loader';
 import { formatCurrency } from '../../utils/formatters';
@@ -42,7 +42,7 @@ export const InventoryValuationScreen: React.FC = () => {
   if (loading) {
     return (
       <View style={{ flex: 1, backgroundColor: colors.background }}>
-        <Header title="Inventory Valuation" showBack onBack={() => navigation.goBack()} />
+        <AppHeader title="Inventory Valuation" showBack onBack={() => navigation.goBack()} />
         <Loader message="Calculating asset costs and retail margin..." />
       </View>
     );
@@ -50,7 +50,7 @@ export const InventoryValuationScreen: React.FC = () => {
 
   return (
     <View style={{ flex: 1, backgroundColor: colors.background }}>
-      <Header
+      <AppHeader
         title="Inventory Valuation"
         showBack
         onBack={() => navigation.goBack()}
@@ -62,20 +62,20 @@ export const InventoryValuationScreen: React.FC = () => {
           <RefreshControl
             refreshing={refreshing}
             onRefresh={onRefresh}
-            colors={[brandColors.primary]}
+            colors={[brandColors.primaryOrange]}
           />
         }
       >
         {/* Retail Asset Value Card */}
-        <Card style={styles.primaryCard}>
+        <AppCard style={styles.primaryCard}>
           <Text style={[styles.cardTag, { color: colors.textSecondary }]}>Total Retail Value</Text>
           <Text style={[styles.mainVal, { color: brandColors.primary }]}>
             {formatCurrency(valuation?.total_retail_value)}
           </Text>
-        </Card>
+        </AppCard>
 
         {/* Detailed Breakdown Card */}
-        <Card>
+        <AppCard>
           <Text style={[styles.sectionTitle, { color: colors.textPrimary }]}>Valuation Audit</Text>
 
           <View style={[styles.metricRow, { borderBottomColor: colors.borderLight }]}>
@@ -113,7 +113,7 @@ export const InventoryValuationScreen: React.FC = () => {
               {valuation?.total_units?.toFixed(1) ?? 0} units
             </Text>
           </View>
-        </Card>
+        </AppCard>
       </ScrollView>
     </View>
   );

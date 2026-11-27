@@ -12,6 +12,7 @@ class GrocerySetting(Base):
 
     id = Column(Integer, primary_key=True, autoincrement=True, index=True)
     store_id = Column(Integer, ForeignKey("stores.id", ondelete="CASCADE"), unique=True, nullable=False, index=True)
+    user_id = Column(Integer, ForeignKey("users.id", ondelete="SET NULL"), nullable=True, index=True)
 
     theme = Column(String(50), default="system", nullable=False)  # 'light' | 'dark' | 'system'
     language = Column(String(20), default="en", nullable=False)  # 'en' | 'hi' | 'gu'

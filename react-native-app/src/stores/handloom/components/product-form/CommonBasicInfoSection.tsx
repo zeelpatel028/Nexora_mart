@@ -1,7 +1,7 @@
 import React from 'react';
 import { View, Text, StyleSheet, TextInput, TouchableOpacity, Switch } from 'react-native';
 import { useTheme } from '../../hooks/useTheme';
-import { BaseProductBasicInfo } from '../../utils/commonTypesIndex';
+import { BaseProductBasicInfo } from '../../utils/commonTypes';
 import { generateProductSku } from '../../utils/skuGenerator';
 import { Category, Brand } from '../../../../api/types';
 

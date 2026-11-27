@@ -5,6 +5,7 @@ import {
   StyleSheet,
   FlatList,
   RefreshControl,
+  TouchableOpacity,
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
@@ -12,8 +13,8 @@ import { RootStackParamList } from '../../../../navigation/types';
 import { useTheme } from '../../hooks/useTheme';
 import { purchaseService } from '../../services';
 import { Purchase } from '../../../../api/types';
-import Header from '../../components/common/Header';
-import Card from '../../components/common/Card';
+import AppHeader from '../../components/layout/AppHeader';
+import AppCard from '../../components/common/AppCard';
 import Badge from '../../components/common/Badge';
 import EmptyState from '../../components/common/EmptyState';
 import Loader from '../../components/common/Loader';
@@ -53,7 +54,7 @@ export const PurchaseListScreen: React.FC = () => {
 
   const renderPurchaseItem = ({ item }: { item: Purchase }) => {
     return (
-      <Card style={styles.purchaseCard}>
+      <AppCard style={styles.purchaseCard}>
         <View style={styles.cardHeader}>
           <View>
             <Text style={[styles.invoiceNo, { color: colors.textPrimary }]}>
@@ -91,20 +92,34 @@ export const PurchaseListScreen: React.FC = () => {
             </Text>
           </View>
         </View>
-      </Card>
+      </AppCard>
     );
   };
 
   return (
     <View style={{ flex: 1, backgroundColor: colors.background }}>
-      <Header
+      <AppHeader
         title="Supplier Purchases"
         showBack
         onBack={() => navigation.goBack()}
-        rightAction={{
-          icon: <PlusIcon size={20} color={brandColors.primary} />,
-          onPress: () => navigation.navigate('CreatePurchase'),
-        }}
+        rightAction={
+          <TouchableOpacity
+            onPress={() => navigation.navigate('CreatePurchase')}
+            style={{
+              flexDirection: 'row',
+              alignItems: 'center',
+              backgroundColor: brandColors.primaryOrange,
+              paddingVertical: 6,
+              paddingHorizontal: 12,
+              borderRadius: 10,
+              gap: 4,
+            }}
+            activeOpacity={0.8}
+          >
+            <PlusIcon size={16} color="#FFFFFF" strokeWidth={2.5} />
+            <Text style={{ color: '#FFFFFF', fontSize: 13, fontWeight: '700' }}>New</Text>
+          </TouchableOpacity>
+        }
       />
 
       {loading ? (

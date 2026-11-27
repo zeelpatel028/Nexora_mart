@@ -93,7 +93,7 @@ export function getStoreModule(storeType: StoreTypeCode): StoreEntryModule {
       break;
     case 'grocery':
     default:
-      mod = require('../stores/grocery').default;
+      mod = require('../grocery').default;
       break;
   }
 
