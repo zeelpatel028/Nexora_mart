@@ -1,0 +1,490 @@
+/* ========================================================
+   NEXORA MART - PRODUCT FORM STYLES
+   Modern, Clean, Professional 4-Section Product Architecture
+   ======================================================== */
+
+.product-form-container {
+  max-width: 1080px;
+  margin: 0 auto;
+}
+
+/* Store Badge Header Banner */
+.pf-store-banner {
+  background: linear-gradient(135deg, rgba(255, 106, 26, 0.08) 0%, rgba(255, 184, 46, 0.08) 100%);
+  border: 1px solid rgba(255, 106, 26, 0.18);
+  border-radius: 16px;
+  padding: 18px 24px;
+  margin-bottom: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 16px;
+}
+
+.pf-store-info {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.pf-store-icon {
+  width: 48px;
+  height: 48px;
+  border-radius: 12px;
+  background: linear-gradient(135deg, #FF6A1A 0%, #FF9040 100%);
+  color: #FFFFFF;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 22px;
+  box-shadow: 0 4px 12px rgba(255, 106, 26, 0.25);
+  flex-shrink: 0;
+}
+
+.pf-store-meta h5 {
+  margin: 0;
+  font-weight: 700;
+  color: var(--text-navy, #0B0B2B);
+  font-size: 1.15rem;
+}
+
+.pf-store-meta p {
+  margin: 2px 0 0;
+  color: var(--text-secondary, #5F6375);
+  font-size: 0.85rem;
+}
+
+/* 4-Section Form Cards */
+.pf-section-card {
+  background: #FFFFFF;
+  border: 1px solid #E8ECEF;
+  border-radius: 16px;
+  margin-bottom: 24px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.03);
+  overflow: hidden;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.pf-section-card:focus-within {
+  border-color: rgba(255, 106, 26, 0.35);
+  box-shadow: 0 6px 24px rgba(255, 106, 26, 0.06);
+}
+
+.pf-section-header {
+  padding: 18px 24px;
+  background: #FCFDFE;
+  border-bottom: 1px solid #E8ECEF;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.pf-section-badge {
+  width: 32px;
+  height: 32px;
+  border-radius: 10px;
+  background: #FF6A1A;
+  color: #FFFFFF;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  font-size: 14px;
+  flex-shrink: 0;
+  box-shadow: 0 2px 8px rgba(255, 106, 26, 0.2);
+}
+
+.pf-section-title-wrap h5 {
+  margin: 0;
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: var(--text-navy, #0B0B2B);
+}
+
+.pf-section-title-wrap p {
+  margin: 2px 0 0;
+  font-size: 0.82rem;
+  color: var(--text-muted, #6B6F80);
+}
+
+.pf-section-body {
+  padding: 24px;
+}
+
+/* Form Controls & Inputs */
+.pf-label {
+  display: block;
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--text-navy, #0B0B2B);
+  margin-bottom: 6px;
+}
+
+.pf-label-required {
+  color: #E53935;
+  margin-left: 2px;
+}
+
+.pf-label-hint {
+  font-size: 0.75rem;
+  color: var(--text-muted, #6B6F80);
+  margin-left: 6px;
+  font-weight: 400;
+}
+
+.pf-input,
+.pf-select {
+  width: 100%;
+  height: 44px;
+  padding: 8px 14px;
+  font-size: 0.925rem;
+  border: 1.5px solid #E8ECEF;
+  border-radius: 10px;
+  background-color: #FFFFFF;
+  color: var(--text-navy, #0B0B2B);
+  transition: all 0.2s ease;
+  outline: none;
+}
+
+.pf-input:focus,
+.pf-select:focus {
+  border-color: #FF6A1A;
+  box-shadow: 0 0 0 3px rgba(255, 106, 26, 0.14);
+}
+
+.pf-input::placeholder {
+  color: #9AA2B1;
+}
+
+.pf-input-group {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.pf-input-prefix {
+  position: absolute;
+  left: 14px;
+  font-weight: 600;
+  color: var(--text-muted, #6B6F80);
+  pointer-events: none;
+  font-size: 0.95rem;
+}
+
+.pf-input-has-prefix {
+  padding-left: 32px;
+}
+
+/* Image Upload Container */
+.pf-image-upload-box {
+  border: 2px dashed #D6DCE5;
+  border-radius: 12px;
+  padding: 20px;
+  text-align: center;
+  background: #FBFBFD;
+  transition: all 0.2s ease;
+  cursor: pointer;
+}
+
+.pf-image-upload-box:hover {
+  border-color: #FF6A1A;
+  background: rgba(255, 106, 26, 0.02);
+}
+
+.pf-image-preview {
+  max-height: 140px;
+  max-width: 100%;
+  border-radius: 8px;
+  object-fit: cover;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+/* ========================================================
+   ATTRACTIVE ON/OFF TOGGLE SWITCHES
+   ======================================================== */
+.pf-toggle-card {
+  border: 1px solid #EAECEF;
+  border-radius: 14px;
+  padding: 16px 20px;
+  background: #FFFFFF;
+  transition: all 0.25s ease;
+  margin-bottom: 16px;
+}
+
+.pf-toggle-card.active {
+  border-color: rgba(255, 106, 26, 0.45);
+  background: linear-gradient(180deg, #FFFFFF 0%, rgba(255, 106, 26, 0.03) 100%);
+  box-shadow: 0 4px 14px rgba(255, 106, 26, 0.06);
+}
+
+.pf-toggle-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  cursor: pointer;
+  user-select: none;
+}
+
+.pf-toggle-meta {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.pf-toggle-icon {
+  width: 40px;
+  height: 40px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 20px;
+  background: #F1F3F7;
+  color: #5F6375;
+  transition: all 0.25s ease;
+  flex-shrink: 0;
+}
+
+.pf-toggle-card.active .pf-toggle-icon {
+  background: rgba(255, 106, 26, 0.15);
+  color: #FF6A1A;
+}
+
+.pf-toggle-title {
+  margin: 0;
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: var(--text-navy, #0B0B2B);
+}
+
+.pf-toggle-desc {
+  margin: 2px 0 0;
+  font-size: 0.8rem;
+  color: var(--text-muted, #6B6F80);
+}
+
+/* The Switch Element */
+.pf-switch {
+  position: relative;
+  display: inline-block;
+  width: 52px;
+  height: 28px;
+  flex-shrink: 0;
+}
+
+.pf-switch input {
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+
+.pf-slider {
+  position: absolute;
+  cursor: pointer;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: #D1D5DB;
+  transition: 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  border-radius: 28px;
+}
+
+.pf-slider:before {
+  position: absolute;
+  content: "";
+  height: 22px;
+  width: 22px;
+  left: 3px;
+  bottom: 3px;
+  background-color: white;
+  transition: 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  border-radius: 50%;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+}
+
+.pf-switch input:checked + .pf-slider {
+  background: linear-gradient(90deg, #FF6A1A 0%, #FF8C38 100%);
+  box-shadow: 0 2px 8px rgba(255, 106, 26, 0.3);
+}
+
+.pf-switch input:checked + .pf-slider:before {
+  transform: translateX(24px);
+}
+
+.pf-toggle-content {
+  margin-top: 18px;
+  padding-top: 18px;
+  border-top: 1px dashed rgba(255, 106, 26, 0.2);
+  animation: pfFadeDown 0.25s ease-out;
+}
+
+@keyframes pfFadeDown {
+  from {
+    opacity: 0;
+    transform: translateY(-8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* ========================================================
+   SMART CLOTHING SPECIFICATIONS
+   ======================================================== */
+.pf-smart-specs {
+  background: #FAFBFD;
+  border: 1px solid #E5E9F0;
+  border-radius: 14px;
+  padding: 20px;
+}
+
+.pf-smart-type-select {
+  background: #FFFFFF;
+  border: 2px solid #FF6A1A;
+  border-radius: 12px;
+  font-weight: 600;
+  color: #FF6A1A;
+}
+
+.pf-spec-tag {
+  display: inline-block;
+  padding: 4px 10px;
+  border-radius: 6px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  background: rgba(255, 106, 26, 0.1);
+  color: #FF6A1A;
+  margin-bottom: 8px;
+}
+
+.pf-custom-spec-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.pf-custom-spec-row input {
+  flex: 1;
+}
+
+.pf-btn-remove-spec {
+  width: 40px;
+  height: 44px;
+  border-radius: 10px;
+  border: 1px solid #FCA5A5;
+  background: #FEF2F2;
+  color: #DC2626;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 16px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  flex-shrink: 0;
+}
+
+.pf-btn-remove-spec:hover {
+  background: #DC2626;
+  color: #FFFFFF;
+}
+
+.pf-btn-add-spec {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 16px;
+  border-radius: 10px;
+  border: 1.5px dashed #FF6A1A;
+  background: rgba(255, 106, 26, 0.05);
+  color: #FF6A1A;
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.pf-btn-add-spec:hover {
+  background: rgba(255, 106, 26, 0.12);
+}
+
+/* Action Footer */
+.pf-form-footer {
+  position: sticky;
+  bottom: 0;
+  background: #FFFFFF;
+  padding: 18px 24px;
+  border-top: 1px solid #E8ECEF;
+  border-radius: 0 0 16px 16px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  box-shadow: 0 -4px 16px rgba(0, 0, 0, 0.04);
+  z-index: 10;
+}
+
+.pf-btn-submit {
+  background: linear-gradient(90deg, #FF5B18 0%, #FF781E 60%, #FFA126 100%);
+  color: #FFFFFF;
+  border: none;
+  border-radius: 12px;
+  padding: 12px 28px;
+  font-size: 0.95rem;
+  font-weight: 700;
+  box-shadow: 0 4px 14px rgba(255, 106, 26, 0.3);
+  transition: all 0.2s ease;
+  cursor: pointer;
+}
+
+.pf-btn-submit:hover:not(:disabled) {
+  opacity: 0.94;
+  transform: translateY(-1px);
+  box-shadow: 0 6px 18px rgba(255, 106, 26, 0.4);
+}
+
+.pf-btn-cancel {
+  background: #F1F3F7;
+  color: #4B5563;
+  border: none;
+  border-radius: 12px;
+  padding: 12px 24px;
+  font-size: 0.95rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.pf-btn-cancel:hover {
+  background: #E5E7EB;
+  color: #111827;
+}
+
+/* Responsive Overrides */
+@media (max-width: 768px) {
+  .pf-store-banner {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+  .pf-section-header {
+    padding: 14px 18px;
+  }
+  .pf-section-body {
+    padding: 18px;
+  }
+  .pf-custom-spec-row {
+    flex-wrap: wrap;
+  }
+  .pf-form-footer {
+    flex-direction: column-reverse;
+    gap: 10px;
+  }
+  .pf-form-footer button {
+    width: 100%;
+  }
+}
+
