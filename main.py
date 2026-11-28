@@ -22,3 +22,7 @@ if __name__ == "__main__":
     is_dev = os.environ.get("ENVIRONMENT", "development") == "development"
     uvicorn.run("backend.main:app", host=host, port=port, reload=is_dev)
 
+
+
+
+
