@@ -631,6 +631,56 @@ class TestGroceryUpgradeE2E(unittest.TestCase):
         self.assertTrue(any("MODIFY COLUMN taxable_amount DOUBLE NULL DEFAULT 0.0" in s for s in executed_sql))
         self.assertFalse(any("FOREIGN_KEY_CHECKS" in s.upper() for s in executed_sql))
 
+    def test_14_day_grocery_demo_seed_isolation_and_date_filter(self):
+        """Verify 14-day demo data seeds ONLY Grocery stores, populates all tables across 14 days, and filters invoices by date."""
+        from app.stores.grocery.seed_demo import seed_grocery_14_days_demo
+
+        # Non-grocery store must be skipped
+        clothing_store = Store(
+            user_id=self.user_b.id,
+            shop_category_id=2,
+            name="Fashion Point",
+            store_type="clothing",
+            store_code=f"CL{self.user_b.id:03d}",
+            currency="INR",
+            currency_symbol="₹",
+            is_active=True,
+        )
+        self.db.add(clothing_store)
+        self.db.commit()
+        self.db.refresh(clothing_store)
+
+        res_cloth = seed_grocery_14_days_demo(self.db, clothing_store)
+        self.assertFalse(res_cloth["seeded"])
+        self.assertEqual(res_cloth["reason"], "not_grocery_store")
+
+        # Seed fresh grocery store_b with 14 days of demo data
+        res_groc = seed_grocery_14_days_demo(self.db, self.store_b)
+        self.assertTrue(res_groc["seeded"])
+        self.assertEqual(res_groc["days"], 14)
+        self.assertEqual(res_groc["products"], 12)
+        self.assertEqual(res_groc["bills"], 20)
+
+        # Second call must be idempotent
+        res_dup = seed_grocery_14_days_demo(self.db, self.store_b)
+        self.assertFalse(res_dup["seeded"])
+        self.assertEqual(res_dup["reason"], "already_has_data")
+
+        # Verify overview, 14-day chart trends, valuation, suppliers, khata, expenses
+        overview = get_dashboard_overview(db=self.db, store=self.store_b)
+        self.assertEqual(overview["total_bills_count"], 20)
+        self.assertGreater(overview["today_sales"], 0)
+        self.assertGreater(overview["total_expenses"], 0)
+        self.assertGreater(overview["pending_khata_bills"], 0)
+
+        rep = get_sales_report(period="daily", days=14, db=self.db, store=self.store_b)
+        self.assertGreaterEqual(len(rep["daily_trends"]), 12)
+
+        # Verify today's invoice filter
+        today_ymd = datetime.datetime.now(datetime.timezone.utc).strftime("%Y-%m-%d")
+        today_invs, today_total = GroceryBillingService.list_invoices(self.db, self.store_b.id, date=today_ymd)
+        self.assertEqual(today_total, 3)
+
 
 if __name__ == "__main__":
     unittest.main()

@@ -1,4 +1,4 @@
-import { useState, useCallback, useMemo } from 'react';
+import { useState, useCallback, useMemo, useRef } from 'react';
 import { useFocusEffect } from './useFocusEffect';
 import reportService from '../services/reportService';
 import salesService from '../services/salesService';
@@ -48,6 +48,7 @@ export function useDashboardData() {
   const [refreshing, setRefreshing] = useState<boolean>(false);
   const [analyticsLoading, setAnalyticsLoading] = useState<boolean>(false);
   const [timeframe, setTimeframe] = useState<TimeframeOption>('Week');
+  const demoSeedAttemptedRef = useRef<boolean>(false);
 
   const loadDashboardData = useCallback(async () => {
     try {
@@ -60,22 +61,39 @@ export function useDashboardData() {
         productService.getProducts({ isActive: true, limit: 100 }).catch(() => []),
       ]);
 
+      const safeSales = Array.isArray(salesRes) ? salesRes : [];
+      const safeProducts = Array.isArray(productsRes) ? productsRes : [];
+
+      if (
+        sumRes &&
+        !demoSeedAttemptedRef.current &&
+        Number((sumRes as any).total_bills_count ?? sumRes.total_orders ?? 0) === 0 &&
+        Number((sumRes as any).total_expenses ?? 0) === 0 &&
+        safeProducts.length === 0 &&
+        safeSales.length === 0
+      ) {
+        demoSeedAttemptedRef.current = true;
+        const seedRes = await reportService.seedDemoData().catch(() => null);
+        if (seedRes?.seeded) {
+          return await loadDashboardData();
+        }
+      }
+
       if (sumRes) setSummary(sumRes);
       if (analyticsRes) setSalesAnalytics(analyticsRes);
 
-      const safeSales = Array.isArray(salesRes) ? salesRes : [];
       setRecentSales(safeSales);
 
       const safeDebits = Array.isArray(debitsRes) ? debitsRes : [];
       setDebitBillsCount(safeDebits.length);
       const totalDue = safeDebits.reduce(
         (acc: number, d: any) =>
-          acc + Number(d.balance ?? d.pending_amount ?? d.total_due ?? 0),
+          acc +
+          Number(d.pending_bill_amount ?? d.total_due ?? d.balance ?? d.pending_amount ?? 0),
         0
       );
       setDebitBalanceTotal(totalDue);
 
-      const safeProducts = Array.isArray(productsRes) ? productsRes : [];
       const lowList = safeProducts.filter((p) => {
         const cur = Number(p.inventory_record?.current_stock ?? p.current_stock ?? 0);
         const min = Number(p.inventory_record?.minimum_stock ?? p.min_stock_level ?? 5);

@@ -97,7 +97,7 @@ export const billingApi = {
     return normalizeInvoice(res);
   },
 
-  listInvoices: async (params?: { customer_id?: number; payment_status?: string; search?: string; page?: number; limit?: number }) => {
+  listInvoices: async (params?: { customer_id?: number; payment_status?: string; search?: string; date?: string; start_date?: string; end_date?: string; page?: number; limit?: number }) => {
     const res = await apiClient.get<{ items?: any[]; total?: number }>('/grocery/billing/invoices', { params });
     const items = Array.isArray((res as any)?.items) ? (res as any).items.map(normalizeInvoice) : [];
     return { ...(res as any), items };

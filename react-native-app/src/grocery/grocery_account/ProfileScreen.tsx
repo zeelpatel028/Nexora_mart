@@ -23,14 +23,9 @@ import AppHeader from '../grocery_components/components/layout/AppHeader';
 import {
   UserIcon,
   BuildingIcon,
-  SettingsIcon,
-  ShieldCheckIcon,
-  InfoIcon,
   LogOutIcon,
   ChevronRightIcon,
   CloseIcon,
-  PhoneIcon,
-  MailIcon,
   StoreIcon,
   EditIcon,
 } from '../grocery_components/components/branding/Icons';
@@ -55,9 +50,6 @@ export const ProfileScreen: React.FC = () => {
   const [editPhone, setEditPhone] = useState('');
   const [editStoreName, setEditStoreName] = useState('');
   const [saving, setSaving] = useState(false);
-
-  // About App Modal
-  const [showAboutModal, setShowAboutModal] = useState(false);
 
   const loadData = async () => {
     try {
@@ -155,27 +147,6 @@ export const ProfileScreen: React.FC = () => {
       icon: BuildingIcon,
       iconColor: '#3B82F6',
       onPress: () => navigation.navigate('AccountDetail'),
-    },
-    {
-      id: 'app_settings',
-      title: 'App Settings',
-      icon: SettingsIcon,
-      iconColor: '#8B5CF6',
-      onPress: () => navigation.navigate('Settings'),
-    },
-    {
-      id: 'privacy_policy',
-      title: 'Privacy Policy',
-      icon: ShieldCheckIcon,
-      iconColor: '#10B981',
-      onPress: () => navigation.navigate('PrivacyPolicy'),
-    },
-    {
-      id: 'about_app',
-      title: 'About App',
-      icon: InfoIcon,
-      iconColor: '#F59E0B',
-      onPress: () => setShowAboutModal(true),
     },
     {
       id: 'logout',
@@ -441,72 +412,6 @@ export const ProfileScreen: React.FC = () => {
                 )}
               </TouchableOpacity>
             </ScrollView>
-          </View>
-        </View>
-      </Modal>
-
-      {/* About App Modal */}
-      <Modal
-        visible={showAboutModal}
-        transparent
-        animationType="fade"
-        onRequestClose={() => setShowAboutModal(false)}
-      >
-        <View style={styles.modalOverlay}>
-          <View
-            style={[
-              styles.aboutModalCard,
-              { backgroundColor: colors.surface, borderColor: colors.border },
-            ]}
-          >
-            <View style={styles.modalHeader}>
-              <Text style={[styles.modalTitle, { color: colors.textPrimary }]}>
-                About Tulsi Mart
-              </Text>
-              <TouchableOpacity onPress={() => setShowAboutModal(false)}>
-                <CloseIcon size={18} color={colors.textPrimary} />
-              </TouchableOpacity>
-            </View>
-
-            <View style={styles.aboutContent}>
-              <View
-                style={[
-                  styles.aboutLogoBox,
-                  { backgroundColor: isDark ? '#261C16' : '#FFF3E0' },
-                ]}
-              >
-                <StoreIcon size={36} color={brandColors.primary} />
-              </View>
-
-              <Text style={[styles.aboutAppName, { color: colors.textPrimary }]}>
-                Tulsi Mart
-              </Text>
-              <Text style={[styles.aboutVersion, { color: colors.textSecondary }]}>
-                Version 1.0.0 (Production)
-              </Text>
-
-              <Text style={[styles.aboutDescription, { color: colors.textSecondary }]}>
-                Professional Retail Store Management & Indian Khata Book System for Indian merchants.
-              </Text>
-
-              <View style={[styles.aboutInfoRow, { borderTopColor: colors.border }]}>
-                <Text style={[styles.aboutInfoLabel, { color: colors.textSecondary }]}>
-                  Platform
-                </Text>
-                <Text style={[styles.aboutInfoValue, { color: colors.textPrimary }]}>
-                  Android Native React Native
-                </Text>
-              </View>
-
-              <View style={[styles.aboutInfoRow, { borderTopColor: colors.border }]}>
-                <Text style={[styles.aboutInfoLabel, { color: colors.textSecondary }]}>
-                  Currency
-                </Text>
-                <Text style={[styles.aboutInfoValue, { color: colors.textPrimary }]}>
-                  Indian Rupee (₹)
-                </Text>
-              </View>
-            </View>
           </View>
         </View>
       </Modal>

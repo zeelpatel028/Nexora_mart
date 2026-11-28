@@ -46,12 +46,10 @@ export function getScreen(name: string): React.ComponentType<any> {
       return require('./grocery_supplier/SupplierListScreen').default;
     case 'SupplierDetail':
       return require('./grocery_supplier/SupplierDetailScreen').default;
-    case 'PurchaseList':
-      return require('./grocery_order/PurchaseListScreen').default;
     case 'PurchaseOrder':
-      return require('./grocery_order/PurchaseOrderScreen').default;
+    case 'PurchaseList':
     case 'CreatePurchase':
-      return require('./grocery_add_order/CreatePurchaseScreen').default;
+      return require('./grocery_order/PurchaseOrderScreen').default;
     case 'Reports':
       return require('./grocery_reports/ReportsScreen').default;
     case 'InventoryValuation':

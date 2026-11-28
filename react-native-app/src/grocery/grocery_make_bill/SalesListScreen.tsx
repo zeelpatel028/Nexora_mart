@@ -52,11 +52,10 @@ export const SalesListScreen: React.FC = () => {
 
   const todayStr = useMemo(() => formatDateYMD(new Date()), []);
 
-  // Default to showing today's bills
+  // Default to showing recent bills across the last 2 weeks
   const [dateFilter, setDateFilter] = useState<BillDateFilter>({
-    type: 'today',
-    dateStr: todayStr,
-    label: 'Today',
+    type: 'all',
+    label: 'All',
   });
 
   const [sales, setSales] = useState<Sale[]>([]);

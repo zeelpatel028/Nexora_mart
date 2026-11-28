@@ -224,12 +224,35 @@ class GroceryBillingService:
         payment_status: Optional[str] = None,
         search: Optional[str] = None,
         page: int = 1,
-        limit: int = 50
+        limit: int = 50,
+        date: Optional[str] = None,
+        start_date: Optional[str] = None,
+        end_date: Optional[str] = None,
     ) -> Tuple[List[dict], int]:
         query = db.query(GroceryBill).filter(
             GroceryBill.store_id == store_id,
             GroceryBill.is_deleted == False
         )
+
+        if date:
+            try:
+                day = datetime.datetime.strptime(date[:10], "%Y-%m-%d").replace(tzinfo=datetime.timezone.utc)
+                query = query.filter(GroceryBill.created_at >= day, GroceryBill.created_at < day + datetime.timedelta(days=1))
+            except ValueError:
+                pass
+        else:
+            if start_date:
+                try:
+                    sd = datetime.datetime.strptime(start_date[:10], "%Y-%m-%d").replace(tzinfo=datetime.timezone.utc)
+                    query = query.filter(GroceryBill.created_at >= sd)
+                except ValueError:
+                    pass
+            if end_date:
+                try:
+                    ed = datetime.datetime.strptime(end_date[:10], "%Y-%m-%d").replace(tzinfo=datetime.timezone.utc)
+                    query = query.filter(GroceryBill.created_at < ed + datetime.timedelta(days=1))
+                except ValueError:
+                    pass
 
         if customer_id:
             query = query.filter(GroceryBill.customer_id == customer_id)
@@ -275,7 +298,10 @@ class GroceryBillingService:
                 "customer_phone": cust_phone,
                 "subtotal": b.subtotal,
                 "total_tax": b.total_tax,
+                "discount_amount": b.discount_amount,
                 "grand_total": b.grand_total,
+                "paid_amount": b.paid_amount,
+                "payment_method": b.payment_method,
                 "payment_status": b.payment_status,
                 "paid_at": str(b.paid_at) if b.paid_at else None,
                 "template_id": b.template_id,

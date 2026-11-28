@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import {
   View,
   Text,
@@ -7,8 +7,10 @@ import {
   Alert,
   TouchableOpacity,
   RefreshControl,
+  TextInput,
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
+import { useFocusEffect } from '../grocery_components/hooks/useFocusEffect';
 import { Colors } from '../grocery_components/utils/themeColors';
 import { useTheme } from '../grocery_components/hooks/useTheme';
 import AppHeader from '../grocery_components/components/layout/AppHeader';
@@ -40,6 +42,8 @@ export const PurchaseOrderScreen: React.FC = () => {
 
   // State
   const [orders, setOrders] = useState<any[]>([]);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [statusFilter, setStatusFilter] = useState<'ALL' | 'PLACED' | 'RECEIVED' | 'UNPAID'>('ALL');
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
 
@@ -110,9 +114,43 @@ export const PurchaseOrderScreen: React.FC = () => {
     }
   }, []);
 
-  useEffect(() => {
-    loadData();
-  }, [loadData]);
+  useFocusEffect(
+    useCallback(() => {
+      loadData();
+    }, [loadData])
+  );
+
+  const filteredOrders = useMemo(() => {
+    return orders.filter((o) => {
+      const st = String(o.order_status || o.status || '').toUpperCase();
+      const pst = String(o.payment_status || '').toUpperCase();
+      if (statusFilter === 'PLACED' && st === 'RECEIVED') return false;
+      if (statusFilter === 'RECEIVED' && st !== 'RECEIVED') return false;
+      if (statusFilter === 'UNPAID' && pst === 'PAID') return false;
+      if (searchQuery.trim()) {
+        const q = searchQuery.trim().toLowerCase();
+        const text = `${o.order_number || ''} ${o.supplier_name || ''} ${o.product_name || ''}`.toLowerCase();
+        if (!text.includes(q)) return false;
+      }
+      return true;
+    });
+  }, [orders, statusFilter, searchQuery]);
+
+  const totalPurchaseVal = useMemo(
+    () => orders.reduce((s, o) => s + Number(o.total_amount || 0), 0),
+    [orders]
+  );
+  const totalPayableDue = useMemo(
+    () =>
+      orders.reduce(
+        (s, o) =>
+          String(o.payment_status || '').toLowerCase() === 'paid'
+            ? s
+            : s + Math.max(0, Number(o.total_amount || 0) - Number(o.paid_amount || 0)),
+        0
+      ),
+    [orders]
+  );
 
   const onRefresh = () => {
     setRefreshing(true);
@@ -334,7 +372,7 @@ export const PurchaseOrderScreen: React.FC = () => {
   return (
     <View style={[styles.screen, { backgroundColor: colors.background }]}>
       <AppHeader
-        title="Purchase Orders"
+        title="Purchase & Orders"
         showBack
         onBack={() => navigation.goBack()}
         rightAction={
@@ -343,10 +381,63 @@ export const PurchaseOrderScreen: React.FC = () => {
             onPress={() => setAddOrderModal(true)}
           >
             <AppIcon name="plus" size={18} color="#FFFFFF" />
-            <Text style={styles.addHeaderBtnText}>Add Order</Text>
+            <Text style={styles.addHeaderBtnText}>New Order</Text>
           </TouchableOpacity>
         }
       />
+
+      {/* Summary & Filter Controls */}
+      <View style={{ paddingHorizontal: 14, paddingTop: 10 }}>
+        <View style={{ flexDirection: 'row', gap: 8, marginBottom: 10 }}>
+          <View style={{ flex: 1, backgroundColor: colors.cardBg, borderWidth: 1, borderColor: colors.cardBorder, borderRadius: 12, padding: 10 }}>
+            <Text style={{ fontSize: 10, fontWeight: '700', color: colors.textMuted }}>TOTAL ORDERS</Text>
+            <Text style={{ fontSize: 16, fontWeight: '800', color: colors.textPrimary, marginTop: 2 }}>{orders.length}</Text>
+          </View>
+          <View style={{ flex: 1.3, backgroundColor: colors.cardBg, borderWidth: 1, borderColor: colors.cardBorder, borderRadius: 12, padding: 10 }}>
+            <Text style={{ fontSize: 10, fontWeight: '700', color: colors.textMuted }}>PURCHASE VALUE</Text>
+            <Text style={{ fontSize: 15, fontWeight: '800', color: brandColors.primaryOrange, marginTop: 2 }}>{formatCurrency(totalPurchaseVal)}</Text>
+          </View>
+          <View style={{ flex: 1.2, backgroundColor: colors.cardBg, borderWidth: 1, borderColor: colors.cardBorder, borderRadius: 12, padding: 10 }}>
+            <Text style={{ fontSize: 10, fontWeight: '700', color: '#DC2626' }}>PENDING PAY</Text>
+            <Text style={{ fontSize: 15, fontWeight: '800', color: '#DC2626', marginTop: 2 }}>{formatCurrency(totalPayableDue)}</Text>
+          </View>
+        </View>
+
+        <View style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.border, borderRadius: 12, paddingHorizontal: 10, marginBottom: 8 }}>
+          <AppIcon name="search" size={16} color={colors.textSecondary} />
+          <TextInput
+            style={{ flex: 1, height: 38, marginLeft: 8, color: colors.textPrimary, fontSize: 13 }}
+            placeholder="Search order ID, supplier, or product..."
+            placeholderTextColor={colors.textMuted}
+            value={searchQuery}
+            onChangeText={setSearchQuery}
+          />
+        </View>
+
+        <View style={{ flexDirection: 'row', gap: 8, marginBottom: 6 }}>
+          {(['ALL', 'PLACED', 'RECEIVED', 'UNPAID'] as const).map((tab) => {
+            const active = statusFilter === tab;
+            return (
+              <TouchableOpacity
+                key={tab}
+                onPress={() => setStatusFilter(tab)}
+                style={{
+                  paddingHorizontal: 12,
+                  paddingVertical: 6,
+                  borderRadius: 16,
+                  backgroundColor: active ? brandColors.primaryOrange : colors.cardBg,
+                  borderWidth: 1,
+                  borderColor: active ? brandColors.primaryOrange : colors.border,
+                }}
+              >
+                <Text style={{ fontSize: 12, fontWeight: '700', color: active ? '#FFFFFF' : colors.textSecondary }}>
+                  {tab === 'ALL' ? 'All' : tab === 'PLACED' ? 'Placed' : tab === 'RECEIVED' ? 'Received' : 'Unpaid'}
+                </Text>
+              </TouchableOpacity>
+            );
+          })}
+        </View>
+      </View>
 
       <View style={styles.container}>
         {loading ? (
@@ -357,7 +448,7 @@ export const PurchaseOrderScreen: React.FC = () => {
           </View>
         ) : (
           <FlatList
-            data={orders}
+            data={filteredOrders}
             keyExtractor={(item) => String(item.id)}
             renderItem={renderOrderCard}
             contentContainerStyle={styles.listContent}

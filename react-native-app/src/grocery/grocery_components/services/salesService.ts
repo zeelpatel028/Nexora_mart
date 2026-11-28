@@ -10,6 +10,8 @@ export const salesService = {
     date?: string;
     startDate?: string;
     endDate?: string;
+    start_date?: string;
+    end_date?: string;
     search?: string;
     customerId?: number;
     paymentStatus?: string;
@@ -21,6 +23,9 @@ export const salesService = {
       customer_id: params?.customerId,
       payment_status: params?.paymentStatus,
       search: params?.search,
+      date: params?.date,
+      start_date: params?.start_date || params?.startDate,
+      end_date: params?.end_date || params?.endDate,
       page: params?.page || 1,
       limit: params?.limit || 50,
     });

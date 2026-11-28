@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import {
   View,
   Text,
@@ -8,8 +8,11 @@ import {
   Alert,
   KeyboardAvoidingView,
   Platform,
+  TouchableOpacity,
+  TextInput,
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
+import { useFocusEffect } from '../grocery_components/hooks/useFocusEffect';
 import { useTheme } from '../grocery_components/hooks/useTheme';
 import { useSettings } from '../../navigation/context/SettingsContext';
 import AppHeader from '../grocery_components/components/layout/AppHeader';
@@ -19,8 +22,11 @@ import AppButton from '../grocery_components/components/common/AppButton';
 import AppDropdown from '../grocery_components/components/common/AppDropdown';
 import SearchDropdown, { SearchDropdownItem } from '../grocery_components/components/common/SearchDropdown';
 import AppIcon from '../grocery_components/components/icons/AppIcon';
+import Badge from '../grocery_components/components/common/Badge';
+import TableSkeleton from '../grocery_components/components/skeletons/TableSkeleton';
 import groceryProductService from '../grocery_components/services/storeProductService';
 import supplierApi from '../grocery_components/services/supplierApi';
+import { formatCurrency } from '../grocery_components/utils/formatters';
 
 const DEFAULT_GST_OPTIONS = [
   { label: '0% (Exempt)', value: '0' },
@@ -63,33 +69,55 @@ export const GroceryAddProductScreen: React.FC = () => {
 
   const [submitting, setSubmitting] = useState(false);
 
-  const loadLookups = useCallback(async () => {
-    const [nextId, supps, rates, units] = await Promise.all([
-      groceryProductService.previewNextId().catch(() => 'TM_PRD_0001'),
-      supplierApi.listSuppliers({ limit: 100 }).catch(() => []),
-      groceryProductService.getLookupRates().catch(() => null),
-      groceryProductService.getLookupUnits().catch(() => null),
-    ]);
+  // Existing Products List state
+  const [existingProducts, setExistingProducts] = useState<any[]>([]);
+  const [loadingProducts, setLoadingProducts] = useState(true);
+  const [prodSearch, setProdSearch] = useState('');
 
-    setPreviewId(nextId);
-    setSuppliers(
-      (supps || []).map((s: any) => ({
-        id: s.id,
-        title: s.store_name || s.company_name || s.seller_name || s.name,
-        subtitle: `${s.supplier_code || 'SUP'} • ${s.seller_name || s.phone || ''}`,
-      }))
-    );
-    if (Array.isArray(rates) && rates.length > 0) {
-      setGstOptions(rates.map((r: any) => ({ label: r.label, value: String(r.value) })));
-    }
-    if (Array.isArray(units) && units.length > 0) {
-      setUnitOptions(units.map((u: string) => ({ label: u, value: u })));
+  const loadLookupsAndProducts = useCallback(async () => {
+    try {
+      const [nextId, supps, rates, units, prodRes] = await Promise.all([
+        groceryProductService.previewNextId().catch(() => 'TM_PRD_0001'),
+        supplierApi.listSuppliers({ limit: 100 }).catch(() => []),
+        groceryProductService.getLookupRates().catch(() => null),
+        groceryProductService.getLookupUnits().catch(() => null),
+        groceryProductService.getProducts({ limit: 100 }).catch(() => ({ items: [] })),
+      ]);
+
+      setPreviewId(nextId);
+      setSuppliers(
+        (supps || []).map((s: any) => ({
+          id: s.id,
+          title: s.store_name || s.company_name || s.seller_name || s.name,
+          subtitle: `${s.supplier_code || 'SUP'} • ${s.seller_name || s.phone || ''}`,
+        }))
+      );
+      if (Array.isArray(rates) && rates.length > 0) {
+        setGstOptions(rates.map((r: any) => ({ label: r.label, value: String(r.value) })));
+      }
+      if (Array.isArray(units) && units.length > 0) {
+        setUnitOptions(units.map((u: string) => ({ label: u, value: u })));
+      }
+      setExistingProducts(Array.isArray(prodRes?.items) ? prodRes.items : []);
+    } finally {
+      setLoadingProducts(false);
     }
   }, []);
 
-  useEffect(() => {
-    loadLookups();
-  }, [loadLookups]);
+  useFocusEffect(
+    useCallback(() => {
+      loadLookupsAndProducts();
+    }, [loadLookupsAndProducts])
+  );
+
+  const filteredExisting = useMemo(() => {
+    if (!prodSearch.trim()) return existingProducts;
+    const q = prodSearch.trim().toLowerCase();
+    return existingProducts.filter((p) => {
+      const text = `${p.name || ''} ${p.product_code || ''} ${p.supplier_name || ''}`.toLowerCase();
+      return text.includes(q);
+    });
+  }, [existingProducts, prodSearch]);
 
   const handleSave = async () => {
     if (!name.trim()) {
@@ -121,10 +149,18 @@ export const GroceryAddProductScreen: React.FC = () => {
         expiry_alert_enabled: expiryAlertEnabled,
       });
 
+      // Immediately reflect newly created product in list & reset inputs
+      setExistingProducts((prev) => [created, ...prev.filter((x) => x.id !== created.id)]);
+      setName('');
+      setPurchasePrice('');
+      setSellingPrice('');
+      setAvailableStock('0');
+      setSelectedSupplier(null);
+      loadLookupsAndProducts();
+
       Alert.alert(
-        'Product Saved',
-        `"${created.name}" (${created.product_code}) added successfully!`,
-        [{ text: 'OK', onPress: () => navigation.goBack() }]
+        'Product Added',
+        `"${created.name}" (${created.product_code}) added successfully!`
       );
     } catch (err: any) {
       const msg = err?.response?.data?.detail || err?.message || 'Failed to save grocery product.';
@@ -308,8 +344,77 @@ export const GroceryAddProductScreen: React.FC = () => {
             title={submitting ? 'Saving Product...' : 'Save Grocery Product'}
             onPress={handleSave}
             loading={submitting}
-            style={{ marginTop: 6, marginBottom: 24 }}
+            style={{ marginTop: 6, marginBottom: 18 }}
           />
+
+          {/* Existing Grocery Products List */}
+          <View style={styles.catalogHeader}>
+            <Text style={[styles.catalogHeading, { color: colors.textPrimary }]}>
+              Existing Products ({existingProducts.length})
+            </Text>
+            <TouchableOpacity onPress={() => navigation.navigate('ProductsTab')}>
+              <Text style={{ color: brandColors.primaryOrange, fontSize: 13, fontWeight: '700' }}>View All →</Text>
+            </TouchableOpacity>
+          </View>
+
+          <View style={[styles.searchBox, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+            <AppIcon name="search" size={16} color={colors.textSecondary} />
+            <TextInput
+              style={[styles.searchInput, { color: colors.textPrimary }]}
+              placeholder="Search existing products by name or code..."
+              placeholderTextColor={colors.textMuted}
+              value={prodSearch}
+              onChangeText={setProdSearch}
+            />
+          </View>
+
+          {loadingProducts ? (
+            <TableSkeleton rows={4} />
+          ) : filteredExisting.length === 0 ? (
+            <AppCard>
+              <Text style={{ color: colors.textSecondary, textAlign: 'center', paddingVertical: 14 }}>
+                {prodSearch ? `No products match "${prodSearch}".` : 'No grocery products found yet.'}
+              </Text>
+            </AppCard>
+          ) : (
+            filteredExisting.map((item) => {
+              const stock = Number(item.available_stock ?? item.current_stock ?? 0);
+              const isLow = Boolean(item.is_low_stock || (item.low_stock_enabled && stock <= Number(item.low_stock_qty ?? 5)));
+              return (
+                <TouchableOpacity
+                  key={String(item.id)}
+                  activeOpacity={0.8}
+                  onPress={() => navigation.navigate('ProductDetail', { productId: item.id })}
+                >
+                  <AppCard style={styles.existingCard}>
+                    <View style={styles.existingTop}>
+                      <View style={{ flex: 1, paddingRight: 8 }}>
+                        <Text style={[styles.existingName, { color: colors.textPrimary }]} numberOfLines={1}>
+                          {item.name}
+                        </Text>
+                        <Text style={[styles.existingSub, { color: colors.textSecondary }]}>
+                          {item.product_code}
+                          {item.supplier_name ? ` • ${item.supplier_name}` : ''}
+                        </Text>
+                      </View>
+                      <Badge
+                        label={stock <= 0 ? 'Out of Stock' : isLow ? 'Low Stock' : 'In Stock'}
+                        variant={stock <= 0 ? 'danger' : isLow ? 'warning' : 'success'}
+                      />
+                    </View>
+                    <View style={[styles.existingBottom, { borderTopColor: colors.borderLight }]}>
+                      <Text style={[styles.existingMeta, { color: colors.textSecondary }]}>
+                        Cost: {formatCurrency(item.purchase_price_with_tax ?? item.purchase_price ?? 0)} • GST {item.selling_gst_rate ?? 0}%
+                      </Text>
+                      <Text style={[styles.existingPrice, { color: brandColors.primaryOrange }]}>
+                        {formatCurrency(item.selling_price_with_tax ?? item.selling_price ?? 0)} / {item.selling_unit || 'Piece'} • Stock: {stock}
+                      </Text>
+                    </View>
+                  </AppCard>
+                </TouchableOpacity>
+              );
+            })
+          )}
         </ScrollView>
       </KeyboardAvoidingView>
     </View>
@@ -334,6 +439,36 @@ const styles = StyleSheet.create({
   },
   switchTitle: { fontSize: 14, fontWeight: '600' },
   switchSub: { fontSize: 12, marginTop: 2 },
+  catalogHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 8,
+  },
+  catalogHeading: { fontSize: 15, fontWeight: '800' },
+  searchBox: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderWidth: 1,
+    borderRadius: 12,
+    paddingHorizontal: 12,
+    marginBottom: 10,
+  },
+  searchInput: { flex: 1, height: 40, marginLeft: 8, fontSize: 13.5 },
+  existingCard: { marginBottom: 10, padding: 13 },
+  existingTop: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+  existingName: { fontSize: 14.5, fontWeight: '700' },
+  existingSub: { fontSize: 12, marginTop: 2 },
+  existingBottom: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginTop: 8,
+    paddingTop: 8,
+    borderTopWidth: 1,
+  },
+  existingMeta: { fontSize: 11.5 },
+  existingPrice: { fontSize: 13, fontWeight: '800' },
 });
 
 export default GroceryAddProductScreen;

@@ -32,9 +32,9 @@ const LANGUAGES = [
 ];
 
 const CURRENCIES = [
-  { label: 'INR (₹) - Indian Rupee', value: 'INR' },
-  { label: 'USD ($) - US Dollar', value: 'USD' },
-  { label: 'EUR (€) - Euro', value: 'EUR' },
+  { label: '₹ - Indian Rupee', value: 'INR' },
+  { label: '$ - US Dollar', value: 'USD' },
+  { label: '€ - Euro', value: 'EUR' },
 ];
 
 const INVOICE_TEMPLATES = [

@@ -34,7 +34,7 @@ export const partnerService = {
   async getDebitCustomers(search?: string): Promise<DebitCustomer[]> {
     const res = await customerApi.listCustomers({ search, limit: 100 });
     return ((res.items || []) as any[]).filter(
-      (c) => Number(c.pending_bill_amount ?? c.total_due ?? 0) > 0 || Number(c.total_bills_count ?? 0) >= 0
+      (c) => Number(c.pending_bill_amount ?? c.total_due ?? 0) > 0
     ) as DebitCustomer[];
   },
 

@@ -28,7 +28,15 @@ export const formatIndianNumber = (amount: number | string | undefined | null): 
  * Formats an amount in Indian Rupee currency (₹1,25,000.00)
  */
 export const formatCurrency = (amount: number | string | undefined | null, symbol: string = '₹'): string => {
-  return `${symbol}${formatIndianNumber(amount)}`;
+  const safeSymbol =
+    !symbol || String(symbol).trim().toUpperCase() === 'INR'
+      ? '₹'
+      : String(symbol).trim().toUpperCase() === 'USD'
+      ? '$'
+      : String(symbol).trim().toUpperCase() === 'EUR'
+      ? '€'
+      : symbol;
+  return `${safeSymbol}${formatIndianNumber(amount)}`;
 };
 
 export const formatDate = (dateString?: string | null): string => {

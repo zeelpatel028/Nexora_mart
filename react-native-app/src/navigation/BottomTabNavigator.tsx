@@ -26,6 +26,7 @@ export const BottomTabNavigator: React.FC = () => {
     <Tab.Navigator
       initialRouteName="DashboardTab"
       backBehavior="initialRoute"
+      detachInactiveScreens={false}
       tabBar={(props) => <FloatingTabBar {...props} />}
       screenOptions={{
         headerShown: false,

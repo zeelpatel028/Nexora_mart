@@ -127,7 +127,9 @@ export const KhataScreen: React.FC = () => {
   };
 
   const renderCustomerItem = ({ item }: { item: any }) => {
-    const balance = Number(item.balance ?? item.outstanding_balance ?? 0);
+    const balance = Number(
+      item.pending_bill_amount ?? item.total_due ?? item.balance ?? item.outstanding_balance ?? 0
+    );
     const hasPending = balance > 0;
 
     return (

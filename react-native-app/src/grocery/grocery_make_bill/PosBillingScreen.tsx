@@ -11,6 +11,7 @@ import {
   FlatList,
 } from 'react-native';
 import { useNavigation, useRoute } from '@react-navigation/native';
+import { useFocusEffect } from '../grocery_components/hooks/useFocusEffect';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../../navigation/types';
 import { useTheme } from '../grocery_components/hooks/useTheme';
@@ -111,9 +112,11 @@ export const PosBillingScreen: React.FC = () => {
     }
   }, []);
 
-  useEffect(() => {
-    loadInitialData();
-  }, [loadInitialData]);
+  useFocusEffect(
+    useCallback(() => {
+      loadInitialData();
+    }, [loadInitialData])
+  );
 
   // When selectedCustomerId changes, update selectedCustomer
   useEffect(() => {
@@ -184,6 +187,26 @@ export const PosBillingScreen: React.FC = () => {
     const val = parseFloat(rateVal) || 0;
     setCartItems((prev) =>
       prev.map((item) => (item.id === rowId ? { ...item, gstRate: val } : item))
+    );
+  };
+
+  const updateItemExactQty = (rowId: string, qtyStr: string) => {
+    const parsed = parseFloat(qtyStr);
+    if (isNaN(parsed) || parsed <= 0) return;
+    setCartItems((prev) =>
+      prev.map((item) => (item.id === rowId ? { ...item, quantity: parsed } : item))
+    );
+  };
+
+  const cycleItemGst = (rowId: string) => {
+    const rates = [0, 5, 12, 18, 28];
+    setCartItems((prev) =>
+      prev.map((item) => {
+        if (item.id !== rowId) return item;
+        const idx = rates.indexOf(Number(item.gstRate || 0));
+        const nextRate = rates[(idx + 1) % rates.length];
+        return { ...item, gstRate: nextRate };
+      })
     );
   };
 
@@ -339,7 +362,7 @@ export const PosBillingScreen: React.FC = () => {
   const customerDropdownOptions = useMemo(
     () =>
       customers.map((c) => ({
-        label: `${c.name} ${c.phone ? `(${c.phone})` : ''} - Bal: ${currencySymbol}${c.balance ?? c.outstanding_balance ?? 0}`,
+        label: `${c.name} ${c.phone ? `(${c.phone})` : ''} - Bal: ${currencySymbol}${c.pending_bill_amount ?? c.total_due ?? c.balance ?? c.outstanding_balance ?? 0}`,
         value: String(c.id),
       })),
     [customers, currencySymbol]
@@ -481,7 +504,7 @@ export const PosBillingScreen: React.FC = () => {
                 <View style={styles.customerBalanceBadge}>
                   <AppIcon name="AlertCircle" size={14} color="#DC2626" />
                   <Text style={styles.balanceBadgeText}>
-                    Outstanding Balance: {formatCurrency(selectedCustomer.balance ?? selectedCustomer.outstanding_balance ?? 0, currency)}
+                    Outstanding Balance: {formatCurrency(selectedCustomer.pending_bill_amount ?? selectedCustomer.total_due ?? selectedCustomer.balance ?? selectedCustomer.outstanding_balance ?? 0, currency)}
                   </Text>
                 </View>
               )}
@@ -491,7 +514,12 @@ export const PosBillingScreen: React.FC = () => {
 
         {/* 2. Add Products */}
         <AppCard style={styles.sectionCard}>
-          <Text style={styles.sectionTitle}>2. Add Products to Bill</Text>
+          <View style={styles.stepTitleRow}>
+            <View style={styles.stepPill}><Text style={styles.stepPillText}>2</Text></View>
+            <Text style={[styles.sectionTitle, { marginBottom: 0, color: colors.textPrimary }]}>Add Products to Bill</Text>
+            <Text style={{ fontSize: 11.5, fontWeight: '600', color: colors.textMuted }}>{products.length} items</Text>
+          </View>
+
           <SearchDropdown
             label="Search Catalog"
             placeholder="Search product by name, SKU, or barcode..."
@@ -499,21 +527,58 @@ export const PosBillingScreen: React.FC = () => {
             selectedValue=""
             onSelect={handleSelectProduct}
           />
+
+          {products.length > 0 ? (
+            <View style={{ marginTop: 8 }}>
+              <Text style={[styles.miniLabel, { marginBottom: 6 }]}>QUICK ADD ITEMS</Text>
+              <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8 }}>
+                {products.slice(0, 10).map((p) => (
+                  <TouchableOpacity
+                    key={String(p.id)}
+                    activeOpacity={0.8}
+                    onPress={() => handleSelectProduct(String(p.id))}
+                    style={[
+                      styles.quickProdChip,
+                      {
+                        backgroundColor: isDark ? '#261C16' : '#FFF3E0',
+                        borderColor: '#FFE0B2',
+                      },
+                    ]}
+                  >
+                    <Text style={[styles.quickProdName, { color: colors.textPrimary }]} numberOfLines={1}>
+                      {p.product_name || p.name}
+                    </Text>
+                    <Text style={styles.quickProdPrice}>
+                      {formatCurrency(p.selling_price || 0, '₹')} • +{p.unit || 'pc'}
+                    </Text>
+                  </TouchableOpacity>
+                ))}
+              </ScrollView>
+            </View>
+          ) : null}
         </AppCard>
 
         {/* 3. Line Items Table */}
         <AppCard style={styles.sectionCard}>
           <View style={styles.cartHeaderRow}>
-            <Text style={styles.sectionTitle}>
-              3. Bill Line Items ({cartItems.length})
-            </Text>
+            <View style={styles.stepTitleRow}>
+              <View style={styles.stepPill}><Text style={styles.stepPillText}>3</Text></View>
+              <Text style={[styles.sectionTitle, { marginBottom: 0, color: colors.textPrimary }]}>
+                Bill Items ({cartItems.length})
+              </Text>
+            </View>
+            {cartItems.length > 0 ? (
+              <Text style={{ fontSize: 13, fontWeight: '800', color: '#F57C00' }}>
+                {formatCurrency(totals.subtotal, '₹')}
+              </Text>
+            ) : null}
           </View>
 
           {cartItems.length === 0 ? (
             <View style={styles.emptyCartBox}>
               <AppIcon name="ShoppingBag" size={36} color="#CBD5E1" />
               <Text style={styles.emptyCartText}>No items added to this bill yet.</Text>
-              <Text style={styles.emptyCartSub}>Select products above to build invoice.</Text>
+              <Text style={styles.emptyCartSub}>Tap a quick item above or search catalog.</Text>
             </View>
           ) : (
             cartItems.map((item, idx) => {
@@ -524,12 +589,11 @@ export const PosBillingScreen: React.FC = () => {
 
               return (
                 <View key={item.id} style={styles.cartItemRow}>
-                  {/* Top: Product Name, Stock, Delete */}
                   <View style={styles.cartItemTop}>
                     <View style={{ flex: 1 }}>
                       <Text style={styles.cartItemName}>{idx + 1}. {item.name}</Text>
                       <Text style={styles.cartItemStock}>
-                        In Stock: {item.availableStock} {item.unit}
+                        Stock: {item.availableStock} {item.unit}
                       </Text>
                     </View>
                     <TouchableOpacity onPress={() => removeItem(item.id)} style={styles.removeRowBtn}>
@@ -537,9 +601,7 @@ export const PosBillingScreen: React.FC = () => {
                     </TouchableOpacity>
                   </View>
 
-                  {/* Middle: Qty counter & Editable Selling Price */}
                   <View style={styles.cartItemControls}>
-                    {/* Qty +/- */}
                     <View style={styles.qtyControlBox}>
                       <Text style={styles.miniLabel}>QTY ({item.unit})</Text>
                       <View style={styles.qtyStepper}>
@@ -549,19 +611,23 @@ export const PosBillingScreen: React.FC = () => {
                         >
                           <Text style={styles.stepperBtnText}>-</Text>
                         </TouchableOpacity>
-                        <Text style={styles.stepperValue}>{item.quantity}</Text>
+                        <TextInput
+                          style={styles.stepperValue}
+                          keyboardType="decimal-pad"
+                          value={String(item.quantity)}
+                          onChangeText={(t) => updateItemExactQty(item.id, t)}
+                        />
                         <TouchableOpacity
                           onPress={() => updateItemQty(item.id, 1)}
-                          style={styles.stepperBtn}
+                          style={[styles.stepperBtn, { backgroundColor: '#FFF3E0' }]}
                         >
-                          <Text style={styles.stepperBtnText}>+</Text>
+                          <Text style={[styles.stepperBtnText, { color: '#F57C00' }]}>+</Text>
                         </TouchableOpacity>
                       </View>
                     </View>
 
-                    {/* Editable Selling Price for this bill */}
                     <View style={styles.priceInputBox}>
-                      <Text style={styles.miniLabel}>PRICE ({currencySymbol})</Text>
+                      <Text style={styles.miniLabel}>RATE (₹)</Text>
                       <TextInput
                         style={styles.priceInput}
                         keyboardType="decimal-pad"
@@ -570,22 +636,20 @@ export const PosBillingScreen: React.FC = () => {
                       />
                     </View>
 
-                    {/* GST Rate Dropdown */}
                     <View style={styles.gstBox}>
                       <Text style={styles.miniLabel}>GST %</Text>
-                      <View style={styles.gstPill}>
+                      <TouchableOpacity onPress={() => cycleItemGst(item.id)} style={styles.gstPill} activeOpacity={0.7}>
                         <Text style={styles.gstPillText}>{item.gstRate}%</Text>
-                      </View>
+                      </TouchableOpacity>
                     </View>
                   </View>
 
-                  {/* Bottom: Taxable, GST, Line Total */}
                   <View style={styles.cartItemFooter}>
                     <Text style={styles.cartItemMeta}>
-                      Taxable: {formatCurrency(taxable, currency)} | GST: {formatCurrency(gstAmt, currency)}
+                      Base: {formatCurrency(taxable, '₹')} | GST: {formatCurrency(gstAmt, '₹')}
                     </Text>
                     <Text style={styles.cartItemTotal}>
-                      Total: {formatCurrency(lineTotal, currency)}
+                      {formatCurrency(lineTotal, '₹')}
                     </Text>
                   </View>
                 </View>
@@ -596,54 +660,78 @@ export const PosBillingScreen: React.FC = () => {
 
         {/* 4. Live Calculations & Payment */}
         <AppCard style={styles.sectionCard}>
-          <Text style={styles.sectionTitle}>4. Bill Summary & Payment</Text>
-
-          <View style={styles.calcRow}>
-            <Text style={styles.calcLabel}>Subtotal</Text>
-            <Text style={styles.calcValue}>{formatCurrency(totals.subtotal, currency)}</Text>
+          <View style={styles.stepTitleRow}>
+            <View style={styles.stepPill}><Text style={styles.stepPillText}>4</Text></View>
+            <Text style={[styles.sectionTitle, { marginBottom: 0, color: colors.textPrimary }]}>Bill Summary & Payment</Text>
           </View>
 
-          <View style={styles.calcRow}>
-            <Text style={styles.calcLabel}>Bill Discount ({currencySymbol})</Text>
-            <TextInput
-              style={styles.discountInput}
-              keyboardType="decimal-pad"
-              value={overallDiscount}
-              onChangeText={setOverallDiscount}
-              placeholder="0"
-            />
+          <View style={styles.summaryHighlightBox}>
+            <View style={styles.calcRow}>
+              <Text style={styles.calcLabel}>Subtotal (Items Total)</Text>
+              <Text style={styles.calcValue}>{formatCurrency(totals.subtotal, '₹')}</Text>
+            </View>
+
+            <View style={styles.calcRow}>
+              <Text style={styles.calcLabel}>Bill Discount (₹)</Text>
+              <TextInput
+                style={styles.discountInput}
+                keyboardType="decimal-pad"
+                value={overallDiscount}
+                onChangeText={setOverallDiscount}
+                placeholder="0"
+              />
+            </View>
+
+            <View style={styles.calcRow}>
+              <Text style={styles.calcLabel}>Taxable Base Value</Text>
+              <Text style={styles.calcValue}>{formatCurrency(totals.totalTaxable, '₹')}</Text>
+            </View>
+
+            <View style={styles.calcRow}>
+              <Text style={styles.calcLabel}>Total GST (CGST + SGST)</Text>
+              <Text style={styles.calcValue}>{formatCurrency(totals.totalGst, '₹')}</Text>
+            </View>
+
+            <View style={[styles.calcRow, styles.grandTotalRow]}>
+              <Text style={styles.grandTotalLabel}>Grand Total</Text>
+              <Text style={styles.grandTotalValue}>{formatCurrency(totals.grandTotal, '₹')}</Text>
+            </View>
           </View>
 
-          <View style={styles.calcRow}>
-            <Text style={styles.calcLabel}>Taxable Value</Text>
-            <Text style={styles.calcValue}>{formatCurrency(totals.totalTaxable, currency)}</Text>
-          </View>
-
-          <View style={styles.calcRow}>
-            <Text style={styles.calcLabel}>Total GST (CGST + SGST)</Text>
-            <Text style={styles.calcValue}>{formatCurrency(totals.totalGst, currency)}</Text>
-          </View>
-
-          <View style={[styles.calcRow, styles.grandTotalRow]}>
-            <Text style={styles.grandTotalLabel}>Grand Total</Text>
-            <Text style={styles.grandTotalValue}>{formatCurrency(totals.grandTotal, currency)}</Text>
-          </View>
-
-          <View style={styles.divider} />
-
-          {/* Payment Method */}
-          <AppDropdown
-            label="Payment Mode"
-            options={PAYMENT_METHODS}
-            selectedValue={paymentMethod}
-            onSelect={setPaymentMethod}
-          />
+          <Text style={[styles.fieldLabel, { marginTop: 10, marginBottom: 8 }]}>Payment Mode</Text>
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8, marginBottom: 10 }}>
+            {PAYMENT_METHODS.map((pm) => {
+              const active = paymentMethod === pm.value;
+              return (
+                <TouchableOpacity
+                  key={pm.value}
+                  onPress={() => setPaymentMethod(pm.value)}
+                  style={[
+                    styles.payModePill,
+                    {
+                      backgroundColor: active ? '#F57C00' : colors.surfaceSubtle,
+                      borderColor: active ? '#F57C00' : colors.border,
+                    },
+                  ]}
+                >
+                  <Text style={{ fontSize: 12.5, fontWeight: '700', color: active ? '#FFFFFF' : colors.textPrimary }}>
+                    {pm.label}
+                  </Text>
+                </TouchableOpacity>
+              );
+            })}
+          </ScrollView>
 
           {/* Paid Amount */}
           <View style={styles.paidRow}>
             <View style={{ flex: 1, marginRight: 8 }}>
+              <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 2 }}>
+                <Text style={styles.fieldLabel}>Paid Amount (₹)</Text>
+                <TouchableOpacity onPress={() => setPaidAmountInput(String(totals.grandTotal))}>
+                  <Text style={{ fontSize: 11.5, fontWeight: '700', color: '#F57C00' }}>Full ₹{totals.grandTotal}</Text>
+                </TouchableOpacity>
+              </View>
               <AppInput
-                label={`Paid Amount (${currencySymbol})`}
                 placeholder={String(totals.grandTotal)}
                 value={paidAmountInput}
                 onChangeText={setPaidAmountInput}
@@ -651,7 +739,7 @@ export const PosBillingScreen: React.FC = () => {
               />
             </View>
             <View style={{ flex: 1 }}>
-              <Text style={styles.fieldLabel}>Pending (Balance Due)</Text>
+              <Text style={styles.fieldLabel}>Pending Balance</Text>
               <View style={styles.pendingDisplayBox}>
                 <Text
                   style={[
@@ -659,7 +747,7 @@ export const PosBillingScreen: React.FC = () => {
                     totals.pendingAmount > 0 && { color: '#DC2626' },
                   ]}
                 >
-                  {formatCurrency(totals.pendingAmount, currency)}
+                  {formatCurrency(totals.pendingAmount, '₹')}
                 </Text>
               </View>
             </View>
@@ -674,7 +762,7 @@ export const PosBillingScreen: React.FC = () => {
 
           {/* Make Bill Button */}
           <AppButton
-            title={`Make Bill • ${formatCurrency(totals.grandTotal, currency)}`}
+            title={`Make Bill • ${formatCurrency(totals.grandTotal, '₹')}`}
             onPress={handleMakeBill}
             loading={submitting}
             disabled={cartItems.length === 0}
@@ -728,8 +816,59 @@ const styles = StyleSheet.create({
     paddingBottom: 40,
   },
   sectionCard: {
-    marginBottom: 16,
-    padding: 16,
+    marginBottom: 14,
+    padding: 15,
+    borderRadius: 16,
+  },
+  stepTitleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginBottom: 10,
+  },
+  stepPill: {
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    backgroundColor: '#F57C00',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  stepPillText: {
+    color: '#FFFFFF',
+    fontSize: 12,
+    fontWeight: '800',
+  },
+  quickProdChip: {
+    borderWidth: 1,
+    borderRadius: 12,
+    paddingHorizontal: 11,
+    paddingVertical: 8,
+    maxWidth: 160,
+  },
+  quickProdName: {
+    fontSize: 12.5,
+    fontWeight: '700',
+  },
+  quickProdPrice: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: '#F57C00',
+    marginTop: 2,
+  },
+  summaryHighlightBox: {
+    backgroundColor: '#FFFBF5',
+    borderWidth: 1,
+    borderColor: '#FFE0B2',
+    borderRadius: 12,
+    padding: 12,
+    marginTop: 4,
+  },
+  payModePill: {
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    borderRadius: 20,
+    borderWidth: 1,
   },
   sectionTitle: {
     fontSize: 16,

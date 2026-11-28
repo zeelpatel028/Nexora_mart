@@ -64,6 +64,10 @@ export const reportService = {
       ...(res || {}),
     } as any;
   },
+
+  async seedDemoData(): Promise<{ seeded?: boolean; reason?: string }> {
+    return apiClient.post('/grocery/dashboard/seed-demo');
+  },
 };
 
 export default reportService;

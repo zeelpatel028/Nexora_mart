@@ -6,8 +6,8 @@ import {
   ScrollView,
   TouchableOpacity,
   Alert,
-  Modal,
   Image,
+  Modal,
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -20,8 +20,8 @@ import { useTheme } from '../grocery_components/hooks/useTheme';
 import { useAuth } from '../grocery_components/hooks/useAuth';
 import { useStore } from '../../navigation/context/StoreContext';
 import AppHeader from '../grocery_components/components/layout/AppHeader';
-import AppIcon, { IconName } from '../grocery_components/components/icons/AppIcon';
 import AppButton from '../grocery_components/components/common/AppButton';
+import AppIcon, { IconName } from '../grocery_components/components/icons/AppIcon';
 
 export type MenuItemTarget =
   | { type: 'tab'; screen: keyof MainTabParamList }
@@ -56,7 +56,7 @@ export const MoreMenuScreen: React.FC = () => {
       items: [
         {
           id: 'home_dash',
-          title: 'Home Dashboard',
+          title: 'Home',
           icon: 'home',
           color: '#F57C00',
           tintBg: isDark ? '#3D240E' : '#FFF3E0',
@@ -94,7 +94,7 @@ export const MoreMenuScreen: React.FC = () => {
       items: [
         {
           id: 'products',
-          title: 'Products',
+          title: 'Product',
           icon: 'products',
           color: '#2196F3',
           tintBg: isDark ? '#172C45' : '#E3F2FD',
@@ -126,27 +126,11 @@ export const MoreMenuScreen: React.FC = () => {
         },
         {
           id: 'purchase_orders',
-          title: 'Purchase Orders',
+          title: 'Purchase',
           icon: 'shoppingbag',
           color: '#8B5CF6',
           tintBg: isDark ? '#2B1F47' : '#F3EEFF',
           target: { type: 'stack', screen: 'PurchaseOrder' },
-        },
-        {
-          id: 'purchase_history',
-          title: 'Purchase History',
-          icon: 'orders',
-          color: '#00897B',
-          tintBg: isDark ? '#123330' : '#E0F2F1',
-          target: { type: 'stack', screen: 'PurchaseList' },
-        },
-        {
-          id: 'create_purchase',
-          title: 'Create Purchase',
-          icon: 'plus',
-          color: '#F57C00',
-          tintBg: isDark ? '#3D240E' : '#FFF3E0',
-          target: { type: 'stack', screen: 'CreatePurchase' },
         },
       ],
     },
@@ -182,23 +166,15 @@ export const MoreMenuScreen: React.FC = () => {
     },
     {
       id: 'sec_store',
-      title: 'Store & Settings',
+      title: 'Store & Account',
       items: [
         {
           id: 'store_info',
           title: 'Store Information',
-          icon: 'user',
-          color: '#F57C00',
-          tintBg: isDark ? '#3D240E' : '#FFF3E0',
-          target: { type: 'stack', screen: 'Profile' },
-        },
-        {
-          id: 'account_details',
-          title: 'Store Account Details',
           icon: 'store',
           color: '#F57C00',
           tintBg: isDark ? '#3D240E' : '#FFF3E0',
-          target: { type: 'stack', screen: 'AccountDetail' },
+          target: { type: 'stack', screen: 'Profile' },
         },
         {
           id: 'app_settings',
@@ -217,8 +193,8 @@ export const MoreMenuScreen: React.FC = () => {
           target: { type: 'stack', screen: 'PrivacyPolicy' },
         },
         {
-          id: 'about_tulsi',
-          title: 'About Tulsi Mart',
+          id: 'app_info',
+          title: 'App Information',
           icon: 'file',
           color: '#F57C00',
           tintBg: isDark ? '#3D240E' : '#FFF3E0',
@@ -304,7 +280,7 @@ export const MoreMenuScreen: React.FC = () => {
       >
         <TouchableOpacity
           activeOpacity={0.85}
-          onPress={() => navigation.navigate('AccountDetail')}
+          onPress={() => navigation.navigate('Profile')}
           style={[
             styles.profileCard,
             {
@@ -397,7 +373,7 @@ export const MoreMenuScreen: React.FC = () => {
             </View>
             <Text style={[styles.aboutTitle, { color: brandColors.primaryOrange }]}>Tulsi Mart</Text>
             <Text style={[styles.aboutVersion, { color: colors.textSecondary }]}>
-              Version 1.0.0
+              App Information • Version 1.0.0
             </Text>
             <Text style={[styles.aboutBody, { color: colors.textPrimary }]}>
               All-in-one store management for billing, customers, products, suppliers, expenses, and sales reports.
