@@ -3,7 +3,7 @@
 Idempotent: seeds only if the target store has store_type='grocery' and zero existing products/bills.
 """
 import datetime
-from typing import Dict, Any
+from typing import Dict, Any, Optional
 from sqlalchemy.orm import Session
 from sqlalchemy import func
 
@@ -17,13 +17,27 @@ from .grocery_billing.models import GroceryBill, GroceryBillItem, GroceryInvoice
 from .grocery_finance.models import GroceryExpense, GroceryPayment
 
 
+def is_grocery_store(store: Optional[Store]) -> bool:
+    """Return True if the store represents a Grocery / Kirana / Supermarket category."""
+    if not store:
+        return False
+    parts = [
+        str(getattr(store, "store_type", "") or ""),
+        str(getattr(getattr(store, "shop_category", None), "code", "") or ""),
+        str(getattr(getattr(store, "shop_category", None), "name", "") or ""),
+        str(getattr(getattr(store, "store_type_rel", None), "code", "") or ""),
+        str(getattr(getattr(store, "store_type_rel", None), "name", "") or ""),
+    ]
+    joined = " ".join(parts).strip().lower()
+    return any(tok in joined for tok in ("grocery", "kirana", "supermarket"))
+
+
 def seed_grocery_14_days_demo(db: Session, store: Store) -> Dict[str, Any]:
     """Seed exactly 14 days (days -13 .. today) of realistic Grocery Store demo records."""
     if not store:
         return {"seeded": False, "reason": "missing_store"}
 
-    stype = str(getattr(store, "store_type", "") or "").strip().lower()
-    if "grocery" not in stype:
+    if not is_grocery_store(store):
         return {"seeded": False, "reason": "not_grocery_store"}
 
     existing_prods = db.query(func.count(GroceryProduct.id)).filter(GroceryProduct.store_id == store.id).scalar() or 0
