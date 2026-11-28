@@ -129,6 +129,13 @@ def seed_initial_data():
                     updated = True
                 if updated:
                     db.commit()
+
+        # Seed 14-day demo data ONLY for empty Grocery stores
+        from app.models.store import Store
+        from app.stores.grocery.seed_demo import seed_grocery_14_days_demo
+        grocery_stores = db.query(Store).filter(Store.store_type == "grocery", Store.is_active == True).all()
+        for gs in grocery_stores:
+            seed_grocery_14_days_demo(db, gs)
     except Exception as e:
         db.rollback()
         logger.error(f"Error seeding initial data: {e}", exc_info=True)

@@ -32,14 +32,17 @@ def list_invoices(
     customer_id: Optional[int] = None,
     payment_status: Optional[str] = None,
     search: Optional[str] = None,
+    date: Optional[str] = None,
+    start_date: Optional[str] = None,
+    end_date: Optional[str] = None,
     page: int = Query(1, ge=1),
     limit: int = Query(50, ge=1, le=100),
     db: Session = Depends(get_db),
     store: Store = Depends(get_current_store)
 ):
-    """List invoices with search and pagination."""
+    """List invoices with search, date filters, and pagination."""
     items, total = GroceryBillingService.list_invoices(
-        db, store.id, customer_id, payment_status, search, page, limit
+        db, store.id, customer_id, payment_status, search, page, limit, date, start_date, end_date
     )
     return {
         "items": items,

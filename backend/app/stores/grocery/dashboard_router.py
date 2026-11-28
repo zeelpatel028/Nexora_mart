@@ -168,6 +168,16 @@ def get_sales_report(
     }
 
 
+@router.post("/seed-demo")
+def trigger_grocery_demo_seed(
+    db: Session = Depends(get_db),
+    store: Store = Depends(get_current_store),
+):
+    """Idempotently seed 14 days of demo data for an empty Grocery store."""
+    from .seed_demo import seed_grocery_14_days_demo
+    return seed_grocery_14_days_demo(db, store)
+
+
 @router.get("/reports/valuation")
 def get_inventory_valuation(
     db: Session = Depends(get_db),
