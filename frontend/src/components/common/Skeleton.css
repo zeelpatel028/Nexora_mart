@@ -1,0 +1,134 @@
+.nexora-skeleton {
+  background: linear-gradient(
+    90deg,
+    rgba(255, 255, 255, 0.05) 25%,
+    rgba(255, 255, 255, 0.12) 37%,
+    rgba(255, 255, 255, 0.05) 63%
+  );
+  background-size: 400% 100%;
+  animation: nexora-skeleton-shimmer 1.4s ease infinite;
+}
+
+@keyframes nexora-skeleton-shimmer {
+  0% {
+    background-position: 100% 50%;
+  }
+  100% {
+    background-position: 0 50%;
+  }
+}
+
+.nexora-skeleton-text {
+  border-radius: 4px;
+}
+
+.nexora-skeleton-circular {
+  border-radius: 50%;
+}
+
+.nexora-skeleton-rectangular {
+  border-radius: 8px;
+}
+
+/* Skeleton Layout Wrappers */
+.nexora-skeleton-table-wrapper {
+  width: 100%;
+  background-color: var(--bg-card, #181E2B);
+  border: 1px solid var(--border-color, #283348);
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+.nexora-skeleton-table-header {
+  display: flex;
+  padding: 16px 20px;
+  background-color: rgba(255, 255, 255, 0.02);
+  border-bottom: 1px solid var(--border-color, #283348);
+  gap: 16px;
+}
+
+.nexora-skeleton-table-row {
+  display: flex;
+  padding: 16px 20px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.03);
+  gap: 16px;
+  align-items: center;
+}
+
+.nexora-skeleton-dashboard {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  width: 100%;
+}
+
+.nexora-skeleton-stats-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 16px;
+}
+
+.nexora-skeleton-stat-card {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 20px;
+  background-color: var(--bg-card, #181E2B);
+  border: 1px solid var(--border-color, #283348);
+  border-radius: 14px;
+}
+
+.nexora-skeleton-content-grid {
+  display: flex;
+  gap: 20px;
+  width: 100%;
+  flex-wrap: wrap;
+}
+
+.nexora-skeleton-card {
+  background-color: var(--bg-card, #181E2B);
+  border: 1px solid var(--border-color, #283348);
+  border-radius: 14px;
+  padding: 24px;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.nexora-skeleton-product-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: 20px;
+  width: 100%;
+}
+
+.nexora-skeleton-product-card {
+  background-color: var(--bg-card, #181E2B);
+  border: 1px solid var(--border-color, #283348);
+  border-radius: 14px;
+  padding: 16px;
+}
+
+.nexora-skeleton-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  width: 100%;
+}
+
+.nexora-skeleton-list-item {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 16px;
+  background-color: var(--bg-card, #181E2B);
+  border: 1px solid var(--border-color, #283348);
+  border-radius: 12px;
+}
+
+.nexora-skeleton-pos-layout {
+  display: flex;
+  gap: 24px;
+  width: 100%;
+  flex-wrap: wrap;
+}
+

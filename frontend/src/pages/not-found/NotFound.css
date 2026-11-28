@@ -1,0 +1,38 @@
+/**
+ * 404 Not Found Page Styles
+ */
+.not-found-root {
+  text-align: center;
+  padding: 48px 24px;
+  max-width: 480px;
+  margin: 0 auto;
+  background: #ffffff;
+  border-radius: 24px;
+  box-shadow: var(--shadow-sm);
+  border: 1px solid var(--border-light, #e2e8f0);
+}
+
+.not-found-code {
+  font-family: var(--font-heading);
+  font-size: 72px;
+  font-weight: 900;
+  background: var(--gradient-brand);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  margin: 0;
+  line-height: 1;
+}
+
+.not-found-title {
+  font-size: 24px;
+  font-weight: 800;
+  color: #0f172a;
+  margin: 16px 0 8px 0;
+}
+
+.not-found-desc {
+  font-size: 14.5px;
+  color: #64748b;
+  margin: 0 0 24px 0;
+  line-height: 1.5;
+}

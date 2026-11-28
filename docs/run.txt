@@ -1,0 +1,23 @@
+cd D:\Nexora\Nmart\backend
+.\.venv\Scripts\Activate.ps1
+uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
+
+
+
+
+cd D:\Nexora\Nmart\react-native-app
+npm start
+
+
+
+& "$env:LOCALAPPDATA\Android\Sdk\platform-tools\adb.exe" reverse tcp:8081 tcp:8081
+
+
+
+Set-Location d:\Nexora\Nmart\react-native-app\android; .\gradlew.bat assembleRelease
+
+
+
+
+& "C:\Users\zeel\AppData\Local\Android\Sdk\platform-tools\adb.exe" install -r --user 0 "d:\Nexora\Nmart\NexoraMart.apk"
+& "C:\Users\zeel\AppData\Local\Android\Sdk\platform-tools\adb.exe" shell am start --user 0 -n com.nexora.nmart/.MainActivity

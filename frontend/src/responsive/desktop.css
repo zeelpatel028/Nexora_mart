@@ -1,0 +1,32 @@
+/**
+ * Desktop & Laptop Specific Styles (>= 1024px)
+ * Optimizations for high-resolution widescreen monitors and laptops
+ */
+
+@media (min-width: 1024px) {
+  .app-viewport-root {
+    padding: 0;
+    background-color: var(--bg-page, #FFF8F0);
+  }
+
+  .main-display-area {
+    padding: 0;
+    align-items: center;
+    justify-content: center;
+  }
+
+  /* Large Desktop Displays (>= 1440px) */
+  @media (min-width: 1440px) {
+    .website-login-card {
+      width: 1040px;
+      min-height: 620px;
+    }
+  }
+
+  /* Ultra-wide screens (>= 1920px) */
+  @media (min-width: 1920px) {
+    .website-login-card {
+      width: 1080px;
+    }
+  }
+}

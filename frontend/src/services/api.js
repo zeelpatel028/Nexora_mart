@@ -1,0 +1,267 @@
+/**
+ * Centralized API Client
+ * Provides structured request handling, token injection, unified error handling,
+ * and automatic dual-connection failover between Localhost and Render Cloud.
+ */
+import {
+  LOCAL_API_URL,
+  RENDER_API_URL,
+  getInitialApiUrl,
+  saveApiUrl
+} from '../constants';
+
+const TOKEN_KEY = 'nmart_auth_token';
+const REFRESH_TOKEN_KEY = 'nmart_refresh_token';
+
+let currentApiBaseUrl = getInitialApiUrl();
+let refreshPromise = null;
+
+export const getStoredToken = () => {
+  try {
+    return localStorage.getItem(TOKEN_KEY);
+  } catch {
+    return null;
+  }
+};
+
+export const setStoredToken = (token) => {
+  try {
+    if (token) {
+      localStorage.setItem(TOKEN_KEY, token);
+    } else {
+      localStorage.removeItem(TOKEN_KEY);
+    }
+  } catch {
+    // Local storage unavailable
+  }
+};
+
+export const getStoredRefreshToken = () => {
+  try {
+    return localStorage.getItem(REFRESH_TOKEN_KEY);
+  } catch {
+    return null;
+  }
+};
+
+export const setStoredRefreshToken = (token) => {
+  try {
+    if (token) {
+      localStorage.setItem(REFRESH_TOKEN_KEY, token);
+    } else {
+      localStorage.removeItem(REFRESH_TOKEN_KEY);
+    }
+  } catch {
+    // Local storage unavailable
+  }
+};
+
+export const clearStoredAuth = () => {
+  setStoredToken(null);
+  setStoredRefreshToken(null);
+  try {
+    localStorage.removeItem('nmart_auth_user');
+  } catch {
+    // Ignore
+  }
+};
+
+async function tryRefreshAccessToken() {
+  if (refreshPromise) return refreshPromise;
+  const refreshToken = getStoredRefreshToken();
+  if (!refreshToken) return null;
+
+  refreshPromise = (async () => {
+    try {
+      const res = await fetch(`${currentApiBaseUrl}/auth/refresh`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ refresh_token: refreshToken })
+      });
+      if (!res.ok) {
+        clearStoredAuth();
+        return null;
+      }
+      const data = await res.json();
+      const newToken = data?.access_token || data?.token;
+      if (!newToken) {
+        clearStoredAuth();
+        return null;
+      }
+      setStoredToken(newToken);
+      if (data?.refresh_token) {
+        setStoredRefreshToken(data.refresh_token);
+      }
+      if (data?.user) {
+        try {
+          localStorage.setItem('nmart_auth_user', JSON.stringify(data.user));
+        } catch {
+          // Ignore
+        }
+      }
+      return newToken;
+    } catch {
+      return null;
+    } finally {
+      refreshPromise = null;
+    }
+  })();
+
+  return refreshPromise;
+}
+
+export function getActiveApiUrl() {
+  return currentApiBaseUrl;
+}
+
+export function setActiveApiUrl(url) {
+  if (url && url.trim()) {
+    currentApiBaseUrl = url.trim().replace(/\/+$/, '');
+    saveApiUrl(currentApiBaseUrl);
+  }
+}
+
+function getAlternateUrl(currentUrl) {
+  if (currentUrl.includes('localhost') || currentUrl.includes('127.0.0.1')) {
+    return RENDER_API_URL;
+  }
+  return LOCAL_API_URL;
+}
+
+export async function request(endpoint, options = {}) {
+  const token = getStoredToken();
+
+  const headers = {
+    'Content-Type': 'application/json',
+    ...(token ? { Authorization: `Bearer ${token}` } : {}),
+    ...options.headers
+  };
+
+  const config = {
+    ...options,
+    headers
+  };
+
+  const isFullUrl = endpoint.startsWith('http');
+  const primaryUrl = isFullUrl ? endpoint : `${currentApiBaseUrl}${endpoint}`;
+
+  let response;
+  let data;
+
+  try {
+    response = await fetch(primaryUrl, config);
+  } catch (primaryErr) {
+    // If relative endpoint, attempt automatic failover to the alternate server
+    if (!isFullUrl) {
+      const alternateBase = getAlternateUrl(currentApiBaseUrl);
+      const fallbackUrl = `${alternateBase}${endpoint}`;
+      try {
+        console.warn(`[NMART API] Primary (${currentApiBaseUrl}) unreachable. Automatically trying alternate (${alternateBase})...`);
+        response = await fetch(fallbackUrl, config);
+        // Alternate succeeded: switch active base URL for future requests (in production only)
+        if (!import.meta.env.DEV) {
+          currentApiBaseUrl = alternateBase;
+          saveApiUrl(alternateBase);
+        }
+      } catch (fallbackErr) {
+        const error = new Error(
+          `Cannot connect to backend server. Tried both Localhost (${LOCAL_API_URL}) and Render Cloud (${RENDER_API_URL}). Please verify your backend server is online.`
+        );
+        error.status = 0;
+        error.cause = fallbackErr;
+        throw error;
+      }
+    } else {
+      const error = new Error(`Cannot connect to server at ${primaryUrl}`);
+      error.status = 0;
+      error.cause = primaryErr;
+      throw error;
+    }
+  }
+
+  // Attempt transparent refresh on 401 for non-auth endpoints
+  const isAuthPath =
+    endpoint.includes('/auth/login') ||
+    endpoint.includes('/auth/register') ||
+    endpoint.includes('/auth/refresh');
+
+  if (response.status === 401 && !options._retried && !isAuthPath) {
+    const refreshedToken = await tryRefreshAccessToken();
+    if (refreshedToken) {
+      return request(endpoint, {
+        ...options,
+        _retried: true,
+        headers: {
+          ...options.headers,
+          Authorization: `Bearer ${refreshedToken}`
+        }
+      });
+    }
+  }
+
+  // Parse response
+  const contentType = response.headers.get('content-type');
+  data = contentType && contentType.includes('application/json')
+    ? await response.json()
+    : await response.text();
+
+  if (!response.ok) {
+    let message = response.statusText || 'Request failed';
+    let retryAfter = null;
+
+    if (data) {
+      if (typeof data.detail === 'string') {
+        message = data.detail;
+      } else if (Array.isArray(data.detail) && data.detail.length > 0) {
+        message = data.detail.map((item) => item.msg || item.message || JSON.stringify(item)).join('; ');
+      } else if (data.message) {
+        message = data.message;
+      } else if (typeof data === 'string' && data.trim()) {
+        message = data;
+      }
+      if (data.retryAfter) {
+        retryAfter = parseInt(data.retryAfter, 10);
+      }
+    }
+
+    // Check Retry-After response header
+    const retryHeader = response.headers.get('retry-after') || response.headers.get('Retry-After');
+    if (retryHeader) {
+      const parsed = parseInt(retryHeader, 10);
+      if (!isNaN(parsed)) retryAfter = parsed;
+    }
+
+    // Map standardized user-friendly fallbacks if message is generic
+    if (!message || message === 'Request failed' || message.includes('Internal Server Error')) {
+      if (response.status === 400) message = 'Validation error. Please check your inputs.';
+      else if (response.status === 401) message = 'Authentication required. Please log in.';
+      else if (response.status === 403) message = 'Access denied. You do not have permission to access this resource.';
+      else if (response.status === 404) message = 'The requested resource was not found.';
+      else if (response.status === 409) message = 'An account with this email already exists. Please log in or use another email.';
+      else if (response.status === 422) message = 'Validation error. Please verify the submitted information.';
+      else if (response.status === 429) message = 'Too many requests. Please try again in 5 minutes.';
+      else if (response.status === 502) message = 'Bad Gateway: Server communication error.';
+      else if (response.status === 503) message = 'Service Unavailable: Server is temporarily undergoing maintenance.';
+      else if (response.status === 504) message = 'Gateway Timeout: Request took too long to complete.';
+      else if (response.status >= 500) message = 'Something went wrong on the server. Please try again.';
+    }
+
+    const error = new Error(message);
+    error.status = response.status;
+    error.statusCode = response.status;
+    error.data = data;
+    error.retryAfter = retryAfter || (response.status === 429 ? 300 : null);
+    throw error;
+  }
+
+  return data;
+}
+
+export default {
+  get: (endpoint, options) => request(endpoint, { ...options, method: 'GET' }),
+  post: (endpoint, body, options) => request(endpoint, { ...options, method: 'POST', body: JSON.stringify(body) }),
+  put: (endpoint, body, options) => request(endpoint, { ...options, method: 'PUT', body: JSON.stringify(body) }),
+  delete: (endpoint, options) => request(endpoint, { ...options, method: 'DELETE' }),
+  getActiveApiUrl,
+  setActiveApiUrl
+};

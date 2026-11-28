@@ -1,0 +1,55 @@
+/**
+ * Global Breakpoints & Container Dimensions
+ * - Small Mobile:   320px - 374px
+ * - Standard Mobile: 375px - 599px
+ * - Tablet:         600px - 1023px
+ * - Desktop:        1024px - 1439px
+ * - Large Desktop:  1440px and above
+ */
+:root {
+  --breakpoint-mobile-small: 320px;
+  --breakpoint-mobile-standard: 375px;
+  --breakpoint-mobile-max: 599px;
+  --breakpoint-tablet-min: 600px;
+  --breakpoint-tablet-max: 1023px;
+  --breakpoint-desktop-min: 1024px;
+  --breakpoint-desktop-large: 1440px;
+
+  /* Card and Container Maximums */
+  --container-max-mobile: 100%;
+  --container-max-tablet: 540px;
+  --container-max-desktop: 980px;
+  --container-max-wide: 1200px;
+}
+
+/* Fluid responsive container */
+.responsive-container {
+  width: 100%;
+  margin-left: auto;
+  margin-right: auto;
+  box-sizing: border-box;
+}
+
+@media (min-width: 1024px) {
+  .responsive-container {
+    max-width: var(--container-max-wide);
+    padding-left: 24px;
+    padding-right: 24px;
+  }
+}
+
+@media (min-width: 600px) and (max-width: 1023px) {
+  .responsive-container {
+    max-width: 720px;
+    padding-left: 20px;
+    padding-right: 20px;
+  }
+}
+
+@media (max-width: 599px) {
+  .responsive-container {
+    max-width: 100%;
+    padding-left: 16px;
+    padding-right: 16px;
+  }
+}
