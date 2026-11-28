@@ -57,7 +57,7 @@ class GroceryInvoice(Base):
     id = Column(Integer, primary_key=True, autoincrement=True, index=True)
     store_id = Column(Integer, ForeignKey("stores.id", ondelete="CASCADE"), nullable=False, index=True)
     user_id = Column(Integer, ForeignKey("users.id", ondelete="SET NULL"), nullable=True, index=True)
-    bill_id = Column(Integer, ForeignKey("grocery_bills.id", ondelete="CASCADE"), unique=True, nullable=False, index=True)
+    bill_id = Column(Integer, ForeignKey("grocery_bills.id", ondelete="CASCADE"), unique=True, nullable=True, index=True)
     customer_id = Column(Integer, ForeignKey("grocery_customers.id", ondelete="SET NULL"), nullable=True, index=True)
     invoice_number = Column(String(100), nullable=False, index=True)
     subtotal = Column(Float, default=0.0, nullable=False)
