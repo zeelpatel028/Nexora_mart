@@ -469,6 +469,168 @@ class TestGroceryUpgradeE2E(unittest.TestCase):
         inv = self.db.query(GroceryInvoice).filter(GroceryInvoice.bill_id == khata_bill["id"]).first()
         self.assertEqual(inv.payment_status, "paid")
 
+    def test_legacy_grocery_invoices_with_child_fk_preserved_on_upgrade(self):
+        """Simulate legacy 5d6e7f8a9b0c schema with child `grocery_invoice_items` FK referencing `grocery_invoices` and populated rows."""
+        from sqlalchemy import event, text
+        from app.migrations import ensure_grocery_schema
+
+        with tempfile.TemporaryDirectory() as tmpdir:
+            db_path = Path(tmpdir) / "legacy_fk_copy.db"
+            temp_engine = create_engine(f"sqlite:///{db_path}")
+            try:
+                @event.listens_for(temp_engine, "connect")
+                def _enable_fk(dbapi_conn, _conn_record):
+                    cur = dbapi_conn.cursor()
+                    cur.execute("PRAGMA foreign_keys=ON")
+                    cur.close()
+
+                with temp_engine.begin() as conn:
+                    conn.execute(text("CREATE TABLE users (id INTEGER PRIMARY KEY, email VARCHAR(255))"))
+                    conn.execute(text("CREATE TABLE stores (id INTEGER PRIMARY KEY, user_id INTEGER REFERENCES users(id), name VARCHAR(255))"))
+                    conn.execute(text("CREATE TABLE customers (id INTEGER PRIMARY KEY, name VARCHAR(255))"))
+                    conn.execute(text("CREATE TABLE grocery_customers (id INTEGER PRIMARY KEY, store_id INTEGER REFERENCES stores(id), name VARCHAR(255))"))
+                    conn.execute(text("CREATE TABLE grocery_bills (id INTEGER PRIMARY KEY, store_id INTEGER REFERENCES stores(id))"))
+                    conn.execute(
+                        text(
+                            "CREATE TABLE grocery_invoices ("
+                            "id INTEGER PRIMARY KEY AUTOINCREMENT, "
+                            "store_id INTEGER NOT NULL REFERENCES stores(id) ON DELETE CASCADE, "
+                            "customer_id INTEGER REFERENCES customers(id) ON DELETE SET NULL, "
+                            "invoice_number VARCHAR(100) NOT NULL, "
+                            "invoice_date DATETIME, "
+                            "subtotal FLOAT NOT NULL, "
+                            "taxable_amount FLOAT NOT NULL, "
+                            "gst_amount FLOAT NOT NULL, "
+                            "discount_amount FLOAT NOT NULL, "
+                            "total_amount FLOAT NOT NULL, "
+                            "paid_amount FLOAT NOT NULL, "
+                            "payment_status VARCHAR(50), "
+                            "payment_method VARCHAR(50), "
+                            "customer_type VARCHAR(50), "
+                            "customer_name VARCHAR(150), "
+                            "customer_phone VARCHAR(50), "
+                            "notes TEXT, "
+                            "created_at DATETIME)"
+                        )
+                    )
+                    conn.execute(
+                        text(
+                            "CREATE TABLE grocery_invoice_items ("
+                            "id INTEGER PRIMARY KEY AUTOINCREMENT, "
+                            "store_id INTEGER NOT NULL REFERENCES stores(id) ON DELETE CASCADE, "
+                            "invoice_id INTEGER NOT NULL REFERENCES grocery_invoices(id) ON DELETE CASCADE, "
+                            "product_id VARCHAR(50) NOT NULL, "
+                            "product_name VARCHAR(200) NOT NULL, "
+                            "quantity FLOAT NOT NULL, "
+                            "unit VARCHAR(50), "
+                            "selling_price FLOAT NOT NULL, "
+                            "gst_rate FLOAT, "
+                            "taxable_amount FLOAT, "
+                            "gst_amount FLOAT, "
+                            "total_amount FLOAT NOT NULL)"
+                        )
+                    )
+                    conn.execute(text("INSERT INTO users (id, email) VALUES (1, 'owner@tulsimart.com')"))
+                    conn.execute(text("INSERT INTO stores (id, user_id, name) VALUES (1, 1, 'Legacy Tulsi')"))
+                    conn.execute(text("INSERT INTO customers (id, name) VALUES (99, 'Old Legacy Cust')"))
+                    conn.execute(text("INSERT INTO grocery_customers (id, store_id, name) VALUES (1, 1, 'Khata Cust')"))
+                    conn.execute(
+                        text(
+                            "INSERT INTO grocery_invoices "
+                            "(id, store_id, customer_id, invoice_number, subtotal, taxable_amount, gst_amount, discount_amount, total_amount, paid_amount, payment_status, created_at) "
+                            "VALUES (10, 1, 99, 'INV-0010', 237.5, 237.5, 12.5, 0.0, 250.0, 250.0, 'PAID', '2026-11-20 10:00:00')"
+                        )
+                    )
+                    conn.execute(
+                        text(
+                            "INSERT INTO grocery_invoice_items "
+                            "(id, store_id, invoice_id, product_id, product_name, quantity, unit, selling_price, gst_rate, taxable_amount, gst_amount, total_amount) "
+                            "VALUES (55, 1, 10, 'P1', 'Basmati Rice', 5.0, 'Kg', 50.0, 5.0, 237.5, 12.5, 250.0)"
+                        )
+                    )
+
+                # Run twice to confirm full idempotency with PRAGMA foreign_keys=ON
+                ensure_grocery_schema(temp_engine)
+                ensure_grocery_schema(temp_engine)
+
+                with temp_engine.connect() as conn:
+                    fk_violations = conn.execute(text("PRAGMA foreign_key_check")).fetchall()
+                    self.assertEqual(fk_violations, [])
+
+                    inv_row = conn.execute(
+                        text("SELECT id, user_id, customer_id, invoice_number, total_tax, grand_total FROM grocery_invoices WHERE id = 10")
+                    ).fetchone()
+                    self.assertIsNotNone(inv_row)
+                    self.assertEqual(inv_row[1], 1)
+                    self.assertIsNone(inv_row[2])  # legacy `customers` FK id 99 safely cleared instead of violating grocery_customers FK
+                    self.assertEqual(inv_row[3], "INV-0010")
+                    self.assertEqual(float(inv_row[4]), 12.5)
+                    self.assertEqual(float(inv_row[5]), 250.0)
+
+                    item_row = conn.execute(
+                        text("SELECT id, invoice_id, product_name FROM grocery_invoice_items WHERE id = 55")
+                    ).fetchone()
+                    self.assertIsNotNone(item_row)
+                    self.assertEqual(item_row[1], 10)
+                    self.assertEqual(item_row[2], "Basmati Rice")
+            finally:
+                temp_engine.dispose()
+
+    def test_mysql_inplace_upgrade_never_drops_grocery_invoices(self):
+        """Verify MySQL dialect path alters `grocery_invoices` in-place without DROP TABLE or FOREIGN_KEY_CHECKS=0."""
+        from unittest.mock import MagicMock, patch
+        from app.migrations import get_grocery_migration_module
+
+        mig = get_grocery_migration_module()
+        executed_sql: list[str] = []
+        dropped_tables: list[str] = []
+        dropped_fks: list[tuple[str, str]] = []
+
+        mock_bind = MagicMock()
+        mock_bind.dialect.name = "mysql"
+        mock_bind.execute.side_effect = lambda stmt, *a, **kw: MagicMock(scalar=lambda: 0)
+
+        mock_insp = MagicMock()
+        existing_tables = [
+            "users", "stores", "customers", "grocery_customers", "grocery_bills",
+            "grocery_invoices", "grocery_invoice_items",
+            "grocery_store_prefixes", "grocery_orders", "grocery_order_items",
+            "grocery_expenses", "grocery_payments", "grocery_returns",
+            "grocery_refunds", "grocery_employees",
+        ]
+        mock_insp.get_table_names.return_value = existing_tables
+        mock_insp.get_columns.return_value = [
+            {"name": "id", "nullable": False},
+            {"name": "store_id", "nullable": False},
+            {"name": "customer_id", "nullable": True},
+            {"name": "invoice_number", "nullable": False},
+            {"name": "taxable_amount", "nullable": False},
+            {"name": "gst_amount", "nullable": False},
+            {"name": "discount_amount", "nullable": False},
+            {"name": "total_amount", "nullable": False},
+            {"name": "paid_amount", "nullable": False},
+        ]
+        mock_insp.get_foreign_keys.return_value = [
+            {"name": "grocery_invoices_ibfk_1", "referred_table": "stores", "constrained_columns": ["store_id"]},
+            {"name": "grocery_invoices_ibfk_2", "referred_table": "customers", "constrained_columns": ["customer_id"]},
+        ]
+        mock_insp.get_indexes.return_value = []
+
+        with patch.object(mig.op, "get_bind", return_value=mock_bind), \
+             patch.object(mig.sa, "inspect", return_value=mock_insp), \
+             patch.object(mig.op, "drop_table", side_effect=lambda t: dropped_tables.append(t)), \
+             patch.object(mig.op, "drop_constraint", side_effect=lambda n, t, **kw: dropped_fks.append((n, t))), \
+             patch.object(mig.op, "add_column"), \
+             patch.object(mig.op, "create_index"), \
+             patch.object(mig.op, "create_foreign_key"), \
+             patch.object(mig.op, "execute", side_effect=lambda stmt: executed_sql.append(str(stmt))):
+            mig.upgrade()
+
+        self.assertEqual(dropped_tables, [])
+        self.assertEqual(dropped_fks, [("grocery_invoices_ibfk_2", "grocery_invoices")])
+        self.assertTrue(any("MODIFY COLUMN taxable_amount DOUBLE NULL DEFAULT 0.0" in s for s in executed_sql))
+        self.assertFalse(any("FOREIGN_KEY_CHECKS" in s.upper() for s in executed_sql))
+
 
 if __name__ == "__main__":
     unittest.main()
