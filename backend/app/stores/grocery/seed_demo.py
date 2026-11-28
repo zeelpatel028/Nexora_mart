@@ -1,14 +1,16 @@
 """
 14-Day Realistic Demo Data Seeder (Strictly for Grocery Store only).
-Idempotent: seeds only if the target store has store_type='grocery' and zero existing products/bills.
+Idempotent and batched for low-latency execution against remote cloud MySQL.
 """
 import datetime
+import uuid
 from typing import Dict, Any, Optional
 from sqlalchemy.orm import Session
 from sqlalchemy import func
 
 from ...models.store import Store
-from ...utils.id_generator import generate_next_id
+from ...utils.id_generator import DEFAULT_PREFIXES
+from .grocery_prefix.models import GroceryPrefix, GroceryIdCounter
 from .grocery_supplier.models import GrocerySupplier
 from .grocery_product.models import GroceryProduct, GroceryProductBatch, GroceryStockMovement
 from .grocery_khata_customer.models import GroceryCustomer
@@ -47,6 +49,35 @@ def seed_grocery_14_days_demo(db: Session, store: Store) -> Dict[str, Any]:
 
     now = datetime.datetime.now(datetime.timezone.utc)
     uid = store.user_id
+    store_code = (getattr(store, "store_code", None) or f"S{store.id:03d}").strip()
+
+    # Preload configured prefixes & sequence counters in 2 fast queries
+    pfx_map = dict(DEFAULT_PREFIXES)
+    for row in (
+        db.query(GroceryPrefix)
+        .filter(GroceryPrefix.store_id == store.id, GroceryPrefix.is_deleted == False)
+        .all()
+    ):
+        if row.key and row.prefix_value:
+            pfx_map[row.key.lower().strip()] = str(row.prefix_value).strip().upper()
+
+    counter_rows = {
+        row.key.lower().strip(): row
+        for row in db.query(GroceryIdCounter).filter(GroceryIdCounter.store_id == store.id).all()
+        if row.key
+    }
+
+    def next_code(key: str) -> str:
+        k = key.lower().strip()
+        row = counter_rows.get(k)
+        if not row:
+            row = GroceryIdCounter(store_id=store.id, key=k, last_number=0, updated_at=now)
+            db.add(row)
+            counter_rows[k] = row
+        row.last_number = int(row.last_number or 0) + 1
+        row.updated_at = now
+        prefix = pfx_map.get(k, "DOC")
+        return f"{store_code}_{prefix}_{str(row.last_number).zfill(4)}"
 
     # 1. Seed 3 Grocery Suppliers
     supp_specs = [
@@ -54,12 +85,11 @@ def seed_grocery_14_days_demo(db: Session, store: Store) -> Dict[str, Any]:
         ("Amul Dairy Agency", "Kirtibhai Desai", "9825033344", "Dairy Circle, Anand", "24AAACB2222B1Z8", "HDFC Bank", "Amul Dairy Agency", "502000445566", "HDFC0000124", "amuldairy@hdfcbank"),
         ("Narmada FMCG Distributors", "Hiteshbhai Shah", "9825055566", "Ring Road, Surat", "24AAACC3333C1Z2", "ICICI Bank", "Narmada FMCG", "002405009911", "ICIC0000024", "narmada@icici"),
     ]
-    suppliers = []
-    for s_name, seller, phone, addr, gst, b_name, holder, acc, ifsc, upi in supp_specs:
-        sup = GrocerySupplier(
+    suppliers = [
+        GrocerySupplier(
             store_id=store.id,
             user_id=uid,
-            supplier_code=generate_next_id(db, store.id, "supplier"),
+            supplier_code=next_code("supplier"),
             store_name=s_name,
             seller_name=seller,
             phone=phone,
@@ -73,9 +103,10 @@ def seed_grocery_14_days_demo(db: Session, store: Store) -> Dict[str, Any]:
             is_active=True,
             created_at=now - datetime.timedelta(days=13),
         )
-        db.add(sup)
-        db.flush()
-        suppliers.append(sup)
+        for s_name, seller, phone, addr, gst, b_name, holder, acc, ifsc, upi in supp_specs
+    ]
+    db.add_all(suppliers)
+    db.flush()
 
     # 2. Seed 12 Grocery Products (2 intentionally low-stock for alerts; expiry enabled on perishables)
     prod_specs = [
@@ -84,20 +115,24 @@ def seed_grocery_14_days_demo(db: Session, store: Store) -> Dict[str, Any]:
         ("Tata Salt Iodized 1kg", 2, 21.0, 0.0, "Packet", 28.0, 0.0, "Packet", 65.0, True, 12.0, False),
         ("Fortune Sunlite Oil 1L", 0, 128.0, 5.0, "Bottle", 152.0, 5.0, "Bottle", 34.0, True, 8.0, True),
         ("Unpolished Toor Dal 1kg", 0, 132.0, 0.0, "Kilogram", 160.0, 0.0, "Kilogram", 30.0, True, 6.0, False),
-        ("Aashirvaad Shudh Atta 10kg", 0, 390.0, 0.0, "Bag", 455.0, 0.0, "Bag", 4.0, True, 5.0, False),  # low stock
+        ("Aashirvaad Shudh Atta 10kg", 0, 390.0, 0.0, "Bag", 455.0, 0.0, "Bag", 4.0, True, 5.0, False),
         ("Parle-G Gold Biscuit Pack", 2, 72.0, 18.0, "Box", 90.0, 18.0, "Box", 28.0, True, 5.0, True),
         ("Red Label Tea 500g", 2, 235.0, 5.0, "Packet", 285.0, 5.0, "Packet", 18.0, True, 4.0, True),
-        ("Amul Pasteurised Butter 500g", 1, 248.0, 12.0, "Packet", 285.0, 12.0, "Packet", 3.0, True, 5.0, True),  # low stock + soon expiry
+        ("Amul Pasteurised Butter 500g", 1, 248.0, 12.0, "Packet", 285.0, 12.0, "Packet", 3.0, True, 5.0, True),
         ("Maggi 2-Min Masala 12 Pack", 2, 138.0, 18.0, "Packet", 168.0, 18.0, "Packet", 22.0, True, 5.0, True),
         ("Surf Excel Easy Wash 1kg", 2, 118.0, 18.0, "Packet", 142.0, 18.0, "Packet", 20.0, True, 5.0, False),
         ("Gujarat Jeera Whole 500g", 0, 195.0, 5.0, "Packet", 240.0, 5.0, "Packet", 14.0, True, 3.0, False),
     ]
     products = []
+    init_extras = []
     for name, s_idx, p_price, p_gst, p_unit, s_price, s_gst, s_unit, stock, low_en, low_qty, exp_en in prod_specs:
+        pid = str(uuid.uuid4())
+        pcode = next_code("product")
         prod = GroceryProduct(
+            id=pid,
             store_id=store.id,
             user_id=uid,
-            product_code=generate_next_id(db, store.id, "product"),
+            product_code=pcode,
             name=name,
             supplier_id=suppliers[s_idx].id,
             purchase_price_with_tax=p_price,
@@ -113,26 +148,25 @@ def seed_grocery_14_days_demo(db: Session, store: Store) -> Dict[str, Any]:
             is_active=True,
             created_at=now - datetime.timedelta(days=13),
         )
-        db.add(prod)
-        db.flush()
-        db.add(
+        products.append(prod)
+        init_extras.append(
             GroceryStockMovement(
                 store_id=store.id,
                 user_id=uid,
-                product_id=prod.id,
+                product_id=pid,
                 type="initial",
                 qty=stock,
-                ref_id=prod.product_code,
+                ref_id=pcode,
                 created_at=now - datetime.timedelta(days=13),
             )
         )
         if exp_en:
             exp_dt = now + datetime.timedelta(days=10 if "Butter" in name else 45)
-            db.add(
+            init_extras.append(
                 GroceryProductBatch(
                     store_id=store.id,
                     user_id=uid,
-                    product_id=prod.id,
+                    product_id=pid,
                     qty=stock,
                     remaining_qty=stock,
                     expiry_date=exp_dt,
@@ -140,7 +174,8 @@ def seed_grocery_14_days_demo(db: Session, store: Store) -> Dict[str, Any]:
                     created_at=now - datetime.timedelta(days=13),
                 )
             )
-        products.append(prod)
+    db.add_all(products)
+    db.flush()
 
     # 3. Seed 5 Khata Customers
     cust_specs = [
@@ -150,23 +185,23 @@ def seed_grocery_14_days_demo(db: Session, store: Store) -> Dict[str, Any]:
         ("Jayeshbhai Desai", "9876504455", "18 College Road"),
         ("Kavita Joshi", "9876505566", "7B Gokul Apartment"),
     ]
-    customers = []
-    for c_name, c_phone, c_addr in cust_specs:
-        cust = GroceryCustomer(
+    customers = [
+        GroceryCustomer(
             store_id=store.id,
             user_id=uid,
-            customer_code=generate_next_id(db, store.id, "debit_customer"),
+            customer_code=next_code("debit_customer"),
             name=c_name,
             phone=c_phone,
             address=c_addr,
             is_active=True,
             created_at=now - datetime.timedelta(days=13),
         )
-        db.add(cust)
-        db.flush()
-        customers.append(cust)
+        for c_name, c_phone, c_addr in cust_specs
+    ]
+    db.add_all(customers)
+    db.flush()
 
-    # 4. Seed 6 Purchase Orders across 14 days (5 received + 4 paid + 1 newly placed)
+    # 4. Seed 6 Purchase Orders across 14 days
     po_specs = [
         (13, 0, 0, 10.0, "received", "paid"),
         (11, 1, 1, 20.0, "received", "paid"),
@@ -175,11 +210,14 @@ def seed_grocery_14_days_demo(db: Session, store: Store) -> Dict[str, Any]:
         (2, 1, 8, 8.0, "received", "paid"),
         (0, 2, 10, 10.0, "placed", "pending"),
     ]
+    po_rows = []
+    ord_rows = []
+    po_meta = []
     for d_off, s_idx, p_idx, qty, st_val, pay_val in po_specs:
         dt = now - datetime.timedelta(days=d_off, hours=3)
         prod = products[p_idx]
         supp = suppliers[s_idx]
-        ord_code = generate_next_id(db, store.id, "order")
+        ord_code = next_code("order")
         tot = round(qty * prod.purchase_price_with_tax, 2)
         exp_dt = (now + datetime.timedelta(days=30)) if prod.expiry_alert_enabled else None
 
@@ -201,9 +239,6 @@ def seed_grocery_14_days_demo(db: Session, store: Store) -> Dict[str, Any]:
             paid_at=dt if pay_val == "paid" else None,
             created_at=dt,
         )
-        db.add(po)
-        db.flush()
-
         g_ord = GroceryOrder(
             store_id=store.id,
             user_id=uid,
@@ -219,9 +254,15 @@ def seed_grocery_14_days_demo(db: Session, store: Store) -> Dict[str, Any]:
             created_at=dt,
             updated_at=dt,
         )
-        db.add(g_ord)
-        db.flush()
-        db.add(
+        po_rows.append(po)
+        ord_rows.append(g_ord)
+        po_meta.append((po, g_ord, prod, qty, tot, dt, exp_dt, st_val, pay_val, ord_code))
+
+    db.add_all(po_rows + ord_rows)
+    db.flush()
+
+    for po, g_ord, prod, qty, tot, dt, exp_dt, st_val, pay_val, ord_code in po_meta:
+        init_extras.append(
             GroceryOrderItem(
                 store_id=store.id,
                 user_id=uid,
@@ -237,7 +278,7 @@ def seed_grocery_14_days_demo(db: Session, store: Store) -> Dict[str, Any]:
             )
         )
         if st_val == "received":
-            db.add(
+            init_extras.append(
                 GroceryStockMovement(
                     store_id=store.id,
                     user_id=uid,
@@ -249,7 +290,7 @@ def seed_grocery_14_days_demo(db: Session, store: Store) -> Dict[str, Any]:
                 )
             )
             if pay_val == "paid":
-                db.add(
+                init_extras.append(
                     GroceryPayment(
                         store_id=store.id,
                         user_id=uid,
@@ -264,7 +305,7 @@ def seed_grocery_14_days_demo(db: Session, store: Store) -> Dict[str, Any]:
                     )
                 )
 
-    # 5. Seed 21 Sales / Bills spread across all 14 days (day_offset 13 .. 0)
+    # 5. Seed 20 Sales / Bills spread across all 14 days (day_offset 13 .. 0)
     walkin_names = [
         ("Kiran Patel", "9824011100", "Navrangpura"),
         ("Pooja Verma", "9824022200", "Satellite Road"),
@@ -293,9 +334,11 @@ def seed_grocery_14_days_demo(db: Session, store: Store) -> Dict[str, Any]:
         (0, "walk_in", None, "CASH", "paid", [(1, 2), (2, 2), (9, 1)]),
         (0, "khata", 2, "KHATA", "unpaid", [(4, 2), (7, 1)]),
     ]
+    bill_rows = []
+    bill_meta = []
     for idx, (d_off, c_type, c_idx, p_method, pay_st, item_pairs) in enumerate(bill_schedule):
         bill_dt = now - datetime.timedelta(days=d_off, hours=(idx % 5) + 1)
-        inv_code = generate_next_id(db, store.id, "invoice")
+        inv_code = next_code("invoice")
         cust = customers[c_idx] if c_idx is not None else None
         w_name, w_phone, w_addr = walkin_names[idx % len(walkin_names)]
 
@@ -303,7 +346,6 @@ def seed_grocery_14_days_demo(db: Session, store: Store) -> Dict[str, Any]:
         total_tax = 0.0
         grand_total = 0.0
         bill_items = []
-
         for p_idx, q in item_pairs:
             prod = products[p_idx]
             qty = float(q)
@@ -344,11 +386,15 @@ def seed_grocery_14_days_demo(db: Session, store: Store) -> Dict[str, Any]:
             created_at=bill_dt,
             updated_at=bill_dt,
         )
-        db.add(bill)
-        db.flush()
+        bill_rows.append(bill)
+        bill_meta.append((bill, inv_code, c_type, cust, p_method, pay_st, bill_dt, subtotal, total_tax, grand_total, bill_items))
 
+    db.add_all(bill_rows)
+    db.flush()
+
+    for bill, inv_code, c_type, cust, p_method, pay_st, bill_dt, subtotal, total_tax, grand_total, bill_items in bill_meta:
         for prod, qty, p_tax, base_p, gst, tax_amt, line_tot in bill_items:
-            db.add(
+            init_extras.append(
                 GroceryBillItem(
                     bill_id=bill.id,
                     store_id=store.id,
@@ -364,7 +410,7 @@ def seed_grocery_14_days_demo(db: Session, store: Store) -> Dict[str, Any]:
                     created_at=bill_dt,
                 )
             )
-            db.add(
+            init_extras.append(
                 GroceryStockMovement(
                     store_id=store.id,
                     user_id=uid,
@@ -375,8 +421,7 @@ def seed_grocery_14_days_demo(db: Session, store: Store) -> Dict[str, Any]:
                     created_at=bill_dt,
                 )
             )
-
-        db.add(
+        init_extras.append(
             GroceryInvoice(
                 store_id=store.id,
                 user_id=uid,
@@ -387,13 +432,11 @@ def seed_grocery_14_days_demo(db: Session, store: Store) -> Dict[str, Any]:
                 total_tax=total_tax,
                 grand_total=grand_total,
                 payment_status=pay_st,
-                template_id="modern_orange",
-                invoice_date=bill_dt,
                 created_at=bill_dt,
             )
         )
         if pay_st == "paid":
-            db.add(
+            init_extras.append(
                 GroceryPayment(
                     store_id=store.id,
                     user_id=uid,
@@ -419,9 +462,11 @@ def seed_grocery_14_days_demo(db: Session, store: Store) -> Dict[str, Any]:
         (1, "Transport", 520.0, "UPI", "Dairy & Morning Stock Delivery"),
         (0, "Other", 240.0, "CASH", "Store Cleaning & Sanitization"),
     ]
+    exp_rows = []
+    exp_meta = []
     for d_off, cat, amt, p_meth, desc in exp_specs:
         e_dt = now - datetime.timedelta(days=d_off, hours=2)
-        e_code = generate_next_id(db, store.id, "expense")
+        e_code = next_code("expense")
         exp = GroceryExpense(
             store_id=store.id,
             user_id=uid,
@@ -434,9 +479,14 @@ def seed_grocery_14_days_demo(db: Session, store: Store) -> Dict[str, Any]:
             created_at=e_dt,
             updated_at=e_dt,
         )
-        db.add(exp)
-        db.flush()
-        db.add(
+        exp_rows.append(exp)
+        exp_meta.append((exp, e_code, amt, p_meth, e_dt, desc))
+
+    db.add_all(exp_rows)
+    db.flush()
+
+    for exp, e_code, amt, p_meth, e_dt, desc in exp_meta:
+        init_extras.append(
             GroceryPayment(
                 store_id=store.id,
                 user_id=uid,
@@ -451,5 +501,6 @@ def seed_grocery_14_days_demo(db: Session, store: Store) -> Dict[str, Any]:
             )
         )
 
+    db.add_all(init_extras)
     db.commit()
     return {"seeded": True, "store_id": store.id, "days": 14, "bills": len(bill_schedule), "products": len(products)}

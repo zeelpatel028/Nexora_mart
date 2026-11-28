@@ -136,7 +136,11 @@ def seed_initial_data():
         active_stores = db.query(Store).filter(Store.is_active == True).all()
         for gs in active_stores:
             if is_grocery_store(gs):
-                seed_grocery_14_days_demo(db, gs)
+                try:
+                    seed_grocery_14_days_demo(db, gs)
+                except Exception as seed_err:
+                    db.rollback()
+                    logger.warning(f"Skipping demo seed for store {gs.id}: {seed_err}")
     except Exception as e:
         db.rollback()
         logger.error(f"Error seeding initial data: {e}", exc_info=True)
